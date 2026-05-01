@@ -19,7 +19,7 @@ declare global {
       errorId?: string
     }
     interface Locals {
-      supabase: SupabaseClient<Database>
+      supabase: SupabaseClient<Database, 'public'>
       getSession(): Promise<Session | null>
       getProfile(): Promise<SupaProfile | null>
       getProjects(): Promise<SupaProject[] | null>

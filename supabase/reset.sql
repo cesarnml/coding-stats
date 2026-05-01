@@ -1,6 +1,8 @@
-drop table if exists projects cascade;
-drop table if exists summaries cascade;
-drop table if exists durations cascade;
-drop table if exists durations_by_language cascade;
-drop table if exists project_summaries cascade;
-drop table if exists profiles cascade;
+truncate table
+  public.project_summaries,
+  public.projects,
+  public.summaries,
+  public.durations,
+  public.durations_by_language,
+  public.profiles
+restart identity cascade;

@@ -3,6 +3,10 @@ name: Today Crons
 on:
   schedule:
     - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+env:
+  CRON_BASE_URL: https://coding-stats.vercel.app
 
 jobs:
   http-request:
@@ -11,13 +15,13 @@ jobs:
     steps:
       - name: Daily Durations
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/durations/today
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations/today"
       - name: Daily Durations By Language
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/durations-by-language/today
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations-by-language/today"
       - name: Daily Summaries
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/summaries/today
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/summaries/today"
       - name: Daily Project Summaries
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/project-summaries/today
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/project-summaries/today"

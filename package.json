@@ -1,5 +1,5 @@
 {
-  "name": "waka-shortcut-time-stats",
+  "name": "coding-stats",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -18,8 +18,9 @@
     "lint": "eslint .",
     "format": "prettier --plugin-search-dir . --write .",
     "webhint": "hint",
-    "sb:start": "supabase start && pnpm sb:dump && pnpm sb:reset && pnpm sb:seed && pnpm sb:types",
+    "sb:start": "supabase start && pnpm sb:dump:remote && pnpm sb:reset && pnpm sb:seed && pnpm sb:types",
     "sb:dump": "supabase db dump --data-only -f supabase/seed.sql",
+    "sb:dump:remote": "supabase db dump --data-only --linked -f supabase/seed.sql",
     "sb:types": "supabase gen types typescript --local > src/lib/database.types.ts",
     "sb:reset": "psql postgresql://postgres:postgres@localhost:54322/postgres < supabase/reset.sql",
     "sb:seed": "psql postgresql://postgres:postgres@localhost:54322/postgres < supabase/seed.sql",
@@ -87,6 +88,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@sentry/opentelemetry": "10.32.1",
     "@sentry/sveltekit": "10.32.1",
     "@supabase/ssr": "0.8.0",
     "@sveltejs/vite-plugin-svelte": "6.2.1"

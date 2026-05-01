@@ -1,8 +1,4 @@
 # Supabase
-.branches
-.temp
-config.toml
-# Supabase
-.branches
-.temp
+.branches/
+.temp/
 .env

@@ -1,11 +1,10 @@
 import { sveltekit } from '@sveltejs/kit/vite'
-import { sentrySvelteKit } from '@sentry/sveltekit'
+// import { sentrySvelteKit } from '@sentry/sveltekit'
 import { defineConfig, loadEnv } from 'vite'
 import Inspect from 'vite-plugin-inspect'
 import viteCompression from 'vite-plugin-compression'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
-// @ts-expect-error tough type
 const config = defineConfig(({ mode }) => {
   // Only setup Sentry in production
   const isProduction = mode === 'production'
@@ -35,21 +34,21 @@ const config = defineConfig(({ mode }) => {
         build: true,
         outputDir: '.vite-inspect',
       }),
-      isProduction
-        ? sentrySvelteKit({
-            adapter: 'vercel',
-            sourceMapsUploadOptions: {
-              org: env.PUBLIC_SENTRY_ORG,
-              project: env.PUBLIC_SENTRY_PROJECT,
-              authToken: env.SENTRY_AUTH_TOKEN,
-              telemetry: false,
-              cleanArtifacts: true,
-              setCommits: {
-                auto: true,
-              },
-            },
-          })
-        : '',
+      // isProduction
+      //   ? sentrySvelteKit({
+      //       adapter: 'vercel',
+      //       sourceMapsUploadOptions: {
+      //         org: env.PUBLIC_SENTRY_ORG,
+      //         project: env.PUBLIC_SENTRY_PROJECT,
+      //         authToken: env.SENTRY_AUTH_TOKEN,
+      //         telemetry: false,
+      //         cleanArtifacts: true,
+      //         setCommits: {
+      //           auto: true,
+      //         },
+      //       },
+      //     })
+      //   : '',
     ],
     define: {
       // Eliminate in-source test code

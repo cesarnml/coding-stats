@@ -21,3 +21,14 @@ reports
 playwright-report
 config.toml
 settings.json
+
+# Local agent/config secrets
+.mcp.json
+
+# Generated/local tooling output
+graphify-out
+
+# Supabase local data dumps
+*.backup
+supabase/seed.sql
+.qodo

@@ -1,7 +1,7 @@
-import * as Sentry from '@sentry/sveltekit'
-import { handleErrorWithSentry } from '@sentry/sveltekit'
+// import * as Sentry from '@sentry/sveltekit'
+// import { handleErrorWithSentry } from '@sentry/sveltekit'
 import {
-  PUBLIC_SENTRY_DSN,
+  // PUBLIC_SENTRY_DSN,
   PUBLIC_SUPABASE_ANON_KEY,
   PUBLIC_SUPABASE_URL,
 } from '$env/static/public'
@@ -12,25 +12,29 @@ import type { Session } from '@supabase/supabase-js'
 import type { DataContainer } from '$lib/constants'
 import type { SupaProject } from './app'
 
-if (import.meta.env.PROD) {
-  Sentry.init({
-    dsn: PUBLIC_SENTRY_DSN,
-    tracesSampleRate: 1.0,
-  })
-}
+// if (import.meta.env.PROD) {
+//   Sentry.init({
+//     dsn: PUBLIC_SENTRY_DSN,
+//     tracesSampleRate: 1.0,
+//   })
+// }
 
 export const handle: Handle = async ({ event, resolve }) => {
   // Create supabase server client
-  event.locals.supabase = createServerClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-    cookies: {
-      getAll: () => event.cookies.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          event.cookies.set(name, value, { ...options, path: '/' })
-        })
+  event.locals.supabase = createServerClient<Database, 'public'>(
+    PUBLIC_SUPABASE_URL,
+    PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll: () => event.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            event.cookies.set(name, value, { ...options, path: '/' })
+          })
+        },
       },
     },
-  })
+  )
 
   event.locals.getSession = async () => {
     const {
@@ -96,9 +100,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 }
 
 export const handleError: HandleServerError = (input) => {
-  if (import.meta.env.PROD) {
-    handleErrorWithSentry()
-  }
+  // if (import.meta.env.PROD) {
+  //   handleErrorWithSentry()
+  // }
   if (import.meta.env.DEV) {
     console.error(input.error)
   }

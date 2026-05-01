@@ -3,6 +3,10 @@ name: Yesterday Crons
 on:
   schedule:
     - cron: '01 01 * * *'
+  workflow_dispatch:
+
+env:
+  CRON_BASE_URL: https://coding-stats.vercel.app
 
 jobs:
   http-request:
@@ -11,13 +15,13 @@ jobs:
     steps:
       - name: Yesterday Durations
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/durations
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations"
       - name: Yesterday Durations By Language
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/durations-by-language
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations-by-language"
       - name: Yesterday Summaries
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/summaries
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/summaries"
       - name: Yesterday Project Summaries
         run: |
-          curl https://codingstats.vercel.app/api/cron/wakatime/project-summaries
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/project-summaries"
