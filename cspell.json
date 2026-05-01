@@ -1,0 +1,9 @@
+{
+  "version": "0.2",
+  "ignorePaths": [],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": ["daterangepicker", "Greptile", "intraday", "prcs", "Qodo", "Qube", "upserts"],
+  "ignoreWords": [],
+  "import": []
+}
