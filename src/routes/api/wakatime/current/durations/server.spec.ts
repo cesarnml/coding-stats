@@ -16,7 +16,7 @@ describe('/api/wakatime/current/durations', () => {
     const response = await GET(event as unknown as RequestEvent)
     const result = await response.json()
 
-    expect(event.url.searchParams.get).toBeCalledTimes(2)
+    expect(event.url.searchParams.get).toHaveBeenCalledTimes(2)
     expect(response.status).toBe(200)
     expect(result).toEqual(durations)
   })

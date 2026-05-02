@@ -76,6 +76,9 @@
       }
     }
   }
+
+  const getInputValue = (event: Event) =>
+    event.target instanceof HTMLInputElement ? event.target.value : ''
 </script>
 
 <div class="space-y-8">
@@ -88,7 +91,7 @@
             class="project-color"
             type="color"
             value={$project?.find((p) => p.name === name)?.color ?? ChartColor.Icon}
-            on:change={(e) => onColorChange(name, e?.target?.value ?? '')}
+            on:change={(event) => onColorChange(name, getInputValue(event))}
           />
         </div>
         <a

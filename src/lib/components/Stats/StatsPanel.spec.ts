@@ -65,7 +65,7 @@ describe('StatsPanel', () => {
           },
         },
       ],
-    } as SummariesResult
+    } as unknown as SummariesResult
 
     const props = {
       summaries,

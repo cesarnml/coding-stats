@@ -9,7 +9,7 @@
   let { profile } = data
 
   let loading = false
-  let name: string | null = profile?.name
+  let name: string | null = profile?.name ?? null
 
   function handleSubmit() {
     loading = true

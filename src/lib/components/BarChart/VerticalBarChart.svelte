@@ -38,7 +38,8 @@
 
     // @ts-expect-error tough type
     chart.on('click', async (params) => {
-      const branch: string = params.data[0 as keyof echarts.ECElementEvent['data']] ?? ''
+      const data = Array.isArray(params.data) ? params.data : []
+      const branch = String(data[0] ?? '')
       if (branch.includes(SHORTCUT_STORY_IDENTIFIER)) {
         const storyId = getStoryIdFromShortName(branch)
         const response = await fetch(`${ApiEndpoint.SearchStories}?query=id:${storyId}`)

@@ -13,9 +13,9 @@ describe('GET /api/wakatime/current/projects', () => {
       },
     }
 
-    expect(event.url.searchParams.get).not.toBeCalled()
+    expect(event.url.searchParams.get).not.toHaveBeenCalled()
     const response = await GET(event as unknown as RequestEvent)
-    expect(event.url.searchParams.get).toBeCalledTimes(2)
+    expect(event.url.searchParams.get).toHaveBeenCalledTimes(2)
     expect(response.status).toEqual(200)
     const result = await response.json()
     expect(result).toEqual(projects)

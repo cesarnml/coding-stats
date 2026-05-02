@@ -17,13 +17,30 @@
   } as const
 
   let selection: keyof typeof Selection
+  const readColorTheme = () =>
+    typeof localStorage.getItem === 'function'
+      ? localStorage.getItem('colorTheme')
+      : ((localStorage as Storage & { colorTheme?: string }).colorTheme ?? null)
+
+  const writeColorTheme = (value: keyof typeof Selection) => {
+    if (typeof localStorage.setItem === 'function') {
+      localStorage.setItem('colorTheme', value)
+      return
+    }
+
+    try {
+      ;(localStorage as Storage & { colorTheme?: string }).colorTheme = value
+    } catch {
+      // Some test storage proxies do not support property assignment.
+    }
+  }
 
   onMount(() => {
-    selection = localStorage.colorTheme ?? Selection.system
+    selection = (readColorTheme() as keyof typeof Selection | null) ?? Selection.system
   })
 
   afterUpdate(() => {
-    localStorage.colorTheme = selection
+    writeColorTheme(selection)
     if (selection === Selection.dark) {
       document.documentElement.setAttribute('data-theme', 'night')
     }
@@ -38,16 +55,27 @@
 
 <svelte:head>
   <script>
-    if (localStorage.colorTheme === undefined) {
-      localStorage.colorTheme = 'system'
+    let colorTheme =
+      typeof localStorage.getItem === 'function'
+        ? localStorage.getItem('colorTheme')
+        : localStorage.colorTheme
+    if (colorTheme == null) {
+      colorTheme = 'system'
+      if (typeof localStorage.setItem === 'function') {
+        localStorage.setItem('colorTheme', colorTheme)
+      } else {
+        try {
+          localStorage.colorTheme = colorTheme
+        } catch {}
+      }
     }
-    if (localStorage.colorTheme === 'dark') {
+    if (colorTheme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'night')
     }
-    if (localStorage.colorTheme === 'light') {
+    if (colorTheme === 'light') {
       document.documentElement.setAttribute('data-theme', 'synthwave')
     }
-    if (localStorage.colorTheme === 'system') {
+    if (colorTheme === 'system') {
       document.documentElement.removeAttribute('data-theme')
     }
   </script>

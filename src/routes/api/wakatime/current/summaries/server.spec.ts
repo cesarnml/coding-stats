@@ -21,7 +21,7 @@ describe('GET', () => {
       },
     }
     const response = await GET(event as unknown as RequestEvent)
-    expect(event.url.searchParams.get).toBeCalledTimes(4)
+    expect(event.url.searchParams.get).toHaveBeenCalledTimes(4)
     // ? Do these tests add value? ... leaning toward no.
     expect(event.url.searchParams.get('start')).toEqual('2021-01-01')
     expect(event.url.searchParams.get('end')).toEqual('2021-01-31')

@@ -41,7 +41,9 @@ Size: 2 points
 
 > Append here during implementation.
 
-Red first:
-Why this path:
-Alternative considered:
-Deferred:
+Red first: `pnpm lint` failed before changes because ESLint 9 no longer loads `.eslintrc.cjs`; the legacy `eslint-plugin-svelte3` config was therefore unreachable.
+Why this path: Migrated directly to `eslint.config.js`, replaced `eslint-plugin-svelte3` with `eslint-plugin-svelte` plus `svelte-eslint-parser`, and carried forward the repo's recommended JS/TypeScript/Svelte/Prettier layers.
+Alternative considered: Updating `.eslintrc.cjs` only, but that would not satisfy ESLint 9 and would leave `pnpm lint` broken.
+Expanded scope: Verification surfaced type/test cleanup that was implied by moving this ticket onto the maintained Svelte lint path, including Vitest matcher types, Testing Library query options, nullable session handling, Svelte event target typing, and generated Vite inspect output.
+Deferred: The maintained Svelte/TypeScript rules surfaced remaining app debt (`no-explicit-any`, unused symbols, keyed each blocks, navigation resolve handling, reactive reassignment). Those are documented compatibility waivers in `eslint.config.js` so this ticket stays focused on restoring lint with the maintained plugin.
+Verification note: `pnpm lint`, `pnpm run verify:quiet`, and `pnpm run ci:quiet` pass after the migration and cleanup.

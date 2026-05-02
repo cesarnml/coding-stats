@@ -7,13 +7,16 @@ export const actions: Actions = {
     const name = formData.get('name') as string
 
     const session = await getSession()
+    if (!session) {
+      throw redirect(303, Url.Home)
+    }
 
     const { error } = await supabase
       .from('profiles')
       .update({
         name: name,
       })
-      .eq('id', session?.user.id)
+      .eq('id', session.user.id)
 
     if (error) {
       return fail(500, {

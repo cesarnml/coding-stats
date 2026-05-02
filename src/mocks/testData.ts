@@ -14233,7 +14233,7 @@ export const summaries = {
     text: '6 hrs 46 mins',
     text_including_other_language: '6 hrs 50 mins',
   },
-} as SummariesResult
+} as unknown as SummariesResult
 
 export const durations = {
   data: [
@@ -14303,7 +14303,7 @@ export const durations = {
   start: '2023-05-03T17:00:00Z',
   end: '2023-05-04T16:59:59Z',
   timezone: 'Asia/Bangkok',
-} as DurationsResult
+} as unknown as DurationsResult
 
 export const durationsByLanguage = {
   data: [
@@ -15837,7 +15837,7 @@ export const durationsByLanguage = {
   start: '2023-05-03T17:00:00Z',
   end: '2023-05-04T16:59:59Z',
   timezone: 'Asia/Bangkok',
-} as DurationsResult
+} as unknown as DurationsResult
 
 export const projects = {
   data: [
@@ -16820,7 +16820,7 @@ export const projects = {
   page: 1,
   prev_page: 1,
   next_page: 2,
-} as WakaProjectResult
+} as unknown as WakaProjectResult
 
 export const iterations = [
   {
@@ -16978,7 +16978,7 @@ export const iterations = [
     },
     created_at: '2023-04-06T06:03:49Z',
   },
-] as IterationSlim[]
+] as unknown as IterationSlim[]
 
 export const iterationStories = [
   {
@@ -18036,7 +18036,7 @@ export const iterationStories = [
     created_at: '2023-04-06T06:01:53Z',
     moved_at: '2023-04-06T12:39:26Z',
   },
-] as StorySlim[]
+] as unknown as StorySlim[]
 
 export const supabaseDuration = {
   id: '74ad7feb-c570-448f-b583-5f5d7d61f921',
@@ -18069,7 +18069,7 @@ export const supabaseDuration = {
     },
   ],
   date: '2023-05-19',
-} as SupabaseDuration
+} as unknown as SupabaseDuration
 
 export const vercelAliases = {
   aliases: [
@@ -23551,7 +23551,7 @@ export const vercelProjects = {
     next: null,
     prev: 1684987301446,
   },
-} as ProjectsResult
+} as unknown as ProjectsResult
 
 export const allTimeSinceToday = {
   data: {
