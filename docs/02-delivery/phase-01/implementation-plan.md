@@ -41,7 +41,16 @@ When this phase is complete:
 
 ## Exit Condition
 
-All 6 PRs merged and CI green. Sentry dashboard is receiving production errors. `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` do not appear in `package.json`. ESLint passes with `eslint-plugin-svelte`. CLAUDE.md and roadmap reflect current state. Retrospective written.
+✅ **Exit condition confirmed met (2026-05-02):**
+- All 6 PRs merged to main (#117–121 + retrospective)
+- Sentry dashboard receiving production errors
+- `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` removed from `package.json`
+- ESLint passes with `eslint-plugin-svelte` + flat config
+- CLAUDE.md updated with fixed items
+- Revival roadmap Phase 01 marked complete
+- Retrospective written to `notes/public/phase-01-retrospective.md`
+
+**Phase 01 complete.** Next: Phase 02 — The AI Coding Story.
 
 ## Review Rules
 

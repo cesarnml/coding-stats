@@ -114,15 +114,20 @@ Svelte stores in `src/lib/stores/`:
 
 `$lib` → `src/lib`, `$src` → `src` (configured in `tsconfig.json` and `vite.config.ts`).
 
-## Known issues (as of 2026-05-01)
+## Known issues (as of 2026-05-02)
 
-- Sentry is commented out — zero error visibility in production
-- `getSession()` should be `getUser()` in hooks.server.ts (auth security)
+**Fixed in Phase 01:**
+- ✅ Sentry now active in production (both client + server hooks uncommented)
+- ✅ Auth cookie validation moved to server (`getUser()` in hooks.server.ts)
+- ✅ `axios` replaced with native `fetch` across all internal API calls
+- ✅ `eslint-plugin-svelte3` migrated to `eslint-plugin-svelte` full config
+- ✅ `@vitest/coverage-c8` removed (now using `@vitest/coverage-v8`)
+- ✅ ESLint flat config migration complete
+
+**Remaining known issues:**
+- CI jobs (Lint, Test) disabled in workflow — requires Node 20 bump (one-line fix, deferred from Phase 01)
+- Sentry sourcemaps disabled — requires validation that error traces are readable without them
 - Activity chart renders negative minute bars — cron scrapes yesterday only, but data merging produces artifacts when run multiple times
 - Several charts have no empty state — render blank axes when there's no data for the selected range
-- `axios` used for internal API calls (should be native `fetch`)
-- `eslint-plugin-svelte3` is unmaintained (replace with `eslint-plugin-svelte`)
-- `@vitest/coverage-c8` at 0.33.0 is deprecated (use `@vitest/coverage-v8` already installed)
-- Project has been dormant ~2 years; many deps need incremental updates
 
 See `notes/public/revival-roadmap.md` for prioritized remediation plan.

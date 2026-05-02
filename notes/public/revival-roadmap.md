@@ -4,32 +4,44 @@
 
 ---
 
-## Tier 1 — Unblock Production (do these first)
+## Tier 1 — Unblock Production (✅ COMPLETE — Phase 01, merged 2026-05-02)
 
-### Fix Sentry
-- Currently fully commented out on both client and server hooks
-- Zero error visibility in production right now
-- Likely broke during a dep update — isolate which Sentry package version conflicts and upgrade incrementally
-- Target: errors flowing to Sentry dashboard before any new features ship
+**All 5 code PRs merged to main. Retrospective at `notes/public/phase-01-retrospective.md`.**
 
-### Swap `getSession()` → `getUser()` in hooks.server.ts
-- `getSession()` trusts the local cookie without server-side JWT validation
-- `getUser()` validates against Supabase Auth server — closes a real auth surface
-- One-line change, high signal
+### ✅ Fix Sentry (#121 — P1.05)
+- Upgraded to latest stable Sentry packages
+- Uncommented both client and server hooks
+- Sourcemap uploads disabled (deferred to standalone PR)
+- Errors now flowing to Sentry dashboard in production
 
-### Drop zombie dependencies
-- `eslint-plugin-svelte3` → replace with `eslint-plugin-svelte` (svelte3 plugin is unmaintained)
-- `@vitest/coverage-c8` at 0.33.0 → remove (c8 deprecated; `@vitest/coverage-v8` already installed)
-- `axios` → replace with native `fetch` for internal SvelteKit API route calls (one less dep, no behavior change)
-- MSW v1→v2 API incompatibility — migrated to `http.get` / `HttpResponse` (done 2026-05-02)
+### ✅ Swap `getSession()` → `getUser()` in hooks.server.ts (#117 — P1.01)
+- Migrated to server-side JWT validation
+- Closes auth surface vulnerability
 
-### Fix CI — Playwright workflow disabled (2026-05-02)
+### ✅ Drop zombie dependencies (#118–120 — P1.02–04)
+- `eslint-plugin-svelte3` → `eslint-plugin-svelte` (full migration to flat config) — #119
+- `@vitest/coverage-c8` removed (coverage now via `@vitest/coverage-v8`) — #118
+- `axios` → native `fetch` for all internal API calls (7 files migrated) — #120
+- MSW v1→v2 API incompatibility resolved (migrated to `http.get` / `HttpResponse`)
+
+### ✅ ESLint flat config migration (#119 — P1.03)
+- ESLint `eslint.config.js` flat config + `eslint-plugin-svelte` complete
+- Lint job ready; Test job awaits CI Node 20.x bump
+
+**Exit condition met:** Sentry receiving errors. Auth server-validated. Zero `axios`/`eslint-plugin-svelte3`/`@vitest/coverage-c8` in `package.json`. ESLint runs with flat config.
+
+**Follow-up (post-Phase 01):**
+1. Bump CI Node to 20.x and re-enable Test + Lint jobs (high priority)
+2. Validate Sentry error traces are readable without sourcemaps
+3. Add `last_scraped_at` to `profiles` table (Phase 02 or 03)
+
+### CI — Playwright workflow disabled (2026-05-02)
 The Playwright workflow trigger changed from `push`/`pull_request` to `workflow_dispatch` (manual only). Root cause: Vercel preview deployments are password-protected, so `wait-for-vercel-preview` always times out with 401. Fix: either make previews public, or pass a Vercel bypass token (`VERCEL_AUTOMATION_BYPASS_SECRET`) as a workflow secret so the health-check step gets a 200.
 
-### Fix CI — Lint and Test jobs disabled (2026-05-02)
+### CI — Lint and Test jobs disabled (2026-05-02)
 Both jobs are disabled in `.github/workflows/ci.yaml` until root causes are resolved:
 
-- **Lint** — ESLint v9 dropped support for `.eslintrc.*` config files. The repo uses `.eslintrc.cjs` with `eslint-plugin-svelte3`. Fix: migrate to `eslint.config.js` flat config and swap `eslint-plugin-svelte3` → `eslint-plugin-svelte`. Blocked on zombie dep cleanup above.
+- **Lint** — Originally blocked on ESLint v9 + legacy `.eslintrc.cjs` / `eslint-plugin-svelte3`. Flat config + `eslint-plugin-svelte` shipped in Phase 01 (#119); re-enable tracked in follow-up #1 above.
 
 - **Test / Coverage** — CI runner (Node 18) throws `SyntaxError: The requested module 'svelte' does not provide an export named 'styleText'`. Root cause: Svelte 5 requires Node 20+ for full ESM peer resolution in the jsdom test environment. Fix: bump CI Node version to 20.x and verify `@testing-library/svelte` v5 resolves cleanly under that runtime.
 
