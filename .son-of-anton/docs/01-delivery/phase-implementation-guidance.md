@@ -1,18 +1,51 @@
 # Phase Implementation Guidance
 
-This note defines the default stance for planning and delivering a phase. Use it when creating or revising a phase implementation plan, breaking a phase into tickets, or deciding whether a ticket is small enough to implement safely.
+This note defines the default stance for planning and delivering a phase. Use it when creating or revising a phase plan, breaking a phase into tickets, or deciding whether a ticket is small enough to implement safely.
 
-## Core Stance
+## The Two-Stage Planning Contract
 
-New product phases and epics move through three required developer control points before any code is written:
+Every phase requires **two explicit planning stages** before any code is written. These are separate artifacts with separate grill-me passes. Do not collapse them.
 
-1. **Ideation** — the developer shapes the phase goal through an explicit planning pass. Use `grill-me` to pressure-test scope and decomposition.
-2. **Ticket approval** — the developer approves the decomposed ticket stack as thin, reviewable slices before implementation begins. This is the gate that keeps AI autonomy bounded by explicit human product intent.
-3. **Slice review** — the developer reviews and approves each delivered PR before it advances or merges.
+### Stage 1 — Product Plan (`/soa plan`)
 
-Between those control points, the agent runs autonomously through the bounded phase.
+**Purpose:** Why and what. Establishes the product rationale, committed scope, deferrals, and exit condition.
 
-For implementation itself:
+**Grill-me focus:** scope boundaries, product goals, what stays deferred, success criteria.
+
+**Output:** `docs/01-product/phase-N-[slug].md` — written to the product plans directory and committed to `main` before Stage 2 begins.
+
+**Template:** `.son-of-anton/docs/02-templates/product-plan.template.md`
+
+**Gate:** Developer approves the product plan before decomposition starts.
+
+### Stage 2 — Decomposition (`/soa decompose`)
+
+**Purpose:** How. Breaks the approved product plan into thin, reviewable ticket slices.
+
+**Grill-me focus:** ticket granularity, dependency order, test strategy per ticket, acceptance criteria.
+
+**Output:** `docs/02-delivery/phase-N/implementation-plan.md` + `ticket-NN-*.md` files — committed to `main` before the orchestrator creates any branches.
+
+**Template:** `.son-of-anton/docs/02-templates/implementation-plan.template.md`
+
+**Gate:** Developer approves the ticket breakdown before execution starts.
+
+### Why Two Stages
+
+- `/soa plan` answers: is this the right thing to build?
+- `/soa decompose` answers: is this the right way to slice it?
+
+Collapsing them into one pass produces implementation plans that drift from product intent. The product plan is the contract that the implementation plan is held accountable to.
+
+## Developer Control Points (in order)
+
+1. **Product plan approval** — developer reviews and approves `docs/01-product/phase-N-[slug].md`
+2. **Ticket approval** — developer reviews and approves the full ticket stack
+3. **Slice review** — developer reviews and approves each delivered PR before it advances
+
+Between control points 2 and 3, the agent runs autonomously through the bounded phase.
+
+## Implementation Guidance
 
 - build one small real behavior at a time
 - keep each ticket end to end — it should touch the full vertical stack, not just a layer
@@ -22,18 +55,21 @@ For implementation itself:
 
 ## Using `grill-me`
 
-If a phase or ticket still feels vague, stop and pressure-test it before implementation. That is what `grill-me` is for.
+If a phase or ticket still feels vague, stop and pressure-test it before implementation. That is what `grill-me` is for. Run it for both Stage 1 and Stage 2 — they surface different problems.
 
-Plan Mode can help structure the conversation but is not a required repo policy control point. The required control points are the planning pass, `grill-me` pressure-testing, and developer ticket approval — not the conversation mode label.
+Enforce this proportionally. The two-stage planning gate applies to new product-scope expansion. Docs-only, cleanup-only, and tooling-only changes that do not expand the product surface can skip Stage 1 and go straight to decompose.
 
-Enforce this proportionally. The planning gate applies to new product-scope expansion. Docs-only, cleanup-only, and tooling-only changes that do not expand the product surface can skip it.
+Use Stage 1 grill-me to force clarity on:
 
-Use `grill-me` to force clarity on:
+- the real product problem being solved
+- what is in scope vs. explicitly deferred
+- success criteria a non-technical observer could verify
 
-- the real behavior being delivered
-- the smallest acceptable slice
+Use Stage 2 grill-me to force clarity on:
+
+- the smallest acceptable ticket slice
 - key tradeoffs and decision points
-- what should stay deferred
+- what should stay deferred to a later ticket
 
 ## Phase Closeout Decision
 

@@ -6,24 +6,33 @@ This is the entry point for Son of Anton delivery work. Read this before touchin
 
 Check your repo's roadmap for the current active phase and its status. The handoff file for the active ticket is at `.agents/delivery/<plan-key>/handoffs/<ticket-id>.md` — that is the required input for resuming in-progress work.
 
-## Three developer control points
+## Four developer control points
 
-Son of Anton enforces three gates per phase. Nothing moves forward without explicit developer approval at each:
+Son of Anton enforces four gates per phase. Nothing moves forward without explicit developer approval at each:
 
-1. **Plan approval** — `grill-me` stress-tests the proposed plan. No tickets are written until the developer approves the decomposition.
-2. **Ticket-by-ticket review** — in `gated` mode, the orchestrator stops after each `advance` and prints a canonical resume prompt. Developer reviews the PR and explicitly resumes.
-3. **Phase closeout** — stacked PRs are never auto-merged. `bun run closeout-stack --plan <path>` requires explicit developer invocation.
+1. **Product plan approval** — `/soa plan` + grill-me produces `docs/01-product/phase-N-[slug].md` (the why and what). No decomposition starts until the developer approves this artifact.
+2. **Ticket approval** — `/soa decompose` + grill-me produces `implementation-plan.md` + ticket files (the how). No branches are created until the developer approves the ticket stack.
+3. **Ticket-by-ticket review** — in `gated` mode, the orchestrator stops after each `advance` and prints a canonical resume prompt. Developer reviews the PR and explicitly resumes.
+4. **Phase closeout** — stacked PRs are never auto-merged. `bun run closeout-stack --plan <path>` requires explicit developer invocation.
 
 ## Starting a new phase
 
 ```
-1. Run grill-me on the proposed scope
-2. Get developer approval on ticket decomposition
-3. Commit implementation-plan.md + all ticket-NN-*.md files to main
-4. bun run deliver --plan <plan-path> start
+Stage 1 — Why and What (/soa plan):
+1. /soa plan [description or path]  →  grill-me on product scope
+2. Developer approves product plan
+3. Commit docs/01-product/phase-N-[slug].md to main
+
+Stage 2 — How (/soa decompose):
+4. /soa decompose [plan path]  →  grill-me on ticket decomposition
+5. Developer approves ticket stack
+6. Commit implementation-plan.md + all ticket-NN-*.md files to main
+
+Execute:
+7. bun run deliver --plan <plan-path> start
 ```
 
-Plan and ticket docs must be committed to `main` **before** the orchestrator creates any branches.
+Both the product plan and implementation docs must be committed to `main` **before** the orchestrator creates any branches.
 
 ## Resuming in-progress work
 
