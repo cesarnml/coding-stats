@@ -31,8 +31,8 @@
 **Exit condition met:** Sentry receiving errors. Auth server-validated. Zero `axios`/`eslint-plugin-svelte3`/`@vitest/coverage-c8` in `package.json`. ESLint runs with flat config.
 
 **Follow-up (post-Phase 01):**
-1. Bump CI Node to 20.x and re-enable Test + Lint jobs (high priority)
-2. Validate Sentry error traces are readable without sourcemaps
+1. ✅ Bump CI Node to 24 and re-enable Test + Lint jobs (merged b48db57)
+2. Validate Sentry error traces are readable without sourcemaps *(deferred — sentry.io unresponsive 2026-05-02; needs token with project:read scope in .env as SENTRY_AUTH_TOKEN)*
 3. Add `last_scraped_at` to `profiles` table (Phase 02 or 03)
 
 ### CI — Playwright workflow disabled (2026-05-02)
