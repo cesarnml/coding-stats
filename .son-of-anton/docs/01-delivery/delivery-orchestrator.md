@@ -340,6 +340,8 @@ bun run deliver --plan <plan> codex-preflight patched <sha...>  # Codex findings
 
 The CLI is a state recorder only — it does not invoke Codex. The agent runs the Codex skill, then calls this command. A recorded Codex patch commit must use a subject suffix of `[codexPreflight]`.
 
+**Codex scope contract:** Codex reviews and patches implementation code only. Ticket doc files under `docs/02-delivery/` (including `## Rationale` updates written by Claude during implementation) are part of the ticket deliverable — Codex must not revert them. If Codex touches a ticket doc, that change should be rejected.
+
 **Doc-only tickets** auto-skip Codex preflight only when `reviewPolicy.codexPreflight` is `"skip_doc_only"`. The orchestrator detects doc-only by inspecting the local git diff at `codex-preflight` time (all changed files are `.md`) and records `skipped` without requiring an outcome arg. A clear message is printed: "Doc-only ticket — Codex preflight auto-skipped."
 
 When `reviewPolicy.codexPreflight` is `"disabled"`, `open-pr` does not require `codex_preflight_complete` status and tickets at `post_verify_self_audit_complete` may proceed directly to `open-pr`.
@@ -388,7 +390,8 @@ bun run deliver --plan docs/02-delivery/phase-NN/implementation-plan.md codex-pr
 # for doc-only tickets under skip_doc_only, codex-preflight auto-records skipped
 bun run deliver --plan docs/02-delivery/phase-NN/implementation-plan.md open-pr
 bun run deliver --plan docs/02-delivery/phase-NN/implementation-plan.md poll-review
-# if the triager hook leaves the ticket in needs_patch, follow up and then record the final outcome
+# poll-review auto-records clean/skipped when externalReview is disabled or no findings detected — skip record-review in those cases
+# only run record-review when poll-review leaves the ticket in needs_patch state
 bun run deliver --plan docs/02-delivery/phase-NN/implementation-plan.md record-review PN.NN patched "patched the two actionable correctness issues"
 bun run deliver --plan docs/02-delivery/phase-NN/implementation-plan.md advance
 ```
