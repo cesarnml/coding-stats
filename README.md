@@ -21,7 +21,7 @@ Everything between those control points is owned by the orchestrator and its age
 
 ## Quick start for a new project
 
-### 0. Install the Claude Code skill (one-time, global)
+### 1. Install the Claude Code skill (one-time, global)
 
 ```bash
 mkdir -p ~/.claude/skills/son-of-anton
@@ -29,30 +29,28 @@ curl -fsSL https://raw.githubusercontent.com/cesarnml/son-of-anton/main/.claude/
   -o ~/.claude/skills/son-of-anton/SKILL.md
 ```
 
-This gives you `/son-of-anton:install` and `/son-of-anton:update` as slash commands in any repo.
+This gives you `/son-of-anton:install` and `/son-of-anton:update` as slash commands in every repo on your machine. You only do this once.
 
-### 1. Add as a git subtree
+### 2. Add to a repo
 
-```bash
-git subtree add --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
+Open Claude Code in the target repo and run:
+
+```
+/son-of-anton:install
 ```
 
-Or, once the skill is installed, just run `/son-of-anton:install` inside Claude Code.
+That's it. Son-of-anton is now embedded as a git subtree at `.son-of-anton/`.
 
-### 2. Symlink the skills into your repo root
+### 3. Finish setup
 
 ```bash
 ln -s .son-of-anton/.agents .agents
-```
-
-### 3. Copy the config and scripts
-
-```bash
 cp .son-of-anton/orchestrator.config.json .
 cp -r .son-of-anton/scripts ./scripts
+cp .son-of-anton/AGENTS.md .
 ```
 
-### 4. Add the deliver script to your package.json
+Add to `package.json`:
 
 ```json
 {
@@ -63,23 +61,26 @@ cp -r .son-of-anton/scripts ./scripts
 }
 ```
 
-For pnpm/npm projects using Node runtime, update `orchestrator.config.json` accordingly.
+Edit `AGENTS.md` to reflect your repo's lint, format, verify, and test commands.
 
-### 5. Copy the AGENTS.md into your repo root
+### 4. Write a plan and start
 
-```bash
-cp .son-of-anton/AGENTS.md .
 ```
-
-Edit it to reflect your repo's specific commands (lint, format, verify, test).
-
-### 6. Write a plan and start
-
-```bash
-bun run deliver --plan docs/02-delivery/phase-01/implementation-plan.md start
+/son-of-anton:deliver
 ```
 
 See `docs/00-overview/start-here.md` for the full onboarding flow.
+
+<details>
+<summary>Manual install (no Claude Code)</summary>
+
+```bash
+git subtree add --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
+```
+
+Then complete step 3 above manually.
+
+</details>
 
 ## Ticket boundary modes
 
@@ -110,8 +111,15 @@ Start with `gated` on a new project until you trust the agent's output.
 
 ## Updating son-of-anton in a consuming repo
 
+```
+/son-of-anton:update
+```
+
+<details>
+<summary>Manual</summary>
+
 ```bash
 git subtree pull --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
 ```
 
-Or run `/son-of-anton:update` inside Claude Code.
+</details>
