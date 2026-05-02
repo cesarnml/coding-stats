@@ -101,23 +101,21 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
     throw redirect(303, '/login')
   }
 
-  const response = await resolve(event, {
-    /**
-     * There´s an issue with `filterSerializedResponseHeaders` not working when using `sequence`
-     *
-     * https://github.com/sveltejs/kit/issues/8061
-     */
-    filterSerializedResponseHeaders(name: any) {
-      return name === 'content-range'
-    },
-  })
-
-  return response
+  return resolve(event)
 }
 
-export const handle: Handle = import.meta.env.PROD
+// filterSerializedResponseHeaders must be applied at the outermost handle —
+// it does not propagate correctly through sequence() (sveltejs/kit#8061).
+const handleImpl: Handle = import.meta.env.PROD
   ? sequence(sentryHandle(), supabaseHandle)
   : supabaseHandle
+
+export const handle: Handle = ({ event, resolve }) =>
+  handleImpl({
+    event,
+    resolve: (e, opts) =>
+      resolve(e, { filterSerializedResponseHeaders: (name) => name === 'content-range', ...opts }),
+  })
 
 const baseHandleError: HandleServerError = (input) => {
   if (import.meta.env.DEV) {
