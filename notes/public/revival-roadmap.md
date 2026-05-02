@@ -32,7 +32,7 @@
 
 **Follow-up (post-Phase 01):**
 1. ✅ Bump CI Node to 24 and re-enable Test + Lint jobs (merged b48db57)
-2. Validate Sentry error traces are readable without sourcemaps *(deferred — sentry.io unresponsive 2026-05-02; needs token with project:read scope in .env as SENTRY_AUTH_TOKEN)*
+2. ✅ Validate Sentry error traces are readable without sourcemaps — confirmed 2026-05-02. File names and line numbers visible in production errors without sourcemap upload.
 3. Add `last_scraped_at` to `profiles` table (Phase 02 or 03)
 
 ### ✅ CI — Lint and Test jobs re-enabled (merged b48db57)
