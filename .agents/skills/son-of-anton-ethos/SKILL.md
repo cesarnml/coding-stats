@@ -58,7 +58,7 @@ Commit the delivery plan and all ticket docs to the default branch before creati
    6. Open / refresh PR — `open-pr`
    7. Run AI-review polling — `poll-review` (see [External Review](#external-review))
    8. Patch prudent findings
-   9. Record review — `record-review`
+   9. Record review — `record-review` (**skip** when `poll-review` already auto-recorded `clean` or `skipped`; only needed when `poll-review` leaves ticket in `needs_patch` state)
    10. Advance — `advance`
 5. During the external review window, stay idle.
 6. Do not write ahead across ticket boundaries.
@@ -101,6 +101,8 @@ Reset context (/clear), then resume with:
 3. Record: `bun run deliver --plan <plan> codex-preflight [clean|patched]`
 
 The CLI is a state recorder only — never invoke Codex from within the CLI.
+
+**Codex scope contract:** Codex reviews and patches implementation code only. Ticket doc files under `docs/02-delivery/` — including `## Rationale` sections written by Claude during implementation — are part of the ticket deliverable and must not be reverted by Codex. Brief the Codex subagent to skip ticket doc files when invoking it.
 
 **When `codexPreflight` is `"skip_doc_only"`** (repo default): code tickets still require the Codex step before `open-pr`; doc-only tickets auto-record `skipped`.
 
