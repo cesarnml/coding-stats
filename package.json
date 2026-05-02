@@ -30,7 +30,7 @@
     "codegen": "rm -rf src/lib/generated/openapi/shortcut; openapi-generator-cli generate -i https://developer.shortcut.com/api/rest/v3/shortcut.swagger.json -o src/lib/generated/openapi/shortcut -g typescript-fetch --additional-properties=supportsES6=true,npmVersion=6.9.0,typescriptThreePlus=true",
     "spell": "cspell \"src/**/*.{ts,svelte,js}\" --no-progress",
     "verify": "pnpm check && pnpm lint && pnpm spell",
-    "ci": "pnpm check && pnpm lint && pnpm test:unit",
+    "ci": "pnpm check && pnpm lint && pnpm spell && pnpm test:unit",
     "verify:quiet": "pnpm tsx ./scripts/verify-quiet.ts",
     "ci:quiet": "pnpm tsx ./scripts/ci-quiet.ts",
     "deliver": "pnpm tsx ./scripts/deliver.ts",

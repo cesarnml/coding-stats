@@ -125,7 +125,6 @@ Svelte stores in `src/lib/stores/`:
 - ✅ ESLint flat config migration complete
 
 **Remaining known issues:**
-- CI jobs (Lint, Test) disabled in workflow — requires Node 20 bump (one-line fix, deferred from Phase 01)
 - Sentry sourcemaps disabled — requires validation that error traces are readable without them
 - Activity chart renders negative minute bars — cron scrapes yesterday only, but data merging produces artifacts when run multiple times
 - Several charts have no empty state — render blank axes when there's no data for the selected range
