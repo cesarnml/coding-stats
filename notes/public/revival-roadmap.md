@@ -21,6 +21,7 @@
 - `eslint-plugin-svelte3` → replace with `eslint-plugin-svelte` (svelte3 plugin is unmaintained)
 - `@vitest/coverage-c8` at 0.33.0 → remove (c8 deprecated; `@vitest/coverage-v8` already installed)
 - `axios` → replace with native `fetch` for internal SvelteKit API route calls (one less dep, no behavior change)
+- MSW v1→v2 API incompatibility — `src/mocks/handlers.ts` still uses `rest.get` from MSW v1; MSW v2 uses `http.get`. All 31 unit test files fail at setup because `setupFiles` imports the broken handler. Fix: migrate handlers to MSW v2 `http` API.
 
 ---
 
