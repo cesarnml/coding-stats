@@ -1,25 +1,27 @@
-// import * as Sentry from '@sentry/sveltekit'
-// import { handleErrorWithSentry } from '@sentry/sveltekit'
+import * as Sentry from '@sentry/sveltekit'
 import {
-  // PUBLIC_SENTRY_DSN,
+  PUBLIC_SENTRY_DSN,
   PUBLIC_SUPABASE_ANON_KEY,
   PUBLIC_SUPABASE_URL,
 } from '$env/static/public'
 import { createServerClient } from '@supabase/ssr'
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit'
+import { sequence } from '@sveltejs/kit/hooks'
 import type { Database } from '$lib/database.types'
 import type { Session } from '@supabase/supabase-js'
 import type { DataContainer } from '$lib/constants'
 import type { SupaProject } from './app'
 
-// if (import.meta.env.PROD) {
-//   Sentry.init({
-//     dsn: PUBLIC_SENTRY_DSN,
-//     tracesSampleRate: 1.0,
-//   })
-// }
+if (import.meta.env.PROD) {
+  Sentry.init({
+    dsn: PUBLIC_SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  })
+}
 
-export const handle: Handle = async ({ event, resolve }) => {
+const { sentryHandle, handleErrorWithSentry } = Sentry
+
+const supabaseHandle: Handle = async ({ event, resolve }) => {
   // Create supabase server client
   event.locals.supabase = createServerClient<Database, 'public'>(
     PUBLIC_SUPABASE_URL,
@@ -113,16 +115,20 @@ export const handle: Handle = async ({ event, resolve }) => {
   return response
 }
 
-export const handleError: HandleServerError = (input) => {
-  // if (import.meta.env.PROD) {
-  //   handleErrorWithSentry()
-  // }
+export const handle: Handle = import.meta.env.PROD
+  ? sequence(sentryHandle(), supabaseHandle)
+  : supabaseHandle
+
+const baseHandleError: HandleServerError = (input) => {
   if (import.meta.env.DEV) {
     console.error(input.error)
   }
-  console.log('input.error:', input.error, input.event)
 
   return {
     message: 'A client error has occurred. I have spoken.',
   }
 }
+
+export const handleError: HandleServerError = import.meta.env.PROD
+  ? handleErrorWithSentry(baseHandleError)
+  : baseHandleError

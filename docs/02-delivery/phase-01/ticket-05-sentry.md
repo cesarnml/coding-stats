@@ -44,7 +44,10 @@ Size: 3 points
 
 > Append here during implementation.
 
-Red first:
-Why this path:
-Alternative considered:
+Red first: Confirmed `@sentry/sveltekit` / `@sentry/opentelemetry` on 10.32.1; upgraded to latest 10.x. No `sentrySvelteKit` Vite plugin enabled — sourcemap upload deferral stays “plugin absent” per ticket (no `sourceMapsUploadOptions` needed).
+
+Why this path: `Sentry.init` only in production; `sequence(sentryHandle(), supabaseHandle)` so tracing/meta and existing Supabase `handle` stay ordered. `handleErrorWithSentry` wraps the existing user-facing message handler without adding Replay or BrowserTracing.
+
+Alternative considered: Enabling `sentrySvelteKit` in Vite with `sourceMapsUploadOptions.disable: true` for explicit upload-off — skipped because the plugin is not wired today and the ticket allows no-op when absent.
+
 Deferred: Sentry sourcemap uploads — standalone PR. Replay integration — not in scope.
