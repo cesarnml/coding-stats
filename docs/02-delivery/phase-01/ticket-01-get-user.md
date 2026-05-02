@@ -32,9 +32,10 @@ Size: 1 point
 
 ## Rationale
 
-> Append here during implementation.
+`getSession()` trusts the client-provided JWT without server-side verification, so a forged or replayed token would be accepted. `getUser()` validates the token against the Supabase auth server, closing the security gap.
 
-Red first:
-Why this path:
-Alternative considered:
-Deferred:
+**Why this path:** Kept `getSession` as the public Locals API name (backward compat with all 3 callers) and changed internals only: call `getUser()` first; return `null` on error or missing user; then call `getSession()` to return the full `Session` object. No type changes, no caller changes.
+
+**Alternative considered:** Rename the local to `getUser` returning `User | null` — would require touching `+layout.server.ts`, `login/+page.server.ts`, `account/+page.server.ts`, and `app.d.ts`. Out of scope for a 1-point ticket.
+
+**Deferred:** Removing the internal `getSession()` call (making `getUser()` the sole auth source) — deferred because callers depend on the `Session` type having `access_token`, `refresh_token` etc. that `User` lacks.
