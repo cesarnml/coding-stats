@@ -7,6 +7,6 @@ it('renders a navbar', async () => {
   const navbar = screen.getByRole('navigation')
   expect(navbar).toBeInTheDocument()
 
-  const logo = screen.getByRole('img', { name: 'logo', exact: true })
+  const logo = screen.getByRole('img', { name: 'logo' })
   expect(logo).toBeInTheDocument()
 })

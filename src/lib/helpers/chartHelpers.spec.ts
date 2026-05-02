@@ -31,7 +31,7 @@ describe('getSummaryItems', () => {
         languages: [{ name: 'Svelte', total_seconds: 1800 }],
       },
     ],
-  } as SummariesResult
+  } as unknown as SummariesResult
 
   it('should return all projects', () => {
     expect(getSummaryItems(summaries, SummaryItemType.Projects)).toStrictEqual([

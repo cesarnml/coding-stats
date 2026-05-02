@@ -16,7 +16,7 @@ describe('/api/vercel/aliases', () => {
     const response = await GET(event as unknown as RequestEvent)
     const result = await response.json()
 
-    expect(event.url.searchParams.get).toBeCalledTimes(1)
+    expect(event.url.searchParams.get).toHaveBeenCalledTimes(1)
     expect(response.status).toBe(200)
     expect(result).toEqual(vercelAliases)
   })

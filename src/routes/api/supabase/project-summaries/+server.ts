@@ -41,7 +41,7 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
 
     const summaries = {
       data: summariesData,
-    } as SummariesResult
+    } as unknown as SummariesResult
 
     return json(summaries)
   }

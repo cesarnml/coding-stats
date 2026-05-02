@@ -19,7 +19,7 @@ describe('createPieChartData', () => {
           ],
         },
       ],
-    } as SummariesResult
+    } as unknown as SummariesResult
 
     const result = createPieChartData(summaries)
     const expected = [

@@ -12,7 +12,7 @@ describe('ProjectList', async () => {
     const projects = createProjectList(summaries)
 
     projects.forEach((project) => {
-      const link = screen.getByRole('link', { name: new RegExp(project.name), exact: true })
+      const link = screen.getByRole('link', { name: new RegExp(project.name) })
 
       expect(link).toHaveAttribute('href', Url.ProjectDetail(project.name))
       expect(link).toHaveTextContent(

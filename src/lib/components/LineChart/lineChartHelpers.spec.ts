@@ -22,7 +22,7 @@ const summaries = {
       },
     },
   ],
-} as SummariesResult
+} as unknown as SummariesResult
 
 it('should create line chart data', async () => {
   const data = createLineChartData(summaries)

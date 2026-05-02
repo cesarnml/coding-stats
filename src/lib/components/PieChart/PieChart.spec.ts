@@ -18,7 +18,7 @@ it('renders a PieChart', async () => {
         ],
       },
     ],
-  } as SummariesResult
+  } as unknown as SummariesResult
 
   const props = { summaries, title: 'test title' }
 
