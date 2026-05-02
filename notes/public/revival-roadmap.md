@@ -35,15 +35,11 @@
 2. Validate Sentry error traces are readable without sourcemaps *(deferred — sentry.io unresponsive 2026-05-02; needs token with project:read scope in .env as SENTRY_AUTH_TOKEN)*
 3. Add `last_scraped_at` to `profiles` table (Phase 02 or 03)
 
-### CI — Playwright workflow disabled (2026-05-02)
-The Playwright workflow trigger changed from `push`/`pull_request` to `workflow_dispatch` (manual only). Root cause: Vercel preview deployments are password-protected, so `wait-for-vercel-preview` always times out with 401. Fix: either make previews public, or pass a Vercel bypass token (`VERCEL_AUTOMATION_BYPASS_SECRET`) as a workflow secret so the health-check step gets a 200.
+### ✅ CI — Lint and Test jobs re-enabled (merged b48db57)
+Node bumped to 24, both Lint and Test jobs active on push/PR to main.
 
-### CI — Lint and Test jobs disabled (2026-05-02)
-Both jobs are disabled in `.github/workflows/ci.yaml` until root causes are resolved:
-
-- **Lint** — Originally blocked on ESLint v9 + legacy `.eslintrc.cjs` / `eslint-plugin-svelte3`. Flat config + `eslint-plugin-svelte` shipped in Phase 01 (#119); re-enable tracked in follow-up #1 above.
-
-- **Test / Coverage** — CI runner (Node 18) throws `SyntaxError: The requested module 'svelte' does not provide an export named 'styleText'`. Root cause: Svelte 5 requires Node 20+ for full ESM peer resolution in the jsdom test environment. Fix: bump CI Node version to 20.x and verify `@testing-library/svelte` v5 resolves cleanly under that runtime.
+### CI — Playwright workflow still disabled
+Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview deployments are password-protected, so `wait-for-vercel-preview` always times out with 401. Fix: either make previews public, or pass a Vercel bypass token (`VERCEL_AUTOMATION_BYPASS_SECRET`) as a workflow secret so the health-check step gets a 200.
 
 ---
 
