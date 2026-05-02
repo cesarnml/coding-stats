@@ -2,7 +2,7 @@
 
 [![wakatime](https://wakatime.com/badge/github/cesarnml/waka-shortcut-time-stats.svg)](https://wakatime.com/badge/github/cesarnml/waka-shortcut-time-stats)
 
-Built with SvelteKit. Live site [here](https://coding-stats.vercel.app).
+Personal coding dashboard built with SvelteKit. Pulls WakaTime activity data, stores it in Supabase, and visualizes it as a portfolio/client-facing tool — "Apple Health for coders." Live at [coding-stats.vercel.app](https://coding-stats.vercel.app).
 
 ## Coverage
 
@@ -11,60 +11,25 @@ Built with SvelteKit. Live site [here](https://coding-stats.vercel.app).
 
 ![wakastats coverage](https://codecov.io/gh/cesarnml/waka-shortcut-time-stats/branch/main/graphs/sunburst.svg?token=wyQL5kG765)
 
-## How to use Son of Anton
-
-Son of Anton is the delivery workflow for this repo. It manages phased, ticket-by-ticket delivery with explicit developer approval gates.
-
-### Structure
-
-```
-docs/
-├── 01-product/        # Phase specs — what and why
-└── 02-delivery/       # Implementation plans and tickets — how
-    └── phase-XX/
-        ├── implementation-plan.md
-        └── ticket-NN-*.md
-```
-
-### Workflow
-
-**0. Ideate (optional)**
-Use `/soa ideate [topic]` to brainstorm before you have a defined scope. Good for new features or uncertain territory — surfaces goals, constraints, and unknowns before committing to a phase direction. Output is a draft phase summary; nothing is written until you approve it.
-
-**1. Plan a phase**
-Use `/soa plan` to run a grill-me session against a rough scope. Decisions get locked before any tickets are written.
-
-**2. Decompose into tickets**
-Use `/soa decompose docs/02-delivery/phase-XX/implementation-plan.md` to produce the ticket stack. Approve the breakdown before proceeding — this is a required control point.
-
-**3. Commit the plan to main**
-All plan and ticket docs must be committed to `main` before the orchestrator creates any branches.
+## Development
 
 ```bash
-git add docs/ && git commit -m "plan(phase-XX): ..."
-```
+# Full local dev setup (pulls remote data, resets local DB, seeds, gen types, starts vite)
+pnpm dev:fresh
 
-**4. Execute**
-```
-/soa execute phase-XX
-```
-The orchestrator works ticket-by-ticket in order. In `gated` mode (this repo's default), it stops after each PR and prints the resume prompt.
+# Resume dev without re-pulling remote data
+pnpm dev:resume
 
-**5. Resume after reviewing a PR**
-```
-/soa resume phase-XX
-```
+# Type check
+pnpm check
 
-**6. Close out the phase**
-```
-/soa closeout phase-XX
-```
-Squash-merges the completed stack onto main. Requires explicit invocation — never auto-merges.
+# Lint / format
+pnpm lint
+pnpm format
 
-### Updating son-of-anton
+# Unit tests
+pnpm test:unit
 
-```bash
-/soa update
+# E2E tests
+pnpm test
 ```
-
-Pulls the latest tooling from upstream and re-syncs `soa-*` skill symlinks in `.claude/skills/`.
