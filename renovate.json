@@ -6,5 +6,8 @@
   "major": {
     "enabled": false
   },
+  "patch": {
+    "automerge": true
+  },
   "assignees": ["cesarnml"]
 }
