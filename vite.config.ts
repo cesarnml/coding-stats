@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite'
 // import { sentrySvelteKit } from '@sentry/sveltekit'
+import { svelteTesting } from '@testing-library/svelte/vite'
 import { defineConfig, loadEnv } from 'vite'
 import Inspect from 'vite-plugin-inspect'
 import viteCompression from 'vite-plugin-compression'
@@ -27,7 +28,8 @@ const config = defineConfig(({ mode }) => {
       // },
     },
     plugins: [
-      sveltekit(), // Add the sentry-vite-plugin last
+      sveltekit(),
+      svelteTesting(), // Add the sentry-vite-plugin last
       tsconfigPaths(),
       viteCompression({ algorithm: 'brotliCompress', ext: '.br' }),
       Inspect({
@@ -56,12 +58,10 @@ const config = defineConfig(({ mode }) => {
     },
     test: {
       globals: true,
+      environment: 'jsdom',
       environmentMatchGlobs: [
-        // all tests in tests/dom will run in jsdom
         ['**/*.edge.spec.ts', 'edge-runtime'],
         ['**/*.node.spec.ts', 'node'],
-        ['**/*.spec.ts', 'jsdom'],
-        // ...
       ],
       setupFiles: ['setupTests.ts', 'src/mocks/setup.ts'],
       deps: {

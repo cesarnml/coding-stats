@@ -1,6 +1,55 @@
 // setupTests.ts
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+
+
+// jsdom does not implement the Web Animations API; stub it so Svelte 5
+// transitions don't crash in tests.
+Element.prototype.animate = vi.fn(() => ({
+  onfinish: null,
+  cancel: vi.fn(),
+  finish: vi.fn(),
+}))
+
+// jsdom's HTMLCanvasElement.getContext returns null; stub a minimal 2d context
+// so ECharts (zrender) can initialise without throwing during tests.
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  strokeRect: vi.fn(),
+  beginPath: vi.fn(),
+  closePath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  arc: vi.fn(),
+  fill: vi.fn(),
+  stroke: vi.fn(),
+  clip: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
+  translate: vi.fn(),
+  scale: vi.fn(),
+  rotate: vi.fn(),
+  transform: vi.fn(),
+  setTransform: vi.fn(),
+  drawImage: vi.fn(),
+  createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+  createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+  measureText: vi.fn(() => ({ width: 0 })),
+  fillText: vi.fn(),
+  strokeText: vi.fn(),
+  putImageData: vi.fn(),
+  getImageData: vi.fn(() => ({ data: [] })),
+  createPattern: vi.fn(),
+  createImageData: vi.fn(),
+  setLineDash: vi.fn(),
+  getLineDash: vi.fn(() => []),
+  quadraticCurveTo: vi.fn(),
+  bezierCurveTo: vi.fn(),
+  arcTo: vi.fn(),
+  rect: vi.fn(),
+  canvas: { width: 300, height: 150 },
+}))
 import type { Navigation, Page } from '@sveltejs/kit'
 import { readable } from 'svelte/store'
 import * as environment from '$app/environment'
