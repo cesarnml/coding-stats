@@ -11,17 +11,15 @@ Size: 1 point
 
 ## Doc Update Checklist
 
-- [ ] CLAUDE.md: update Known Issues list (remove fixed items, add any new ones discovered)
-- [ ] `revival-roadmap.md`: mark Tier 1 items done; carry forward any scope additions
-- [ ] `implementation-plan.md`: confirm exit condition met, no loose ends
-
-## Retrospective Prompts
-
-- What slowed us down that a better plan would have caught?
-- What decisions turned out wrong or needed revision mid-flight?
-- What should phase 02 do differently based on what we learned here?
-- Any tooling gaps exposed (CI, local dev, types)?
+- [x] CLAUDE.md: update Known Issues list (remove fixed items, add any new ones discovered)
+- [x] `revival-roadmap.md`: mark Tier 1 items done; carry forward any scope additions
+- [x] `implementation-plan.md`: confirm exit condition met, no loose ends
 
 ## Rationale
 
-> Append here during implementation.
+All Phase 01 tickets (P1.01–05) completed and merged. Updated:
+- **CLAUDE.md** — removed 6 fixed issues (Sentry, getSession/getUser, axios, eslint-plugin-svelte3, coverage-c8, flat config); added 2 remaining issues (CI Node bump deferred, Sentry sourcemaps deferred)
+- **revival-roadmap.md** — marked Tier 1 complete with PR references (#117–121); flagged post-Phase 01 follow-ups (Node 20 bump, sourcemap validation, last_scraped_at)
+- **implementation-plan.md** — confirmed exit condition met; all scope items shipped
+
+Retrospective written to `notes/public/phase-01-retrospective.md` (covers what went well, pain points, surprises, and what to do differently in Phase 02).
