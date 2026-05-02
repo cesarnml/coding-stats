@@ -44,3 +44,4 @@ Red first: visual regression in synthwave/night theme rendering
 Why this path: separate verify ticket keeps the diff reviewable — config migration and fixes are in separate PRs
 Alternative considered: folding fixes into P2.02 — rejected because fixes are unknown until visual test, making the P2.02 scope unbounded
 Deferred: Playwright automated visual regression tests — out of scope for this phase
+Observed during implementation: developer manually confirmed at `http://localhost:5174/` that both `synthwave` and `night` render correctly and the theme toggle works after the Tailwind v4 + daisyUI v5 migration
