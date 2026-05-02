@@ -28,6 +28,9 @@ docs/
 
 ### Workflow
 
+**0. Ideate (optional)**
+Use `/soa ideate [topic]` to brainstorm before you have a defined scope. Good for new features or uncertain territory — surfaces goals, constraints, and unknowns before committing to a phase direction. Output is a draft phase summary; nothing is written until you approve it.
+
 **1. Plan a phase**
 Use `/soa plan` to run a grill-me session against a rough scope. Decisions get locked before any tickets are written.
 
