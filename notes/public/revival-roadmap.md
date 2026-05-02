@@ -45,16 +45,30 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 ## Tier 2 — The AI Coding Story (highest strategic value)
 
+> **Phase 03 product plan:** `docs/01-product/phase-03-ai-coding-story.md`
+> **Grill-me decisions (2026-05-02):**
+> - `GET /api/v1/users/current/ai/heuristics` is paywalled — not used in Phase 03
+> - AI fields (`ai_additions`, `human_additions`, `ai_input_tokens`, etc.) are already present on the free-tier `durations` endpoint and stored in the daily `durations` blob scrape
+> - Phase 03 ships against the existing blob — no new table, no new cron
+> - Backfill is forward-only on the free plan (durations limited to last 7 days)
+
 ### Wire in WakaTime AI data endpoints
-- WakaTime now exposes AI completions data: accepted vs. rejected, by language, by editor
-- This is the 2025 differentiator for clients: "I track not just how long I coded but how much was human vs. AI-assisted"
-- Schema additions needed: `ai_completions` table or columns on `summaries`
-- New chart: AI vs. human coding ratio over time (stacked bar or gauge)
-- New stat panel metric: "AI acceptance rate this month"
+- AI fields are in the `durations` response today: `ai_additions`, `human_additions`, `ai_input_tokens`, `ai_output_tokens`, `ai_prompt_events` per duration segment
+- New chart: AI vs. human lines over time (stacked bar), sourced from `durations` blob
+- New stat panel: total `ai_additions` for selected range
+
+### Historical AI heuristics backfill (future — requires premium subscription)
+- `GET /api/v1/users/current/ai/heuristics` returns richer data: `follow_up_events`, `files_with_follow_up_percent`, `top_files[]` with per-file AI/human line breakdown
+- This endpoint is paywalled — returns `{"error": "You've discovered a premium feature!"}` on the free plan
+- **Plan:** Subscribe for one month to unlock years of historical data. Use the subscription window to slowly backfill `ai_heuristics` data into a new Supabase table, then unsubscribe.
+- **Rate limit discipline required:** WakaTime enforces 10 req/sec averaged over 5 minutes. Backfilling years of daily data must be throttled — target 1 request every 2–3 seconds max, with exponential backoff on 429s. Do not run a bulk backfill in a tight loop.
+- **Backfill scope:** Query `ai/heuristics` per-day (`start=YYYY-MM-DD&end=YYYY-MM-DD`) from earliest available date forward. Store full response blob in `ai_heuristics` table with `UNIQUE (date)` — idempotent, safe to resume if interrupted.
+- **Do not store the API key in a cron after unsubscribing** — the endpoint will 402 and the cron will log noise. Disable the `ai_heuristics` cron route after the backfill window closes; re-enable if subscribing again.
 
 ### Add AI coding share to the client-facing pitch
-- The "show clients my effort" angle gets much stronger with: total hours + language breakdown + AI usage rate
-- Positions you as transparent about your workflow, not hiding AI use
+- Total hours + language breakdown + AI usage rate = the strongest version of the "show clients my effort" story
+- Positions you as transparent about AI use, not hiding it
+- The `/ai` detail route (Tier 5) expands this with per-file breakdown once the heuristics data is backfilled
 
 ---
 
