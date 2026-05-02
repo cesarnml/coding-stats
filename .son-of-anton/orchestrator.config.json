@@ -1,6 +1,6 @@
 {
   "defaultBranch": "main",
-  "planRoot": "docs",
+  "planRoot": "../docs",
   "runtime": "node",
   "packageManager": "pnpm",
   "ticketBoundaryMode": "gated",
