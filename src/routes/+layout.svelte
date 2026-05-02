@@ -12,7 +12,7 @@
   import 'tippy.js/animations/scale.css'
   import 'tippy.js/dist/tippy.css'
   import 'tippy.js/themes/light.css'
-  import '../app.postcss'
+  import '../app.css'
   import { project } from '$lib/stores/project'
   import { session } from '$lib/stores/session'
 

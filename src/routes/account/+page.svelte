@@ -21,10 +21,10 @@
 </script>
 
 <div class="space-y-6">
-  <form method="post" action="?/update" use:enhance={handleSubmit}>
+  <form class="flex flex-col gap-4" method="post" action="?/update" use:enhance={handleSubmit}>
     <div>
-      <label for="name">Name</label>
-      <input id="name" name="name" type="text" value={name} />
+      <label class="label label-text lowercase" for="name">Name</label>
+      <input class="input input-md input-primary" id="name" name="name" type="text" value={name} />
     </div>
 
     <div>
@@ -33,21 +33,6 @@
   </form>
 
   <form method="post" action="?/signout">
-    <button type="submit" disabled={loading}>Sign Out</button>
+    <button class="btn btn-primary btn-wide" type="submit" disabled={loading}>Sign Out</button>
   </form>
 </div>
-
-<style lang="postcss">
-  form {
-    @apply flex flex-col gap-4;
-  }
-  label {
-    @apply label-text label lowercase;
-  }
-  input {
-    @apply input-primary input input-md;
-  }
-  button {
-    @apply btn-primary btn-wide btn;
-  }
-</style>

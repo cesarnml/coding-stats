@@ -92,6 +92,8 @@
 </div>
 
 <style lang="postcss">
+  @reference '../../app.css';
+
   .switch {
     @apply flex h-10 select-none rounded-3xl border border-slate-400 p-1 text-sm;
   }

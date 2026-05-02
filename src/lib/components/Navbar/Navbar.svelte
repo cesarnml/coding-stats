@@ -44,6 +44,8 @@
 </div>
 
 <style lang="postcss">
+  @reference '../../../app.css';
+
   .dropdownVisible {
     @apply h-screen backdrop-blur-lg;
   }
