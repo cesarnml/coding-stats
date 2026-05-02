@@ -31,10 +31,13 @@
 
   const onWakaRange = async () => {
     loading.on()
-    summaries = await fetch(`${ApiEndpoint.SupabaseSummaries}?range=${$selectedRange}`).then(
-      (response) => response.json(),
-    )
-    loading.off()
+    try {
+      summaries = await fetch(`${ApiEndpoint.SupabaseSummaries}?range=${$selectedRange}`).then(
+        (response) => response.json(),
+      )
+    } finally {
+      loading.off()
+    }
   }
 </script>
 

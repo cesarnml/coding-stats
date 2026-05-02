@@ -12,9 +12,11 @@ export const GET: RequestHandler = async ({ url }) => {
     const date = url.searchParams.get('date') ?? today
     const slice_by = url.searchParams.get('slice_by') ?? WakaSliceBy.None
 
-    const durationsResult: DurationsResult = await fetch(
+    const response = await fetch(
       `${BaseUrl.WakaTime}${RestResource.Durations}?api_key=${WAKA_API_KEY}&date=${date}&slice_by=${slice_by}`,
-    ).then((response) => response.json())
+    )
+    if (!response.ok) throw error(response.status, 'WakaTime durations request failed')
+    const durationsResult: DurationsResult = await response.json()
 
     return json(durationsResult)
   } catch (err) {
