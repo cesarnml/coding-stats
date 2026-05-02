@@ -121,8 +121,8 @@ importers:
         specifier: 2.13.6
         version: 2.13.6(@types/node@25.0.3)(typescript@5.9.3)
       postcss:
-        specifier: 8.5.12
-        version: 8.5.12
+        specifier: 8.5.13
+        version: 8.5.13
       prettier:
         specifier: 3.8.3
         version: 3.8.3
@@ -4796,8 +4796,8 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.5.12:
-    resolution: {integrity: sha512-W62t/Se6rA0Az3DfCL0AqJwXuKwBeYg6nOaIgzP+xZ7N5BFCI7DYi1qs6ygUYT6rvfi6t9k65UMLJC+PHZpDAA==}
+  postcss@8.5.13:
+    resolution: {integrity: sha512-qif0+jGGZoLWdHey3UFHHWP0H7Gbmsk8T5VEqyYFbWqPr1XqvLGBbk/sl8V5exGmcYJklJOhOQq1pV9IcsiFag==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres-array@2.0.0:
@@ -6871,7 +6871,7 @@ snapshots:
       '@hint/utils-i18n': 1.0.15
       '@hint/utils-types': 1.2.1
       hint: 7.1.13(canvas@2.11.2(encoding@0.1.13))(encoding@0.1.13)(typescript@5.9.3)
-      postcss: 8.5.12
+      postcss: 8.5.13
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -6885,7 +6885,7 @@ snapshots:
       '@hint/utils-i18n': 1.0.15
       '@hint/utils-types': 1.2.1
       hint: 7.1.13(canvas@2.11.2(encoding@0.1.13))(encoding@0.1.13)(typescript@5.9.3)
-      postcss: 8.5.12
+      postcss: 8.5.13
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -7265,8 +7265,8 @@ snapshots:
       '@hint/utils-debug': 1.0.11
       '@hint/utils-string': 1.0.14
       hint: 7.1.13(canvas@2.11.2(encoding@0.1.13))(encoding@0.1.13)(typescript@5.9.3)
-      postcss: 8.5.12
-      postcss-safe-parser: 6.0.0(postcss@8.5.12)
+      postcss: 8.5.13
+      postcss-safe-parser: 6.0.0(postcss@8.5.13)
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -7310,7 +7310,7 @@ snapshots:
       '@hint/utils-debug': 1.0.11
       '@hint/utils-string': 1.0.14
       hint: 7.1.13(canvas@2.11.2(encoding@0.1.13))(encoding@0.1.13)(typescript@5.9.3)
-      postcss: 8.5.12
+      postcss: 8.5.13
       postcss-less: 5.0.0
     transitivePeerDependencies:
       - supports-color
@@ -7333,9 +7333,9 @@ snapshots:
       '@hint/utils-debug': 1.0.11
       '@hint/utils-string': 1.0.14
       hint: 7.1.13(canvas@2.11.2(encoding@0.1.13))(encoding@0.1.13)(typescript@5.9.3)
-      postcss: 8.5.12
+      postcss: 8.5.13
       postcss-sass: 0.5.0
-      postcss-scss: 4.0.9(postcss@8.5.12)
+      postcss-scss: 4.0.9(postcss@8.5.13)
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -8472,7 +8472,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.2.4
       '@tailwindcss/oxide': 4.2.4
-      postcss: 8.5.12
+      postcss: 8.5.13
       tailwindcss: 4.2.4
 
   '@testing-library/dom@10.4.1':
@@ -9706,9 +9706,9 @@ snapshots:
       esutils: 2.0.3
       globals: 16.5.0
       known-css-properties: 0.37.0
-      postcss: 8.5.12
-      postcss-load-config: 3.1.4(postcss@8.5.12)
-      postcss-safe-parser: 7.0.1(postcss@8.5.12)
+      postcss: 8.5.13
+      postcss-load-config: 3.1.4(postcss@8.5.13)
+      postcss-safe-parser: 7.0.1(postcss@8.5.13)
       semver: 7.7.3
       svelte-eslint-parser: 1.6.0(svelte@5.55.5(@typescript-eslint/types@8.59.1))
     optionalDependencies:
@@ -11177,31 +11177,31 @@ snapshots:
   postcss-less@5.0.0:
     optional: true
 
-  postcss-load-config@3.1.4(postcss@8.5.12):
+  postcss-load-config@3.1.4(postcss@8.5.13):
     dependencies:
       lilconfig: 2.1.0
       yaml: 1.10.3
     optionalDependencies:
-      postcss: 8.5.12
+      postcss: 8.5.13
 
-  postcss-safe-parser@6.0.0(postcss@8.5.12):
+  postcss-safe-parser@6.0.0(postcss@8.5.13):
     dependencies:
-      postcss: 8.5.12
+      postcss: 8.5.13
     optional: true
 
-  postcss-safe-parser@7.0.1(postcss@8.5.12):
+  postcss-safe-parser@7.0.1(postcss@8.5.13):
     dependencies:
-      postcss: 8.5.12
+      postcss: 8.5.13
 
   postcss-sass@0.5.0:
     dependencies:
       gonzales-pe: 4.3.0
-      postcss: 8.5.12
+      postcss: 8.5.13
     optional: true
 
-  postcss-scss@4.0.9(postcss@8.5.12):
+  postcss-scss@4.0.9(postcss@8.5.13):
     dependencies:
-      postcss: 8.5.12
+      postcss: 8.5.13
 
   postcss-selector-parser@6.1.2:
     dependencies:
@@ -11217,7 +11217,7 @@ snapshots:
   postcss-value-parser@4.2.0:
     optional: true
 
-  postcss@8.5.12:
+  postcss@8.5.13:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -11666,8 +11666,8 @@ snapshots:
       eslint-scope: 8.4.0
       eslint-visitor-keys: 4.2.1
       espree: 10.4.0
-      postcss: 8.5.12
-      postcss-scss: 4.0.9(postcss@8.5.12)
+      postcss: 8.5.13
+      postcss-scss: 4.0.9(postcss@8.5.13)
       postcss-selector-parser: 7.1.1
       semver: 7.7.3
     optionalDependencies:
@@ -12009,7 +12009,7 @@ snapshots:
       esbuild: 0.27.2
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
-      postcss: 8.5.12
+      postcss: 8.5.13
       rollup: 4.54.0
       tinyglobby: 0.2.15
     optionalDependencies:
