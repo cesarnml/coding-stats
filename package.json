@@ -45,7 +45,7 @@
     "@tailwindcss/typography": "0.5.19",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
-    "@testing-library/svelte": "github:yanick/svelte-testing-library#without-babel",
+    "@testing-library/svelte": "^5.2.7",
     "@testing-library/user-event": "14.6.1",
     "@types/jest": "30.0.0",
     "@types/lodash": "4.17.21",
