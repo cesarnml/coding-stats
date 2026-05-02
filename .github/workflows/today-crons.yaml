@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  CRON_BASE_URL: https://coding-stats.vercel.app
+  CRON_BASE_URL: https://codingstats.vercel.app
 
 jobs:
   http-request:
