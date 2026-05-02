@@ -28,6 +28,10 @@
     "sb:reset": "psql postgresql://postgres:postgres@localhost:54322/postgres < supabase/reset.sql",
     "sb:seed": "psql postgresql://postgres:postgres@localhost:54322/postgres < supabase/seed.sql",
     "codegen": "rm -rf src/lib/generated/openapi/shortcut; openapi-generator-cli generate -i https://developer.shortcut.com/api/rest/v3/shortcut.swagger.json -o src/lib/generated/openapi/shortcut -g typescript-fetch --additional-properties=supportsES6=true,npmVersion=6.9.0,typescriptThreePlus=true",
+    "verify": "pnpm check && pnpm lint",
+    "ci": "pnpm check && pnpm lint && pnpm test:unit",
+    "verify:quiet": "pnpm tsx ./scripts/verify-quiet.ts",
+    "ci:quiet": "pnpm tsx ./scripts/ci-quiet.ts",
     "deliver": "pnpm tsx ./scripts/deliver.ts",
     "closeout-stack": "pnpm tsx ./scripts/closeout-stack.ts"
   },
