@@ -28,6 +28,7 @@ When this phase is complete:
 3. `P1.03 eslint-plugin-svelte3 → eslint-plugin-svelte full migration`
 4. `P1.04 Replace axios with native fetch`
 5. `P1.05 Upgrade + uncomment Sentry, sourcemaps off`
+6. `P1.06 Phase Closeout — Docs + Retrospective`
 
 ## Ticket Files
 
@@ -36,10 +37,11 @@ When this phase is complete:
 - `ticket-03-eslint-svelte-migration.md`
 - `ticket-04-axios-to-fetch.md`
 - `ticket-05-sentry.md`
+- `ticket-06-closeout.md`
 
 ## Exit Condition
 
-All 5 PRs merged and CI green. Sentry dashboard is receiving production errors. `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` do not appear in `package.json`. ESLint passes with `eslint-plugin-svelte`.
+All 6 PRs merged and CI green. Sentry dashboard is receiving production errors. `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` do not appear in `package.json`. ESLint passes with `eslint-plugin-svelte`. CLAUDE.md and roadmap reflect current state. Retrospective written.
 
 ## Review Rules
 
@@ -60,6 +62,5 @@ All 5 PRs merged and CI green. Sentry dashboard is receiving production errors. 
 
 ## Phase Closeout
 
-Retrospective: skip
-Why: No new product surface, no durable architectural boundary introduced.
-Trigger: none
+Retrospective: yes — `ticket-06-closeout.md`
+Trigger: after P1.05 is merged and Sentry is confirmed receiving errors
