@@ -32,9 +32,7 @@ Size: 1 point
 
 ## Rationale
 
-> Append here during implementation.
-
-Red first:
-Why this path:
-Alternative considered:
-Deferred:
+Red first: Confirmed 31 test files / 60 tests pass before removal.
+Why this path: `vite.config.ts` had no explicit `provider: 'c8'`; coverage config omits provider entirely, so vitest defaults to v8 — zero config changes needed beyond removing the deprecated package.
+Alternative considered: Explicitly setting `provider: 'v8'` in config — skipped since omission already defaults to v8 and adding it would be noise.
+Deferred: Nothing.
