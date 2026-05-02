@@ -12,6 +12,7 @@ export default [
   {
     ignores: [
       'node_modules/**',
+      '.vercel/**',
       'build/**',
       '.svelte-kit/**',
       '.son-of-anton/**',
