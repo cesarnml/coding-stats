@@ -464,7 +464,7 @@ export function openPullRequest(
       cwd: string,
       branch: string,
     ) => PullRequestSummary | undefined;
-    readLatestCommitSubject: (cwd: string) => string;
+    readFirstCommitSubject: (cwd: string, baseBranch: string) => string;
     reportProgress?: (message: string) => void;
     resolveGitHubRepo?: (
       cwd: string,
@@ -520,7 +520,7 @@ export function openPullRequest(
 
   const title = dependencies.buildPullRequestTitle(
     target,
-    dependencies.readLatestCommitSubject(target.worktreePath),
+    dependencies.readFirstCommitSubject(target.worktreePath, target.baseBranch),
   );
   const body = dependencies.buildPullRequestBody(state, target, {
     githubRepo: dependencies.resolveGitHubRepo?.(target.worktreePath),

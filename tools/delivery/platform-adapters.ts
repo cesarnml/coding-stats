@@ -12,6 +12,7 @@ import {
   readCommitSubject as readPlatformCommitSubject,
   readCurrentBranch as readPlatformCurrentBranch,
   readHeadSha as readPlatformHeadSha,
+  readFirstCommitSubject as readPlatformFirstCommitSubject,
   readLatestCommitSubject as readPlatformLatestCommitSubject,
   readMergeBase as readPlatformMergeBase,
   rebaseOnto as rebasePlatformOnto,
@@ -84,6 +85,7 @@ export type PlatformAdapters = {
   readCommitSubject: (cwd: string, sha: string) => string;
   readCurrentBranch: (cwd: string) => string;
   readHeadSha: (cwd: string) => string;
+  readFirstCommitSubject: (cwd: string, baseBranch: string) => string;
   readLatestCommitSubject: (cwd: string) => string;
   readMergeBase: (
     cwd: string,
@@ -199,6 +201,9 @@ export function createPlatformAdapters(
     },
     readHeadSha(cwd) {
       return readPlatformHeadSha(cwd, config.runtime);
+    },
+    readFirstCommitSubject(cwd, baseBranch) {
+      return readPlatformFirstCommitSubject(cwd, baseBranch, config.runtime);
     },
     readLatestCommitSubject(cwd) {
       return readPlatformLatestCommitSubject(cwd, config.runtime);
