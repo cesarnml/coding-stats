@@ -1,20 +1,24 @@
 import { render, screen } from '@testing-library/svelte'
-import { vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import Home from './+page.svelte'
 import { summaries, supabaseDuration } from '$src/mocks/testData'
 import type { PageData } from './$types'
 
-// Axios uses XHR which MSW node server does not intercept. Mock it here so
-// the selectedRange store's reactive axios call doesn't produce unhandled
-// rejections. Remove this mock when axios is replaced with fetch (P1.04).
-vi.mock('axios', () => ({
-  default: {
-    get: vi.fn(() => Promise.resolve({ data: summaries })),
-  },
-}))
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('Home', () => {
   it('it...', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          json: () => Promise.resolve(summaries),
+        }),
+      ),
+    )
+
     const data = {
       summaries,
       durations: supabaseDuration,

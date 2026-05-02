@@ -3,7 +3,16 @@
   "ignorePaths": [],
   "dictionaryDefinitions": [],
   "dictionaries": [],
-  "words": ["daterangepicker", "Greptile", "intraday", "prcs", "Qodo", "Qube", "upserts"],
+  "words": [
+    "daterangepicker",
+    "Greptile",
+    "intraday",
+    "prcs",
+    "Qodo",
+    "Qube",
+    "upserts",
+    "wakatime"
+  ],
   "ignoreWords": [],
   "import": []
 }

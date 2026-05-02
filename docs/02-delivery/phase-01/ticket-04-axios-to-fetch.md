@@ -45,9 +45,7 @@ Size: 2 points
 
 ## Rationale
 
-> Append here during implementation.
-
-Red first:
-Why this path:
-Alternative considered:
-Deferred:
+Red first: `pnpm check` passed before implementation with the existing warning baseline.
+Why this path: Replaced each axios call with native `fetch(...).then((response) => response.json())`, keeping the same direct JSON assignment shape the ticket called for and removing the axios-only component test mock.
+Alternative considered: A shared fetch helper would reduce repetition, but this ticket intentionally avoids adding new error-handling behavior or broadening the abstraction surface.
+Deferred: HTTP status handling remains unchanged in spirit and is not added here; Codex preflight is disabled per operator instruction because the current environment cannot run the Claude-code-only preflight agent.
