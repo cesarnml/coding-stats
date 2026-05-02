@@ -23,6 +23,9 @@
 - `axios` → replace with native `fetch` for internal SvelteKit API route calls (one less dep, no behavior change)
 - MSW v1→v2 API incompatibility — migrated to `http.get` / `HttpResponse` (done 2026-05-02)
 
+### Fix CI — Playwright workflow disabled (2026-05-02)
+The Playwright workflow trigger changed from `push`/`pull_request` to `workflow_dispatch` (manual only). Root cause: Vercel preview deployments are password-protected, so `wait-for-vercel-preview` always times out with 401. Fix: either make previews public, or pass a Vercel bypass token (`VERCEL_AUTOMATION_BYPASS_SECRET`) as a workflow secret so the health-check step gets a 200.
+
 ### Fix CI — Lint and Test jobs disabled (2026-05-02)
 Both jobs are disabled in `.github/workflows/ci.yaml` until root causes are resolved:
 
