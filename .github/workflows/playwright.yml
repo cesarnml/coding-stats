@@ -1,9 +1,10 @@
 name: Playwright
+# Disabled: Vercel preview deployments return 401 (password-protected), causing
+# wait-for-vercel-preview to exhaust retries. Re-enable once previews are public
+# or the workflow is updated to pass a bypass token.
+# See: notes/public/revival-roadmap.md → Fix CI — Playwright workflow disabled
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 jobs:
   test_setup:
     name: Test setup
