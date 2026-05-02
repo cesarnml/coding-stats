@@ -30,10 +30,17 @@
 
 [Prose describing the shipped state. What is true when this phase is done? What can you demonstrate?]
 
+## CI Baseline
+
+[Run `pnpm run ci:quiet` (or equivalent) on `main` before the first ticket starts and record the result here. This snapshot makes per-ticket CI diffs unambiguous — an agent can tell whether a failure is pre-existing or introduced.]
+
+> Baseline recorded: [date] — [pass / N pre-existing errors: brief summary]
+
 ## Review Rules
 
 - Tickets must be merged in order.
 - Each ticket PR must pass CI before the next ticket starts.
+- Pre-existing CI failures documented in **CI Baseline** above do not block a ticket; newly introduced failures do.
 - [Any additional merge-order or dependency rules.]
 
 ## Explicit Deferrals

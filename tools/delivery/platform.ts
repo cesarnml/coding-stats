@@ -1,5 +1,5 @@
 import { spawnSync as nodeSpawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync, readlinkSync, symlinkSync } from 'node:fs';
 import { copyFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -185,6 +185,20 @@ export async function copyLocalBootstrapFilesIfPresent(
     }
 
     await copyFile(sourceFilePath, targetFilePath);
+  }
+
+  // Recreate symlinks that exist in the source worktree but not in the target.
+  // This covers repo-root symlinks like `.agents` and `tools` that the
+  // delivery orchestrator requires but that git does not carry across worktrees.
+  for (const entry of ['.agents', 'tools']) {
+    const sourcePath = resolve(sourceWorktreePath, entry);
+    const targetPath = resolve(targetWorktreePath, entry);
+
+    if (existsSync(targetPath) || lstatSync(sourcePath, { throwIfNoEntry: false })?.isSymbolicLink() !== true) {
+      continue;
+    }
+
+    symlinkSync(readlinkSync(sourcePath), targetPath);
   }
 }
 

@@ -92,6 +92,25 @@ Then complete step 3 above manually.
 
 Start with `gated` on a new project until you trust the agent's output.
 
+## Agent compatibility
+
+Son of Anton is agent-agnostic. Skills live in `.agents/skills/` — a convention respected by most AI agents as the repo-level source of truth for behavioral instructions. No agent-specific config is required to use them.
+
+**Claude Code adapter:** `scripts/sync-skills.sh` creates `soa-`-prefixed symlinks from `.claude/skills/` into `.agents/skills/`, which is how Claude Code discovers repo skills. This is a Claude-specific on-ramp — it does not affect how other agents consume `.agents/skills/` directly.
+
+```
+.agents/skills/grill-me          ← canonical, agent-agnostic
+.claude/skills/soa-grill-me      ← symlink, Claude Code adapter only
+```
+
+Run `sync-skills.sh` once after install (or after `update`) to wire the Claude Code adapter:
+
+```bash
+bash .son-of-anton/scripts/sync-skills.sh
+```
+
+`/soa update` runs this automatically.
+
 ## Skills reference
 
 | Skill | Trigger |

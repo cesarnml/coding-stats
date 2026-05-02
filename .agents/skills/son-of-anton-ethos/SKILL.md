@@ -76,6 +76,16 @@ Canonical `gated` resume prompt:
 
 `Immediately execute \`bun run deliver --plan <plan> start\`, read the locally materialized handoff artifact in the started worktree as the source of truth for context, and implement <next-ticket-id>.`
 
+**After `advance` in `gated` mode, you must echo the resume prompt as the final human-visible output — not buried in CLI output, not paraphrased.** Format it exactly like this, substituting the real plan path and next ticket id:
+
+```
+P<N>.<NN> is done. PR: <url>
+
+Reset context (/clear), then resume with:
+
+/soa resume phase-<NN>
+```
+
 ### Codex Preflight
 
 **Role split:**
