@@ -98,7 +98,7 @@ Chart components receive typed props (e.g. `SupabaseDuration`, `SummariesResult`
 ### State management
 
 Svelte stores in `src/lib/stores/`:
-- `selectedRange` — the active WakaTime range string (e.g. `'Last 7 Days'`). Changing it triggers an `axios.get` to `/api/supabase/summaries?range=...` and updates page-level `summaries` reactively without a full navigation.
+- `selectedRange` — the active WakaTime range string (e.g. `'Last 7 Days'`). Changing it triggers a `fetch` to `/api/supabase/summaries?range=...` and updates page-level `summaries` reactively without a full navigation.
 - `loading` — global boolean for loading indicator
 - `profile`, `session`, `project`, `dropdown` — supporting stores
 
