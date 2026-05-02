@@ -2,7 +2,6 @@ import { WAKA_API_KEY } from '$env/static/private'
 import { BaseUrl, RestResource, WakaApiRange } from '$lib/constants'
 import type { SummariesResult } from '$src/types/wakatime'
 import { json, type RequestHandler } from '@sveltejs/kit'
-import axios from 'axios'
 
 export const GET: RequestHandler = async ({ url }) => {
   const start = url.searchParams.get('start') ?? ''
@@ -15,9 +14,9 @@ export const GET: RequestHandler = async ({ url }) => {
     range = ''
   }
 
-  const { data: summaries }: { data: SummariesResult } = await axios(
+  const summaries: SummariesResult = await fetch(
     `${BaseUrl.WakaTime}${RestResource.Summaries}?api_key=${WAKA_API_KEY}&range=${range}&project=${project}&start=${start}&end=${end}`,
-  )
+  ).then((response) => response.json())
 
   return json(summaries)
 }

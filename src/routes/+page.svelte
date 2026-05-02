@@ -12,7 +12,6 @@
   import { ApiEndpoint, WakaApiRange, type ValueOf } from '$lib/constants'
   import { loading } from '$lib/stores/loading'
   import { selectedRange } from '$lib/stores/selectedRange'
-  import axios from 'axios'
   import { onMount } from 'svelte'
   import type { PageData } from './$types'
   import { invalidate } from '$app/navigation'
@@ -32,8 +31,9 @@
 
   const onWakaRange = async () => {
     loading.on()
-    const { data } = await axios.get(`${ApiEndpoint.SupabaseSummaries}?range=${$selectedRange}`)
-    summaries = data
+    summaries = await fetch(`${ApiEndpoint.SupabaseSummaries}?range=${$selectedRange}`).then(
+      (response) => response.json(),
+    )
     loading.off()
   }
 </script>
