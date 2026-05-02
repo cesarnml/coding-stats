@@ -21,11 +21,23 @@ Everything between those control points is owned by the orchestrator and its age
 
 ## Quick start for a new project
 
+### 0. Install the Claude Code skill (one-time, global)
+
+```bash
+mkdir -p ~/.claude/skills/son-of-anton
+curl -fsSL https://raw.githubusercontent.com/cesarnml/son-of-anton/main/.claude/skills/son-of-anton/SKILL.md \
+  -o ~/.claude/skills/son-of-anton/SKILL.md
+```
+
+This gives you `/son-of-anton:install` and `/son-of-anton:update` as slash commands in any repo.
+
 ### 1. Add as a git subtree
 
 ```bash
-git subtree add --prefix .son-of-anton git@github.com:cesarnml/son-of-anton.git main --squash
+git subtree add --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
 ```
+
+Or, once the skill is installed, just run `/son-of-anton:install` inside Claude Code.
 
 ### 2. Symlink the skills into your repo root
 
@@ -99,5 +111,7 @@ Start with `gated` on a new project until you trust the agent's output.
 ## Updating son-of-anton in a consuming repo
 
 ```bash
-git subtree pull --prefix .son-of-anton git@github.com:cesarnml/son-of-anton.git main --squash
+git subtree pull --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
 ```
+
+Or run `/son-of-anton:update` inside Claude Code.
