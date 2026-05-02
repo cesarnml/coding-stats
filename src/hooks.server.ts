@@ -36,18 +36,25 @@ export const handle: Handle = async ({ event, resolve }) => {
     },
   )
 
+  let cachedSession: Session | null | undefined
   event.locals.getSession = async () => {
+    if (cachedSession !== undefined) return cachedSession
+
     const {
       data: { user },
       error,
     } = await event.locals.supabase.auth.getUser()
 
-    if (error || !user) return null
+    if (error || !user) {
+      cachedSession = null
+      return null
+    }
 
     const {
       data: { session },
     } = await event.locals.supabase.auth.getSession()
 
+    cachedSession = session
     return session
   }
 
