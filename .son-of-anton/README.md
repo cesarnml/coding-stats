@@ -29,14 +29,14 @@ curl -fsSL https://raw.githubusercontent.com/cesarnml/son-of-anton/main/.claude/
   -o ~/.claude/skills/son-of-anton/SKILL.md
 ```
 
-This gives you `/son-of-anton:install` and `/son-of-anton:update` as slash commands in every repo on your machine. You only do this once.
+This gives you `/son-of-anton install` and `/son-of-anton update` as slash commands in every repo on your machine. You only do this once.
 
 ### 2. Add to a repo
 
 Open Claude Code in the target repo and run:
 
 ```
-/son-of-anton:install
+/son-of-anton install
 ```
 
 That's it. Son-of-anton is now embedded as a git subtree at `.son-of-anton/`.
@@ -66,7 +66,7 @@ Edit `AGENTS.md` to reflect your repo's lint, format, verify, and test commands.
 ### 4. Write a plan and start
 
 ```
-/son-of-anton:deliver
+/son-of-anton execute phase-01
 ```
 
 See `docs/00-overview/start-here.md` for the full onboarding flow.
@@ -112,7 +112,7 @@ Start with `gated` on a new project until you trust the agent's output.
 ## Updating son-of-anton in a consuming repo
 
 ```
-/son-of-anton:update
+/son-of-anton update
 ```
 
 <details>
