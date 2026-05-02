@@ -1,6 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin 'daisyui' {
+  themes: synthwave, night --prefersdark;
+}
+
+@theme {
+  --color-chart-dark: #0f0c28;
+  --aspect-panoramic: 3/1;
+}
 
 @media (prefers-color-scheme: dark) {
   .loader {

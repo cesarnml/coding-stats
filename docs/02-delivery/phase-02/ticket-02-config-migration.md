@@ -93,3 +93,6 @@ Red first: v3 `@tailwind base/components/utilities` directives unrecognized by v
 Why this path: CSS-first config is the v4 canonical approach; JS config is not supported in v4
 Alternative considered: keeping `tailwind.config.ts` with v4 compat shim — not supported; v4 dropped JS config entirely
 Deferred: any daisyUI v5 component class renames — discovered and fixed in P2.03
+Observed during implementation: Tailwind v4 also requires `@reference` in Svelte component `<style lang="postcss">` blocks that use `@apply`, so five existing components/routes needed scoped-style reference updates to make `pnpm build` pass after the CSS-first migration
+Why acceptable: this is still migration fallout from removing the JS Tailwind config, not a separate feature change
+Observed during implementation: daisyUI component classes used via `@apply` on the account page no longer compiled cleanly after the v5 migration, so those classes were moved inline onto the elements instead

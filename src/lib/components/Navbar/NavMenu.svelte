@@ -16,6 +16,8 @@
 </div>
 
 <style lang="postcss">
+  @reference '../../../app.css';
+
   button {
     @apply flex items-center;
   }
