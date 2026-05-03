@@ -39,7 +39,8 @@ The main dashboard shows an "AI vs Human Lines" stacked bar chart and an "AI Cod
 
 ## CI Baseline
 
-> Baseline to be recorded at the start of P3.01 — run `pnpm check && pnpm test:unit && pnpm lint` on `main` and record pass/fail here before first commit.
+Recorded at P3.01 start on `main` (2026-05-03):
+- `pnpm check`: 0 errors, 28 warnings (self-closing tag ambiguity + missing `@types/node` — pre-existing, not introduced by this phase)
 
 ## Review Rules
 
