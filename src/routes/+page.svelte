@@ -13,8 +13,10 @@
   import AiTokenBarChart from '$lib/components/AiTokenBarChart/AiTokenBarChart.svelte'
   import TimelineChart from '$lib/components/TimelineChart/TimelineChart.svelte'
   import { ApiEndpoint, WakaApiRange, type ValueOf } from '$lib/constants'
+  import { DateFormat } from '$lib/helpers/timeHelpers'
   import { loading } from '$lib/stores/loading'
   import { selectedRange } from '$lib/stores/selectedRange'
+  import dayjs from 'dayjs'
   import { onMount } from 'svelte'
   import type { PageData } from './$types'
   import { invalidate } from '$app/navigation'
@@ -24,6 +26,9 @@
   let { summaries, durations, durationsByLanguage, profile } = data
 
   $: ({ summaries, durations, durationsByLanguage, profile } = data)
+
+  $: maxDate = (summaries as typeof summaries & { max_date: string | null }).max_date ?? null
+  $: maxDateFormatted = maxDate ? dayjs(maxDate).format(DateFormat.Shortish) : null
 
   $: aiStats = summaries.data.reduce(
     (acc, day) => {
@@ -70,7 +75,12 @@
 </svelte:head>
 
 <div class="space-y-4 px-2 md:px-4">
-  <div class="flex justify-end">
+  <div class="flex items-center justify-between">
+    <div>
+      {#if maxDateFormatted}
+        <p class="text-xs text-base-content/50">Data through {maxDateFormatted}</p>
+      {/if}
+    </div>
     <DateRangeSelect on:wakarange={onWakaRange} />
   </div>
   <ActivityChart {durations} itemType="project" />

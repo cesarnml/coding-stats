@@ -23,16 +23,20 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
       ? dayjs().utc().subtract(1, 'd').format(DateFormat.Query)
       : dayjs().utc().format(DateFormat.Query)
 
-  const { data: summariesData } = await supabase
-    .from('summaries')
-    .select('*')
-    .gte('date', rangeStart)
-    .lte('date', rangeEnd)
-    .order('date', { ascending: true })
+  const [{ data: summariesData }, { data: maxDateData }] = await Promise.all([
+    supabase
+      .from('summaries')
+      .select('*')
+      .gte('date', rangeStart)
+      .lte('date', rangeEnd)
+      .order('date', { ascending: true }),
+    supabase.from('summaries').select('date').order('date', { ascending: false }).limit(1),
+  ])
 
   const summaries = {
     data: summariesData,
-  } as unknown as SummariesResult
+    max_date: maxDateData?.[0]?.date ?? null,
+  } as unknown as SummariesResult & { max_date: string | null }
 
   return json(summaries)
 }
