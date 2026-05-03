@@ -265,7 +265,7 @@ export async function runDeliveryOrchestrator(
             'codex-preflight clean requires a note summarizing what Codex reviewed and concluded. Usage: codex-preflight clean "<note>"',
           );
         }
-        if (preflightOutcome === 'patched' && parsed.positionals.length > 1) {
+        if (preflightOutcome !== 'patched' && parsed.positionals.length > 1) {
           throw new Error(
             'Codex preflight patch commits are only allowed when outcome is `patched`.',
           );
