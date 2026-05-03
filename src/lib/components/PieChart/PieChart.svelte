@@ -6,6 +6,7 @@
   import { createPieChartOption, createPieChartData } from './pieChartHelpers'
   import type { SummariesResult } from '$src/types/wakatime'
   import ChartContainer from '../common/ChartContainer.svelte'
+  import EmptyState from '../EmptyState.svelte'
 
   export let summaries: SummariesResult
   export let title: string
@@ -13,6 +14,7 @@
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
+  $: hasData = (summaries.data?.length ?? 0) > 0
   $: data = createPieChartData(summaries)
   $: option = createPieChartOption(data)
 
@@ -35,7 +37,11 @@
 
 <Container>
   <ChartTitle>{title}</ChartTitle>
-  <ChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} data-testid="chart" />
-  </ChartContainer>
+  {#if hasData}
+    <ChartContainer>
+      <div class="h-full w-full" bind:this={chartRef} data-testid="chart" />
+    </ChartContainer>
+  {:else}
+    <EmptyState message="No data for this range" cta="Try a wider date range" />
+  {/if}
 </Container>

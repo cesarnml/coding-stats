@@ -10,6 +10,7 @@
   import { createDisciplineGaugeData, createDisciplineGaugeOption } from './gaugeChartHelpers'
   import DailyGaugeControls from './DailyGaugeControls.svelte'
   import ChartContainer from '../common/ChartContainer.svelte'
+  import EmptyState from '../EmptyState.svelte'
 
   dayjs.extend(advanceFormat)
 
@@ -19,6 +20,7 @@
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
+  $: hasData = (summaries.data?.length ?? 0) > 0
   $: selectedDate = summaries.data?.at(-1)?.range.date ?? ''
   $: data = createDisciplineGaugeData(summaries, selectedDate)
   $: option = createDisciplineGaugeOption(data)
@@ -44,8 +46,12 @@
 
 <Container>
   <ChartTitle>{title}</ChartTitle>
-  <DailyGaugeControls {summaries} {selectedDate} on:update={onUpdate} />
-  <ChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} />
-  </ChartContainer>
+  {#if hasData}
+    <DailyGaugeControls {summaries} {selectedDate} on:update={onUpdate} />
+    <ChartContainer>
+      <div class="h-full w-full" bind:this={chartRef} />
+    </ChartContainer>
+  {:else}
+    <EmptyState message="No data for this range" cta="Try a wider date range" />
+  {/if}
 </Container>

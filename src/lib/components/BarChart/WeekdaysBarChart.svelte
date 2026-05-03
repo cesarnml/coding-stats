@@ -7,6 +7,7 @@
   import { onMount } from 'svelte'
   import { afterUpdate } from 'svelte'
   import ChartContainer from '../common/ChartContainer.svelte'
+  import EmptyState from '../EmptyState.svelte'
 
   export let summaries: SummariesResult
   export let title = 'Weekly Breakdown'
@@ -15,6 +16,7 @@
   let chart: echarts.ECharts
   let option: SimpleBarChartOption
 
+  $: hasData = (summaries.data?.length ?? 0) > 0
   $: option = createSimpleBarChartOption(summaries)
 
   onMount(() => {
@@ -36,7 +38,11 @@
 
 <Container>
   <ChartTitle>{title}</ChartTitle>
-  <ChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} />
-  </ChartContainer>
+  {#if hasData}
+    <ChartContainer>
+      <div class="h-full w-full" bind:this={chartRef} />
+    </ChartContainer>
+  {:else}
+    <EmptyState message="No data for this range" cta="Try a wider date range" />
+  {/if}
 </Container>

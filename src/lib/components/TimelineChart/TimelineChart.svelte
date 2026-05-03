@@ -10,6 +10,7 @@
   import ChartContainer from '../common/ChartContainer.svelte'
   import { createTimelineChartOption } from './timelineChartHelpers'
   import type { ValueOfDurationItemType } from '$lib/helpers/chartHelpers'
+  import EmptyState from '../EmptyState.svelte'
 
   export let durations: SupabaseDuration
   export let title = 'Context Switch'
@@ -18,6 +19,7 @@
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
+  $: hasData = (durations.data?.length ?? 0) > 0
   $: option = createTimelineChartOption(durations, itemType)
 
   onMount(() => {
@@ -41,8 +43,12 @@
   <ChartTitle>
     <DailyTitleContent {title} {durations} />
   </ChartTitle>
-  <DailyChartControls {durations} {itemType} on:update={onUpdate} />
-  <ChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} />
-  </ChartContainer>
+  {#if hasData}
+    <DailyChartControls {durations} {itemType} on:update={onUpdate} />
+    <ChartContainer>
+      <div class="h-full w-full" bind:this={chartRef} />
+    </ChartContainer>
+  {:else}
+    <EmptyState message="No data for this range" cta="Try a wider date range" />
+  {/if}
 </Container>
