@@ -26,18 +26,21 @@
   $: option = createDisciplineGaugeOption(data)
 
   onMount(() => {
+    if (!chartRef) return
     chart = echarts.init(chartRef, 'dark', { renderer: 'canvas' })
     const handleResize = () => chart.resize()
     window.addEventListener('resize', handleResize, { passive: true })
     chart.setOption(option)
 
     return () => {
-      chart.dispose()
+      chart?.dispose()
       window.removeEventListener('resize', handleResize)
     }
   })
 
   afterUpdate(() => {
+    if (!chartRef) return
+    if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'canvas' })
     chart.setOption(option)
   })
 

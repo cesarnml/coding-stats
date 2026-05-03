@@ -36,6 +36,7 @@
   )
 
   onMount(() => {
+    if (!chartRef) return
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     const handleResize = () => chart.resize()
     window.addEventListener('resize', handleResize, { passive: true })
@@ -52,16 +53,21 @@
     })
 
     return () => {
-      chart.dispose()
+      chart?.dispose()
       window.removeEventListener('resize', handleResize)
     }
   })
 
   afterUpdate(() => {
+    if (!chartRef) return
     tippy(document.querySelectorAll('[data-tippy-content]'), {
       theme: 'light',
       animation: 'scale',
     })
+    if (!chart) {
+      chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
+      chart.on('click', (params) => { goto(Url.ProjectDetail(params.name)) })
+    }
     chart.setOption(option)
   })
 </script>
