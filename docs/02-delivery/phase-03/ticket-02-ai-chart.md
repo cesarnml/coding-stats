@@ -103,9 +103,10 @@ Commit the failing tests. Then make them pass.
 
 ## Rationale
 
-> Append here during implementation if behavior or trade-offs change.
-
-Red first: write all four test cases, run `pnpm test:unit`, confirm they fail before writing implementation.
+Red first: wrote all four test cases (two helpers, two component), confirmed failures before implementation.
+AI stat panel placed directly in `+page.svelte` using `StatPanelItem` rather than modifying `StatsPanel` — `StatsPanel` owns summaries-derived stats, AI total is a separate concern; avoided coupling to keep `StatsPanel` testable in isolation.
+Zero state on the stat panel uses `—` with subtext per ticket spec; zero state on the chart is an ECharts `graphic` text overlay returned from `buildAiActivityOption` when `data.length === 0`.
+`extractAiSeriesData` helper added to `AiActivityChartHelpers.ts` per Refactor section suggestion; tested separately.
 Why this path: sourcing from existing `summaries` page data avoids a new DB query and a new read route; the data is already on the page, just unread.
 Alternative considered: new `/api/supabase/ai-durations` read route with per-segment aggregation from `durations` blob — rejected because `summaries.grand_total` already has the aggregated totals and durations only supports single-date queries.
 Deferred: per-project AI breakdown (needs durations per-segment), time-of-day chart, token/prompt metrics — all Tier 5 `/ai` route work.
