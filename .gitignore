@@ -32,3 +32,4 @@ graphify-out
 *.backup
 supabase/seed.sql
 .qodo
+.codex_*
