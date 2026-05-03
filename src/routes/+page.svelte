@@ -60,6 +60,7 @@
   <div class="flex justify-end">
     <DateRangeSelect on:wakarange={onWakaRange} />
   </div>
+  <ActivityChart {durations} itemType="project" />
   <StatsPanel {summaries} showFullPanel />
   <div class="overflow-x-auto">
     <div class="stats bg-chart-dark shadow-lg">
@@ -74,7 +75,6 @@
     </div>
   </div>
   <AiActivityChart data={aiData} />
-  <ActivityChart {durations} itemType="project" />
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <BreakdownChart {summaries} title="Project Breakdown" />
     {#if $selectedRange !== WakaApiRange.Today && $selectedRange !== WakaApiRange.Yesterday}
