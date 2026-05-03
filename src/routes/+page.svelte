@@ -1,6 +1,5 @@
 <script lang="ts">
   import ActivityChart from '$lib/components/BarChart/ActivityChart.svelte'
-  import AiActivityChart from '$lib/components/AiActivityChart/AiActivityChart.svelte'
   import BreakdownChart from '$lib/components/BarChart/BreakdownChart.svelte'
   import StackedBarChart from '$lib/components/BarChart/StackedBarChart.svelte'
   import WeekdaysBarChart from '$lib/components/BarChart/WeekdaysBarChart.svelte'
@@ -10,7 +9,8 @@
   import ProjectList from '$lib/components/ProjectList.svelte'
   import StatsPanel from '$lib/components/Stats/StatsPanel.svelte'
   import StatPanelItem from '$lib/components/Stats/StatPanelItem.svelte'
-  import { extractAiSeriesData } from '$lib/components/AiActivityChart/AiActivityChartHelpers'
+  import AiLinesPieChart from '$lib/components/AiLinesPieChart/AiLinesPieChart.svelte'
+  import AiTokenBarChart from '$lib/components/AiTokenBarChart/AiTokenBarChart.svelte'
   import TimelineChart from '$lib/components/TimelineChart/TimelineChart.svelte'
   import { ApiEndpoint, WakaApiRange, type ValueOf } from '$lib/constants'
   import { loading } from '$lib/stores/loading'
@@ -22,14 +22,27 @@
   export let data: PageData
 
   let { summaries, durations, durationsByLanguage, profile } = data
-  let aiData = extractAiSeriesData(summaries)
-  let aiTotal = summaries.data.reduce((sum, day) => sum + (day.grand_total.ai_additions ?? 0), 0)
 
   $: ({ summaries, durations, durationsByLanguage, profile } = data)
-  $: {
-    aiData = extractAiSeriesData(summaries)
-    aiTotal = summaries.data.reduce((sum, day) => sum + (day.grand_total.ai_additions ?? 0), 0)
-  }
+
+  $: aiStats = summaries.data.reduce(
+    (acc, day) => {
+      acc.ai_additions += day.grand_total.ai_additions ?? 0
+      acc.ai_deletions += day.grand_total.ai_deletions ?? 0
+      acc.human_additions += day.grand_total.human_additions ?? 0
+      acc.human_deletions += day.grand_total.human_deletions ?? 0
+      acc.total_tokens +=
+        (day.grand_total.ai_input_tokens ?? 0) + (day.grand_total.ai_output_tokens ?? 0)
+      return acc
+    },
+    {
+      ai_additions: 0,
+      ai_deletions: 0,
+      human_additions: 0,
+      human_deletions: 0,
+      total_tokens: 0,
+    },
+  )
 
   onMount(() => {
     if (profile && profile.range !== $selectedRange) {
@@ -64,17 +77,47 @@
   <StatsPanel {summaries} showFullPanel />
   <div class="overflow-x-auto">
     <div class="stats bg-chart-dark shadow-lg">
-      <StatPanelItem title="AI Coding Activity" icon="mdi:robot-outline" label="ai">
-        {#if aiTotal === 0}
+      <StatPanelItem title="AI Additions" icon="mdi:robot-outline" label="ai-additions">
+        {#if aiStats.ai_additions === 0}
           <span>—</span>
-          <p class="text-xs font-normal text-base-content/60">AI data accumulates daily</p>
         {:else}
-          {aiTotal.toLocaleString()} lines
+          {aiStats.ai_additions.toLocaleString()} lines
+        {/if}
+      </StatPanelItem>
+      <StatPanelItem title="AI Deletions" icon="mdi:robot-outline" label="ai-deletions">
+        {#if aiStats.ai_deletions === 0}
+          <span>—</span>
+        {:else}
+          {aiStats.ai_deletions.toLocaleString()} lines
+        {/if}
+      </StatPanelItem>
+      <StatPanelItem title="Human Additions" icon="mdi:account-outline" label="human-additions">
+        {#if aiStats.human_additions === 0}
+          <span>—</span>
+        {:else}
+          {aiStats.human_additions.toLocaleString()} lines
+        {/if}
+      </StatPanelItem>
+      <StatPanelItem title="Human Deletions" icon="mdi:account-outline" label="human-deletions">
+        {#if aiStats.human_deletions === 0}
+          <span>—</span>
+        {:else}
+          {aiStats.human_deletions.toLocaleString()} lines
+        {/if}
+      </StatPanelItem>
+      <StatPanelItem title="Total Tokens" icon="mdi:lightning-bolt-outline" label="total-tokens">
+        {#if aiStats.total_tokens === 0}
+          <span>—</span>
+        {:else}
+          {aiStats.total_tokens.toLocaleString()}
         {/if}
       </StatPanelItem>
     </div>
   </div>
-  <AiActivityChart data={aiData} />
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <AiLinesPieChart {summaries} />
+    <AiTokenBarChart {summaries} />
+  </div>
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <BreakdownChart {summaries} title="Project Breakdown" />
     {#if $selectedRange !== WakaApiRange.Today && $selectedRange !== WakaApiRange.Yesterday}
