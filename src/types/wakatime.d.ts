@@ -112,20 +112,29 @@ type WakaRange = {
   timezone: string
 }
 
-type GrandTotal = {
+export type WakaGrandTotal = {
   decimal: string
   digital: string
   hours: number
   minutes: number
   text: string
   total_seconds: number
+  ai_additions: number
+  ai_deletions: number
+  human_additions: number
+  human_deletions: number
+  ai_input_tokens: number
+  ai_output_tokens: number
+  ai_prompt_length_avg: number
+  ai_prompt_length_sum: number
+  ai_prompt_events: number
 }
 
 type SummariesData = {
   categories: WakaCategory[]
   dependencies: WakaDependency[]
   editors: WakaEditor[]
-  grand_total: GrandTotal
+  grand_total: WakaGrandTotal
   languages: WakaLanguage[]
   machines: WakaMachine[]
   operating_systems: WakaOperatingSystem[]
@@ -155,6 +164,15 @@ export type WakaDuration = {
   entity: string
   branch: string
   time: number
+  ai_session: string | null
+  ai_additions: number
+  ai_deletions: number
+  human_additions: number
+  human_deletions: number
+  ai_input_tokens: number
+  ai_output_tokens: number
+  ai_prompt_length_sum: number
+  ai_prompt_events: number
 }
 
 export type DurationsResult = {
