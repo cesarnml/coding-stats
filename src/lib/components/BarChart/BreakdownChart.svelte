@@ -15,6 +15,7 @@
   import tippy from 'tippy.js'
   import { secPerHour } from '$lib/helpers/timeHelpers'
   import ChartContainer from '../common/ChartContainer.svelte'
+  import EmptyState from '../EmptyState.svelte'
 
   export let summaries: SummariesResult
   export let title: string
@@ -23,6 +24,7 @@
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
+  $: hasData = (summaries.data?.length ?? 0) > 0
   $: data = createBreakdownChartData(summaries)
   $: filteredData = filterBreakdownChartData(data)
   $: option = createBreakdownChartOption(
@@ -34,6 +36,7 @@
   )
 
   onMount(() => {
+    if (!chartRef) return
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     const handleResize = () => chart.resize()
     window.addEventListener('resize', handleResize, { passive: true })
@@ -50,16 +53,21 @@
     })
 
     return () => {
-      chart.dispose()
+      chart?.dispose()
       window.removeEventListener('resize', handleResize)
     }
   })
 
   afterUpdate(() => {
+    if (!chartRef) return
     tippy(document.querySelectorAll('[data-tippy-content]'), {
       theme: 'light',
       animation: 'scale',
     })
+    if (!chart) {
+      chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
+      chart.on('click', (params) => { goto(Url.ProjectDetail(params.name)) })
+    }
     chart.setOption(option)
   })
 </script>
@@ -100,7 +108,11 @@
       </div>
     </div>
   </ChartTitle>
-  <ChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} />
-  </ChartContainer>
+  {#if hasData}
+    <ChartContainer>
+      <div class="h-full w-full" bind:this={chartRef} />
+    </ChartContainer>
+  {:else}
+    <EmptyState message="No data for this range" cta="Try a wider date range" />
+  {/if}
 </Container>
