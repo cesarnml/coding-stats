@@ -1,16 +1,28 @@
+import type { SummariesResult } from '$src/types/wakatime'
 import { describe, expect, it } from 'vitest'
 import { buildAiActivityOption, extractAiSeriesData } from './AiActivityChartHelpers'
-import type { SummariesResult } from '$src/types/wakatime'
 
 describe('buildAiActivityOption', () => {
-  it('maps daily summaries to stacked AI and human series', () => {
+  it('maps daily summaries to one stacked human and AI series', () => {
     const result = buildAiActivityOption([
       { date: '2026-05-01', ai_additions: 100, human_additions: 40 },
       { date: '2026-05-02', ai_additions: 200, human_additions: 80 },
     ])
-    expect(result.series[0].data).toEqual([100, 200])
-    expect(result.series[1].data).toEqual([40, 80])
-    expect(result.xAxis.data).toEqual(['2026-05-01', '2026-05-02'])
+    const series = Array.isArray(result.series) ? result.series : [result.series]
+
+    expect(series).toHaveLength(2)
+    expect(series[0]).toMatchObject({
+      name: 'Human Additions',
+      stack: 'total',
+      data: [40, 80],
+    })
+    expect(series[1]).toMatchObject({
+      name: 'AI Additions',
+      stack: 'total',
+      data: [100, 200],
+    })
+    expect(result.legend).toMatchObject({ data: ['Human Additions', 'AI Additions'] })
+    expect(result.xAxis).toMatchObject({ data: ['2026-05-01', '2026-05-02'] })
   })
 
   it('returns empty state option when data array is empty', () => {
@@ -22,7 +34,10 @@ describe('buildAiActivityOption', () => {
     const result = buildAiActivityOption([
       { date: '2026-05-01', ai_additions: 0, human_additions: 0 },
     ])
-    expect(result.series[0].data).toEqual([0])
+    const series = Array.isArray(result.series) ? result.series : [result.series]
+
+    expect(series[0]).toMatchObject({ data: [0] })
+    expect(series[1]).toMatchObject({ data: [0] })
   })
 })
 

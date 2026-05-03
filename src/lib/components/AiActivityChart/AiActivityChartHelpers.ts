@@ -1,20 +1,30 @@
 import type { SummariesResult } from '$src/types/wakatime'
+import type {
+  BarSeriesOption,
+  ComposeOption,
+  GraphicComponentOption,
+  GridComponentOption,
+  LegendComponentOption,
+  TooltipComponentOption,
+} from 'echarts/types/dist/echarts'
+
+type SummaryEntry = SummariesResult['data'][number]
 
 export type AiSeriesEntry = {
-  date: string
-  ai_additions: number
-  human_additions: number
+  date: SummaryEntry['range']['date']
+  ai_additions: SummaryEntry['grand_total']['ai_additions']
+  human_additions: SummaryEntry['grand_total']['human_additions']
 }
 
-type AiActivityOption = {
-  xAxis: { type: 'category'; data: string[] }
-  yAxis: { type: 'value' }
-  series: Array<{ type: 'bar'; stack: string; name: string; data: number[] }>
-  legend: object
-  tooltip: object
-  grid: object
-  graphic?: object
-}
+export type AiActivityOption = ComposeOption<
+  | TooltipComponentOption
+  | GridComponentOption
+  | LegendComponentOption
+  | GraphicComponentOption
+  | BarSeriesOption
+>
+
+const AI_ACTIVITY_STACK = 'total'
 
 export function buildAiActivityOption(data: AiSeriesEntry[]): AiActivityOption {
   if (data.length === 0) {
@@ -39,32 +49,32 @@ export function buildAiActivityOption(data: AiSeriesEntry[]): AiActivityOption {
   }
 
   return {
-    xAxis: { type: 'category', data: data.map((d) => d.date) },
+    xAxis: { type: 'category', data: data.map((day) => day.date) },
     yAxis: { type: 'value' },
     series: [
       {
         type: 'bar',
-        stack: 'ai-human',
-        name: 'AI Additions',
-        data: data.map((d) => d.ai_additions),
+        stack: AI_ACTIVITY_STACK,
+        name: 'Human Additions',
+        data: data.map((day) => day.human_additions),
       },
       {
         type: 'bar',
-        stack: 'ai-human',
-        name: 'Human Additions',
-        data: data.map((d) => d.human_additions),
+        stack: AI_ACTIVITY_STACK,
+        name: 'AI Additions',
+        data: data.map((day) => day.ai_additions),
       },
     ],
-    legend: { data: ['AI Additions', 'Human Additions'] },
+    legend: { data: ['Human Additions', 'AI Additions'] },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   }
 }
 
 export function extractAiSeriesData(summaries: SummariesResult): AiSeriesEntry[] {
-  return summaries.data.map((d) => ({
-    date: d.range.date,
-    ai_additions: d.grand_total.ai_additions ?? 0,
-    human_additions: d.grand_total.human_additions ?? 0,
+  return summaries.data.map((day) => ({
+    date: day.range.date,
+    ai_additions: day.grand_total.ai_additions ?? 0,
+    human_additions: day.grand_total.human_additions ?? 0,
   }))
 }

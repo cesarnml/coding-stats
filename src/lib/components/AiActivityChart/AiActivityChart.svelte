@@ -1,40 +1,53 @@
 <script lang="ts">
   import * as echarts from 'echarts'
-  import { afterUpdate, onDestroy, onMount } from 'svelte'
+  import { afterUpdate, onMount } from 'svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import Container from '../Container.svelte'
   import ChartContainer from '../common/ChartContainer.svelte'
-  import { buildAiActivityOption, type AiSeriesEntry } from './AiActivityChartHelpers'
+  import {
+    buildAiActivityOption,
+    type AiActivityOption,
+    type AiSeriesEntry,
+  } from './AiActivityChartHelpers'
 
-  export let data: AiSeriesEntry[]
+  export let data: AiSeriesEntry[] = []
 
-  let chartRef: HTMLDivElement
-  let chart: echarts.ECharts
+  let chartRef: HTMLDivElement | undefined
+  let chart: echarts.ECharts | null = null
+  let handleResize: (() => void) | null = null
+  let option: AiActivityOption
 
   $: option = buildAiActivityOption(data)
 
-  onMount(() => {
-    if (data.length === 0) return
-    chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
-    const handleResize = () => chart.resize()
-    window.addEventListener('resize', handleResize, { passive: true })
-    chart.setOption(option)
-
-    return () => {
+  const disposeChart = () => {
+    if (handleResize) {
       window.removeEventListener('resize', handleResize)
+      handleResize = null
     }
+    chart?.dispose()
+    chart = null
+  }
+
+  const syncChart = () => {
+    if (!chartRef || data.length === 0) {
+      disposeChart()
+      return
+    }
+    if (!chart) {
+      chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
+      handleResize = () => chart?.resize()
+      window.addEventListener('resize', handleResize, { passive: true })
+    }
+    chart.setOption(option, true)
+  }
+
+  onMount(() => {
+    syncChart()
+    return disposeChart
   })
 
   afterUpdate(() => {
-    if (data.length === 0) return
-    if (!chart) {
-      chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
-    }
-    chart.setOption(option)
-  })
-
-  onDestroy(() => {
-    chart?.dispose()
+    syncChart()
   })
 </script>
 

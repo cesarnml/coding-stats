@@ -21,9 +21,15 @@
 
   export let data: PageData
 
+  let { summaries, durations, durationsByLanguage, profile } = data
+  let aiData = extractAiSeriesData(summaries)
+  let aiTotal = summaries.data.reduce((sum, day) => sum + (day.grand_total.ai_additions ?? 0), 0)
+
   $: ({ summaries, durations, durationsByLanguage, profile } = data)
-  $: aiData = extractAiSeriesData(summaries)
-  $: aiTotal = summaries.data.reduce((sum, d) => sum + (d.grand_total.ai_additions ?? 0), 0)
+  $: {
+    aiData = extractAiSeriesData(summaries)
+    aiTotal = summaries.data.reduce((sum, day) => sum + (day.grand_total.ai_additions ?? 0), 0)
+  }
 
   onMount(() => {
     if (profile && profile.range !== $selectedRange) {
