@@ -43,7 +43,21 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 ---
 
-## Tier 2 — The AI Coding Story (highest strategic value)
+## Phase 02 — Tailwind v4 + daisyUI v5 Migration (✅ COMPLETE — merged ~2026-05-02)
+
+**Three tickets (P2.01–P2.03) merged to main. Product plan at `docs/01-product/phase-02-tailwind-v4-migration.md`.**
+
+### ✅ Upgrade CSS pipeline (P2.01–P2.03)
+- `tailwindcss` v4 + `daisyui` v5 installed; `tailwind.config.ts` deleted
+- `app.postcss` → `app.css`; all config moved to CSS-first `@import` / `@plugin` / `@theme`
+- `autoprefixer`, `@tailwindcss/forms`, `@tailwindcss/typography` removed
+- `synthwave` and `night` themes verified; `pnpm check`, `pnpm lint`, `pnpm build` pass clean
+
+---
+
+## Tier 2 — The AI Coding Story (✅ COMPLETE — Phase 03, merged 2026-05-03)
+
+**Both PRs (#130, #131) merged to main via closeout-stack. Retrospective at `notes/public/phase-03-retrospective.md`.**
 
 > **Phase 03 product plan:** `docs/01-product/phase-03-ai-coding-story.md`
 > **Grill-me decisions (2026-05-02):**
@@ -52,10 +66,16 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 > - Phase 03 ships against the existing blob — no new table, no new cron
 > - Backfill is forward-only on the free plan (durations limited to last 7 days)
 
-### Wire in WakaTime AI data endpoints
-- AI fields are in the `durations` response today: `ai_additions`, `human_additions`, `ai_input_tokens`, `ai_output_tokens`, `ai_prompt_events` per duration segment
-- New chart: AI vs. human lines over time (stacked bar), sourced from `durations` blob
-- New stat panel: total `ai_additions` for selected range
+### ✅ Wire in WakaTime AI data endpoints (P3.01, P3.02)
+- Typed `WakaGrandTotal` and all AI fields on `summaries.grand_total` and `durations` — P3.01
+- AI vs. human activity chart (stacked bar) added to dashboard — P3.02
+- AI coding activity stat panel added to dashboard — P3.02
+- Sourced entirely from existing page data; no new route, no new Supabase read
+
+**Follow-up (post-Phase 03):**
+1. Add orchestrator safeguard: sync `state.json`, `handoffs/`, `reviews/` to primary checkout when each ticket reaches `done`
+2. Add repo policy: validate schema-affecting changes against a live WakaTime payload when public docs may have drifted
+3. Switch `closeout-stack` from `bun run …` to direct script execution in fresh working trees
 
 ### Historical AI heuristics backfill (future — requires premium subscription)
 - `GET /api/v1/users/current/ai/heuristics` returns richer data: `follow_up_events`, `files_with_follow_up_percent`, `top_files[]` with per-file AI/human line breakdown
