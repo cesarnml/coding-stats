@@ -48,7 +48,7 @@ describe('computeAiLinesSlices', () => {
     const slices = computeAiLinesSlices(summaries)
     expect(slices).not.toBeNull()
     const total = slices!.reduce((sum, s) => sum + s.value, 0)
-    expect(total).toBeCloseTo(100, 1)
+    expect(total).toBe(100)
   })
 
   it('each slice value is proportional to its share of total lines', () => {
