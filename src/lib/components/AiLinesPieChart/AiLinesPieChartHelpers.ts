@@ -27,12 +27,17 @@ export function computeAiLinesSlices(summaries: SummariesResult): AiLinesSlice[]
 
   const pct = (n: number) => Math.round((n / total) * 10000) / 100
 
-  return [
+  const raw = [
     { name: 'AI Additions', value: pct(totals.ai_additions) },
     { name: 'AI Deletions', value: pct(totals.ai_deletions) },
     { name: 'Human Additions', value: pct(totals.human_additions) },
-    { name: 'Human Deletions', value: pct(totals.human_deletions) },
+    { name: 'Human Deletions', value: 0 },
   ]
+  // Assign the last slice as remainder so slices sum to exactly 100
+  const sumFirst = raw.slice(0, -1).reduce((a, s) => a + s.value, 0)
+  raw[raw.length - 1].value = Math.round((100 - sumFirst) * 100) / 100
+
+  return raw
 }
 
 export function buildAiLinesPieOption(slices: AiLinesSlice[]): AiLinesPieOption {
