@@ -27,7 +27,7 @@
 
   $: ({ summaries, durations, durationsByLanguage, profile } = data)
 
-  $: maxDate = (summaries as typeof summaries & { max_date: string | null }).max_date ?? null
+  $: maxDate = summaries.max_date ?? null
   $: maxDateFormatted = maxDate ? dayjs(maxDate).format(DateFormat.Shortish) : null
 
   $: aiStats = summaries.data.reduce(
