@@ -62,4 +62,35 @@ describe('GET /api/supabase/summaries', () => {
     const result = await response.json()
     expect(result.max_date).toBeNull()
   })
+
+  it('uses start and end query params when both are provided', async () => {
+    const gte = vi.fn().mockReturnValue({
+      lte: vi.fn().mockReturnValue({
+        order: vi.fn().mockResolvedValue({ data: [] }),
+      }),
+    })
+    const customRangeSupabase = {
+      from: () => ({
+        select: (fields: string) => {
+          if (fields === 'date') {
+            return {
+              order: () => ({ limit: () => Promise.resolve({ data: [{ date: MAX_DATE }] }) }),
+            }
+          }
+          return { gte }
+        },
+      }),
+    }
+    const event = {
+      url: new URL(
+        'http://localhost/api/supabase/summaries?range=Last+7+Days&start=2024-01-01&end=2024-01-31',
+      ),
+      locals: { supabase: customRangeSupabase },
+    }
+
+    await GET(event as unknown as RequestEvent)
+
+    expect(gte).toHaveBeenCalledWith('date', '2024-01-01')
+    expect(gte.mock.results[0]?.value.lte).toHaveBeenCalledWith('date', '2024-01-31')
+  })
 })
