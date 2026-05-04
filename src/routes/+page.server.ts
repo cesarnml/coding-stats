@@ -1,7 +1,7 @@
 import { ApiEndpoint, WakaApiRange } from '$lib/constants'
-import type { SummariesResult } from '$src/types/wakatime'
 import type { PageServerLoad } from './$types'
 import type { SupabaseDuration } from './api/supabase/durations/+server'
+import type { SummariesApiResponse } from './api/supabase/summaries/+server'
 
 export const load: PageServerLoad = async ({ fetch, url, locals: { getProfile } }) => {
   const profile = await getProfile()
@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ fetch, url, locals: { getProfile } 
     fetch(ApiEndpoint.SupabaseDurationsByLanguage),
   ])
 
-  const summaries = (await summariesResponse.json()) as SummariesResult
+  const summaries = (await summariesResponse.json()) as SummariesApiResponse
   const durations = (await durationsResponse.json()) as SupabaseDuration
   const durationsByLanguage = (await durationsByLanguageResponse.json()) as SupabaseDuration
 
