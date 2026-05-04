@@ -122,6 +122,41 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 ---
 
+## Phase 04 — UX Polish and AI Chart Redesign (✅ COMPLETE — 2026-05-04)
+
+**Five tickets (P4.01–P4.05), PRs #132–#136, stacked on Phase 03. Retrospective at `notes/public/phase-04-retrospective.md`.**
+
+### ✅ Activity chart clamp + promote to top slot (P4.01)
+- Negative minute bars clamped to zero (client-side guard against ingestion model artifact)
+- Chart promoted above the stats panel to the top of the dashboard
+
+### ✅ EmptyState component + apply to 8 charts (P4.02)
+- Consistent `EmptyState` component: "No data for this range" message across all chart views
+- Applied to: ActivityChart, BreakdownChart, WeekdaysBarChart, StackedBarChart (×2), PieChart, DailyGauge, TimelineChart (×2)
+
+### ✅ AI section redesign (P4.03)
+- Replaced the single stacked-bar AI chart with a focused 5-stat row (AI additions, AI deletions, human additions, human deletions, total tokens)
+- Added `AiLinesPieChart` and `AiTokenBarChart` as dedicated panels
+- Last-remainder correction applied to pie slices to guarantee 100% sum
+
+### ✅ Data freshness signal (P4.04)
+- `max_date` added to summaries route via global `MAX(date)` query (independent of range filter)
+- "Data through [date]" displayed in dashboard header; hidden when table is empty
+
+### ✅ Custom date range picker (P4.05)
+- `WakaApiRange.Custom` entry added (not in `WakaToShortcutApiRange` — bypasses shortcut mapping)
+- `customDateRange` store holds `{ start: string | null, end: string | null }`
+- Native `<input type="date">` inputs rendered when Custom is selected; profile sync skipped for Custom
+- `buildSummariesUrl` helper routes to `?start=&end=` or `?range=` depending on mode
+
+**Deferred from Phase 04:**
+- Full `{start,end}` store migration for all named ranges — requires `profiles.range` schema migration (Tier 3, do not attempt without it)
+- `is_finalized` ingestion contract for `durations` (Tier 3, schema migration required)
+- `last_scraped_at` on `profiles` + stale-data warning (Tier 3)
+- Auth removal (future simplification pass)
+
+---
+
 ## Tier 5 — UX / Empty States (screenshots 2026-05-01)
 
 ### Empty state handling is broken across most charts
@@ -355,8 +390,8 @@ Tier 1 (4 tickets) + Tier 2 (2) + Tier 3 (2) + Tier 4 (1) + Tier 5 (4) + Quick W
 
 ## Quick Wins (low effort, visible polish)
 
-- [ ] Show a "last updated" timestamp on the dashboard so clients know data is live
+- [x] Show a "last updated" timestamp on the dashboard so clients know data is live — shipped as P4.04 "Data through [date]" signal
 - [ ] Add a public shareable link / read-only view per client (no login required)
 - [ ] `HOUR_GOAL = 5` is hardcoded in constants.ts — make it configurable per profile
 - [ ] The Discipline Gauge is a great idea — make the goal editable in the account page
-- [ ] Standardize "No Data" empty state component and use it across all charts
+- [x] Standardize "No Data" empty state component and use it across all charts — shipped as P4.02
