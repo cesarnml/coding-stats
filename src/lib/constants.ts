@@ -21,6 +21,7 @@ export const WakaApiRange = {
   This_Week: 'This Week',
   This_Month: 'This Month',
   Last_Month: 'Last Month',
+  Custom: 'Custom',
 } as const
 
 export type WakaApiRange = typeof WakaApiRange
