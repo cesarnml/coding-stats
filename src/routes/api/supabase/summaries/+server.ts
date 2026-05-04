@@ -7,19 +7,18 @@ import dayjs from 'dayjs'
 export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
   const start = url.searchParams.get('start') ?? ''
   const end = url.searchParams.get('end') ?? ''
-  let range = url.searchParams.get('range') ?? WakaApiRange.Last_7_Days_From_Yesterday
+  const range = url.searchParams.get('range') ?? WakaApiRange.Last_7_Days_From_Yesterday
 
-  // start and end take precedence over range
-  if (start && end) {
-    range = ''
-  }
-
-  const rangeStart = dayjs()
-    .utc()
-    .subtract(WakaToShortcutApiRange[range as keyof typeof WakaToShortcutApiRange], 'd')
-    .format(DateFormat.Query)
-  const rangeEnd =
-    range === WakaApiRange.Yesterday || range === WakaApiRange.Last_7_Days_From_Yesterday
+  const hasCustomRange = Boolean(start && end)
+  const rangeStart = hasCustomRange
+    ? start
+    : dayjs()
+        .utc()
+        .subtract(WakaToShortcutApiRange[range as keyof typeof WakaToShortcutApiRange], 'd')
+        .format(DateFormat.Query)
+  const rangeEnd = hasCustomRange
+    ? end
+    : range === WakaApiRange.Yesterday || range === WakaApiRange.Last_7_Days_From_Yesterday
       ? dayjs().utc().subtract(1, 'd').format(DateFormat.Query)
       : dayjs().utc().format(DateFormat.Query)
 

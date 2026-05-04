@@ -12,8 +12,10 @@
   import AiLinesPieChart from '$lib/components/AiLinesPieChart/AiLinesPieChart.svelte'
   import AiTokenBarChart from '$lib/components/AiTokenBarChart/AiTokenBarChart.svelte'
   import TimelineChart from '$lib/components/TimelineChart/TimelineChart.svelte'
-  import { ApiEndpoint, WakaApiRange, type ValueOf } from '$lib/constants'
+  import { WakaApiRange, type ValueOf } from '$lib/constants'
+  import { buildSummariesUrl } from '$lib/helpers/buildSummariesUrl'
   import { DateFormat } from '$lib/helpers/timeHelpers'
+  import { customDateRange } from '$lib/stores/customDateRange'
   import { loading } from '$lib/stores/loading'
   import { selectedRange } from '$lib/stores/selectedRange'
   import dayjs from 'dayjs'
@@ -61,9 +63,8 @@
   const onWakaRange = async () => {
     loading.on()
     try {
-      summaries = await fetch(`${ApiEndpoint.SupabaseSummaries}?range=${$selectedRange}`).then(
-        (response) => response.json(),
-      )
+      const url = buildSummariesUrl($selectedRange, $customDateRange.start, $customDateRange.end)
+      summaries = await fetch(url).then((response) => response.json())
     } finally {
       loading.off()
     }
