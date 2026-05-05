@@ -223,7 +223,7 @@ export const createActiveHoursData = (durations: SupabaseDuration) =>
       const endHour = endTime.hour()
 
       if (startHour === endHour) {
-        acc[startHour] += endTime.diff(startTime, 'minutes')
+        acc[startHour] = Math.max(0, acc[startHour] + endTime.diff(startTime, 'minutes'))
         return acc
       }
 
@@ -236,7 +236,7 @@ export const createActiveHoursData = (durations: SupabaseDuration) =>
         const lowerMinute = startInterval.isBefore(startTime) ? startTime.minute() : 0
         const upperMinute = endInterval.isBefore(endTime) ? 60 : endTime.minute()
         const deltaMinutes = upperMinute - lowerMinute
-        acc[hour] += deltaMinutes
+        acc[hour] = Math.max(0, acc[hour] + deltaMinutes)
       }
       return acc
     }, Array(24).fill(0))
