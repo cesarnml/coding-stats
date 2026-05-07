@@ -25,6 +25,7 @@
 
   export let data: PageData
 
+  // eslint-disable-next-line no-useless-assignment
   let { summaries, durations, durationsByLanguage, profile } = data
 
   $: ({ summaries, durations, durationsByLanguage, profile } = data)

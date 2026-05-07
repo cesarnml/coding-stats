@@ -25,7 +25,7 @@
         })
         dispatch('wakarange')
       } catch (error) {
-        throw new Error('failed to fetch profile')
+        throw new Error('failed to fetch profile', { cause: error })
       }
     }
   })
