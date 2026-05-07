@@ -1,11 +1,13 @@
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import localeData from 'dayjs/plugin/localeData'
+import relativeTime from 'dayjs/plugin/relativeTime'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 
 dayjs.extend(duration)
 dayjs.extend(localeData)
+dayjs.extend(relativeTime)
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -17,6 +19,8 @@ export const DateFormat = {
   TwelveHour: 'h:mm a',
   Time: 'h:mm:ss a',
 } as const
+
+export const fromNow = (date: string) => dayjs(date).fromNow()
 
 export const secPerMin = 60
 export const secPerHour = 3600

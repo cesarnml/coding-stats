@@ -8,17 +8,16 @@
   import PieChart from '$lib/components/PieChart/PieChart.svelte'
   import ProjectList from '$lib/components/ProjectList.svelte'
   import StatsPanel from '$lib/components/Stats/StatsPanel.svelte'
-  import StatPanelItem from '$lib/components/Stats/StatPanelItem.svelte'
+  import AiStatPanel from './AiStatPanel.svelte'
   import AiLinesPieChart from '$lib/components/AiLinesPieChart/AiLinesPieChart.svelte'
   import AiTokenBarChart from '$lib/components/AiTokenBarChart/AiTokenBarChart.svelte'
   import TimelineChart from '$lib/components/TimelineChart/TimelineChart.svelte'
   import { WakaApiRange, type ValueOf } from '$lib/constants'
   import { buildSummariesUrl } from '$lib/helpers/buildSummariesUrl'
-  import { DateFormat } from '$lib/helpers/timeHelpers'
   import { customDateRange } from '$lib/stores/customDateRange'
   import { loading } from '$lib/stores/loading'
   import { selectedRange } from '$lib/stores/selectedRange'
-  import dayjs from 'dayjs'
+  import { fromNow } from '$lib/helpers/timeHelpers'
   import { onMount } from 'svelte'
   import type { PageData } from './$types'
   import { invalidate } from '$app/navigation'
@@ -31,7 +30,7 @@
   $: ({ summaries, durations, durationsByLanguage, profile } = data)
 
   $: maxDate = summaries.max_date ?? null
-  $: maxDateFormatted = maxDate ? dayjs(maxDate).format(DateFormat.Shortish) : null
+  $: maxDateFormatted = maxDate ? fromNow(maxDate) : null
 
   $: aiStats = summaries.data.reduce(
     (acc, day) => {
@@ -82,51 +81,13 @@
   <div class="flex items-center justify-between">
     <div>
       {#if maxDateFormatted}
-        <p class="text-xs text-base-content/50">Data through {maxDateFormatted}</p>
+        <p class="text-xs text-base-content/50">Updated {maxDateFormatted}</p>
       {/if}
     </div>
     <DateRangeSelect on:wakarange={onWakaRange} />
   </div>
   <StatsPanel {summaries} showFullPanel />
-  <div class="overflow-x-auto">
-    <div class="stats bg-chart-dark shadow-lg">
-      <StatPanelItem title="AI Additions" icon="mdi:robot-outline" label="ai-additions">
-        {#if aiStats.ai_additions === 0}
-          <span>—</span>
-        {:else}
-          {aiStats.ai_additions.toLocaleString()} lines
-        {/if}
-      </StatPanelItem>
-      <StatPanelItem title="AI Deletions" icon="mdi:robot-outline" label="ai-deletions">
-        {#if aiStats.ai_deletions === 0}
-          <span>—</span>
-        {:else}
-          {aiStats.ai_deletions.toLocaleString()} lines
-        {/if}
-      </StatPanelItem>
-      <StatPanelItem title="Human Additions" icon="mdi:account-outline" label="human-additions">
-        {#if aiStats.human_additions === 0}
-          <span>—</span>
-        {:else}
-          {aiStats.human_additions.toLocaleString()} lines
-        {/if}
-      </StatPanelItem>
-      <StatPanelItem title="Human Deletions" icon="mdi:account-outline" label="human-deletions">
-        {#if aiStats.human_deletions === 0}
-          <span>—</span>
-        {:else}
-          {aiStats.human_deletions.toLocaleString()} lines
-        {/if}
-      </StatPanelItem>
-      <StatPanelItem title="Total Tokens" icon="mdi:lightning-bolt-outline" label="total-tokens">
-        {#if aiStats.total_tokens === 0}
-          <span>—</span>
-        {:else}
-          {aiStats.total_tokens.toLocaleString()}
-        {/if}
-      </StatPanelItem>
-    </div>
-  </div>
+  <AiStatPanel {aiStats} />
   <ActivityChart {durations} itemType="project" />
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <AiLinesPieChart {summaries} />
