@@ -135,15 +135,6 @@ importers:
       svelte-eslint-parser:
         specifier: 1.6.1
         version: 1.6.1(svelte@5.55.5(@typescript-eslint/types@8.59.2))
-      svelte-fragment-component:
-        specifier: 1.2.0
-        version: 1.2.0(svelte@5.55.5(@typescript-eslint/types@8.59.2))
-      svelte-htm:
-        specifier: 1.2.0
-        version: 1.2.0(svelte@5.55.5(@typescript-eslint/types@8.59.2))
-      svelte-media:
-        specifier: 0.1.5
-        version: 0.1.5(svelte@5.55.5(@typescript-eslint/types@8.59.2))
       tailwindcss:
         specifier: ^4.2.4
         version: 4.2.4
@@ -292,10 +283,6 @@ packages:
     resolution: {integrity: sha512-b3ctpQwp+PROvU/cttc4OYl4MzfJUWy6FZg+PMXfzmt/+39iHVF0sDfqay8TQM3JA2EUOyKcFZt75jWriQijsA==}
     engines: {node: '>=6.0.0'}
     hasBin: true
-
-  '@babel/runtime-corejs3@7.28.4':
-    resolution: {integrity: sha512-h7iEYiW4HebClDEhtvFObtPmIvrd1SSfpI9EhOeKk4CtIK/ngBWFpuhCzhdmRKtg71ylcue+9I6dv54XYO1epQ==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.28.4':
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
@@ -993,14 +980,6 @@ packages:
     resolution: {integrity: sha512-3TASCATfw+ctICSb4ymrv7iCm0qJ0N9CarB+CZ7zIJ7KqNbwI5JjyDL1/sxoC0ccTO1Zyd1iQ+oqncPg5FJXaA==}
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
-
-  '@formatjs/intl-unified-numberformat@3.3.7':
-    resolution: {integrity: sha512-KnWgLRHzCAgT9eyt3OS34RHoyD7dPDYhRcuKn+/6Kv2knDF8Im43J6vlSW6Hm1w63fNq3ZIT1cFk7RuVO3Psag==}
-    deprecated: We have renamed the package to @formatjs/intl-numberformat
-
-  '@formatjs/intl-utils@2.3.0':
-    resolution: {integrity: sha512-KWk80UPIzPmUg+P0rKh6TqspRw0G6eux1PuJr+zz47ftMaZ9QDwbGzHZbtzWkl5hgayM/qrKRutllRC7D/vVXQ==}
-    deprecated: the package is rather renamed to @formatjs/ecma-abstract with some changes in functionality (primarily selectUnit is removed and we don't plan to make any further changes to this package
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2348,10 +2327,6 @@ packages:
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
-  commander@4.1.1:
-    resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
-    engines: {node: '>= 6'}
-
   comment-json@4.6.2:
     resolution: {integrity: sha512-R2rze/hDX30uul4NZoIZ76ImSJLFxn/1/ZxtKC1L77y2X1k+yYu1joKbAtMA2Fg3hZrTOiw0I5mwVMo0cf250w==}
     engines: {node: '>= 6'}
@@ -2370,12 +2345,6 @@ packages:
   cookie@1.1.1:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
     engines: {node: '>=18'}
-
-  core-js-pure@3.47.0:
-    resolution: {integrity: sha512-BcxeDbzUrRnXGYIVAGFtcGQVNpFcUhVjr6W7F8XktvQW2iJP9e66GP6xdKotCRFlrxBvNIBrhwKteRXqMV86Nw==}
-
-  core-js@3.47.0:
-    resolution: {integrity: sha512-c3Q2VVkGAUyupsjRnaNX6u8Dq2vAdzm9iuPj5FW0fRxzlxgq9Q39MDq10IvmQSpLgHQNyQzQmOo6bgGHmH3NNg==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -2489,9 +2458,6 @@ packages:
 
   devalue@5.8.0:
     resolution: {integrity: sha512-2zA9pFEsnp7vWBZbXF5JAgAq0fsUIt/1XPbRiAmRV3lp/2C3upzH+sADiyy66aFCihoLEsrQHxNM5w1gIDfsBg==}
-
-  dlv@1.1.3:
-    resolution: {integrity: sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==}
 
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
@@ -2633,9 +2599,6 @@ packages:
     resolution: {integrity: sha512-MMdARuVEQziNTeJD8DgMqmhwR11BRQ/cBP+pLtYdSTnf3MIO8fFeiINEbX36ZdNlfU/7A9f3gUw49B3oQsvwBA==}
     engines: {node: '>=4.0'}
 
-  estree-walker@0.9.0:
-    resolution: {integrity: sha512-12U47o7XHUX329+x3FzNVjCx3SHEzMF0nkDv7r/HnBzX/xNTKxajBk6gyygaxrAFtLj39219oMfbtxv4KpaOiA==}
-
   estree-walker@2.0.2:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
 
@@ -2662,9 +2625,6 @@ packages:
 
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
-
-  fast-memoize@2.5.2:
-    resolution: {integrity: sha512-Ue0LwpDYErFbmNnZSF0UH6eImUwDmogUO1jyE+JbN2gsQz/jICm1Ve7t9QT0rNSsfJt+Hs4/S3GnsDVjL4HVrw==}
 
   fast-string-truncated-width@3.0.3:
     resolution: {integrity: sha512-0jjjIEL6+0jag3l2XWWizO64/aZVtpiGE3t0Zgqxv0DPuxiMjvB3M24fCyhZUO4KomJQPj3LTSUnDP3GpdwC0g==}
@@ -2774,9 +2734,6 @@ packages:
   headers-polyfill@5.0.1:
     resolution: {integrity: sha512-1TJ6Fih/b8h5TIcv+1+Hw0PDQWJTKDKzFZzcKOiW1wJza3XoAQlkCuXLbymPYB8+ZQyw8mHvdw560e8zVFIWyA==}
 
-  htm@3.1.1:
-    resolution: {integrity: sha512-983Vyg8NwUE7JkZ6NmOqpCZ+sh1bKv2iYTlUkzlWmA5JD2acKoxd4KVxbMmxX/85mtfdnDmTFoNKcg5DGAvxNQ==}
-
   html-encoding-sniffer@6.0.0:
     resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -2839,16 +2796,6 @@ packages:
   ini@6.0.0:
     resolution: {integrity: sha512-IBTdIkzZNOpqm7q3dRqJvMaldXjDHWkEDfrwGEQTs5eaQMWV+djAhR+wahyNNMAa+qpbDUhBMVt4ZKNwpPm7xQ==}
     engines: {node: ^20.17.0 || >=22.9.0}
-
-  intl-format-cache@4.3.1:
-    resolution: {integrity: sha512-OEUYNA7D06agqPOYhbTkl0T8HA3QKSuwWh1HiClEnpd9vw7N+3XsQt5iZ0GUEchp5CW1fQk/tary+NsbF3yQ1Q==}
-
-  intl-messageformat-parser@3.6.4:
-    resolution: {integrity: sha512-RgPGwue0mJtoX2Ax8EmMzJzttxjnva7gx0Q7mKJ4oALrTZvtmCeAw5Msz2PcjW4dtCh/h7vN/8GJCxZO1uv+OA==}
-    deprecated: We've written a new parser that's 6x faster and is backwards compatible. Please use @formatjs/icu-messageformat-parser
-
-  intl-messageformat@7.8.4:
-    resolution: {integrity: sha512-yS0cLESCKCYjseCOGXuV4pxJm/buTfyCJ1nzQjryHmSehlptbZbn9fnlk1I9peLopZGGbjj46yHHiTAEZ1qOTA==}
 
   is-docker@3.0.0:
     resolution: {integrity: sha512-eljcgEDlEns/7AXFosB5K/2nCM4P7FQPkGc/DWLy5rmFEWvZayGrik1d9/QIY5nJ4f9YsVvBkA6kJpHn9rISdQ==}
@@ -3536,30 +3483,6 @@ packages:
       svelte:
         optional: true
 
-  svelte-fragment-component@1.2.0:
-    resolution: {integrity: sha512-rRstmz2oAy2Y/7X57tRaIAJdMYsa2K/MOx/YJN/ETb7Bj9U3vjgioz27dMG1hl2vAKFTtQpxDhC31ur7ECwpog==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      svelte: 3.x
-
-  svelte-htm@1.2.0:
-    resolution: {integrity: sha512-6YFNncbyXbCa3PSoMQc/JR6O/Yg1OgNioH5rMgE88RVPzU8714y2Urfenlqs+ryRS+Inv+m6TJ9jH3W7wDCS1A==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      svelte: 3.x
-
-  svelte-hyperscript@1.2.1:
-    resolution: {integrity: sha512-IVk91VDSOrhOUe0KI+Jfu7yCruUTOXgr4WysrK7hBNbFMDjeBOcPhk+LMYjUjdWxJx3+QSt3bUXj09YrUfRkjg==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      svelte: 3.x
-
-  svelte-media@0.1.5:
-    resolution: {integrity: sha512-qWo35IxY13S57BcLWK9eQPef9i80Od5XFcyTznIJy8km/i/Bmx0g22+MCPuyZeipG4Kz2cUSmsnwwEq0rTybKA==}
-    engines: {node: '>= 11.15.0'}
-    peerDependencies:
-      svelte: ^3.14.1
-
   svelte@5.55.5:
     resolution: {integrity: sha512-2uCs/LZ9us+AktdzYJM8OcxQ8qnPS1kpaO7syGT/MgO+6Qr1Ybl+TqPq+97u7PHqmmMlye5ZkoyXONy5mjjAbw==}
     engines: {node: '>=18'}
@@ -4114,10 +4037,6 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
-  '@babel/runtime-corejs3@7.28.4':
-    dependencies:
-      core-js-pure: 3.47.0
-
   '@babel/runtime@7.28.4': {}
 
   '@babel/template@7.27.2':
@@ -4641,12 +4560,6 @@ snapshots:
       minimatch: 10.2.5
     transitivePeerDependencies:
       - supports-color
-
-  '@formatjs/intl-unified-numberformat@3.3.7':
-    dependencies:
-      '@formatjs/intl-utils': 2.3.0
-
-  '@formatjs/intl-utils@2.3.0': {}
 
   '@humanfs/core@0.19.1': {}
 
@@ -6005,8 +5918,6 @@ snapshots:
 
   commander@2.20.3: {}
 
-  commander@4.1.1: {}
-
   comment-json@4.6.2:
     dependencies:
       array-timsort: 1.0.3
@@ -6019,10 +5930,6 @@ snapshots:
   cookie@0.6.0: {}
 
   cookie@1.1.1: {}
-
-  core-js-pure@3.47.0: {}
-
-  core-js@3.47.0: {}
 
   cross-spawn@7.0.6:
     dependencies:
@@ -6169,8 +6076,6 @@ snapshots:
   detect-libc@2.1.2: {}
 
   devalue@5.8.0: {}
-
-  dlv@1.1.3: {}
 
   dom-accessibility-api@0.5.16: {}
 
@@ -6378,8 +6283,6 @@ snapshots:
 
   estraverse@5.3.0: {}
 
-  estree-walker@0.9.0: {}
-
   estree-walker@2.0.2: {}
 
   estree-walker@3.0.3:
@@ -6397,8 +6300,6 @@ snapshots:
   fast-json-stable-stringify@2.1.0: {}
 
   fast-levenshtein@2.0.6: {}
-
-  fast-memoize@2.5.2: {}
 
   fast-string-truncated-width@3.0.3: {}
 
@@ -6491,8 +6392,6 @@ snapshots:
       '@types/set-cookie-parser': 2.4.10
       set-cookie-parser: 3.1.0
 
-  htm@3.1.1: {}
-
   html-encoding-sniffer@6.0.0:
     dependencies:
       '@exodus/bytes': 1.7.0
@@ -6560,17 +6459,6 @@ snapshots:
   indent-string@4.0.0: {}
 
   ini@6.0.0: {}
-
-  intl-format-cache@4.3.1: {}
-
-  intl-messageformat-parser@3.6.4:
-    dependencies:
-      '@formatjs/intl-unified-numberformat': 3.3.7
-
-  intl-messageformat@7.8.4:
-    dependencies:
-      intl-format-cache: 4.3.1
-      intl-messageformat-parser: 3.6.4
 
   is-docker@3.0.0: {}
 
@@ -7176,36 +7064,6 @@ snapshots:
       semver: 7.7.4
     optionalDependencies:
       svelte: 5.55.5(@typescript-eslint/types@8.59.2)
-
-  svelte-fragment-component@1.2.0(svelte@5.55.5(@typescript-eslint/types@8.59.2)):
-    dependencies:
-      svelte: 5.55.5(@typescript-eslint/types@8.59.2)
-
-  svelte-htm@1.2.0(svelte@5.55.5(@typescript-eslint/types@8.59.2)):
-    dependencies:
-      '@babel/runtime-corejs3': 7.28.4
-      core-js: 3.47.0
-      htm: 3.1.1
-      svelte: 5.55.5(@typescript-eslint/types@8.59.2)
-      svelte-fragment-component: 1.2.0(svelte@5.55.5(@typescript-eslint/types@8.59.2))
-      svelte-hyperscript: 1.2.1(svelte@5.55.5(@typescript-eslint/types@8.59.2))
-
-  svelte-hyperscript@1.2.1(svelte@5.55.5(@typescript-eslint/types@8.59.2)):
-    dependencies:
-      '@babel/runtime-corejs3': 7.28.4
-      core-js: 3.47.0
-      svelte: 5.55.5(@typescript-eslint/types@8.59.2)
-
-  svelte-media@0.1.5(svelte@5.55.5(@typescript-eslint/types@8.59.2)):
-    dependencies:
-      commander: 4.1.1
-      deepmerge: 4.3.1
-      dlv: 1.1.3
-      estree-walker: 0.9.0
-      fast-memoize: 2.5.2
-      intl-messageformat: 7.8.4
-      svelte: 5.55.5(@typescript-eslint/types@8.59.2)
-      tiny-glob: 0.2.9
 
   svelte@5.55.5(@typescript-eslint/types@8.59.2):
     dependencies:

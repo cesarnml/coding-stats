@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/svelte'
 import ProjectList from './ProjectList.svelte'
 import { formatMinimalWork, formatTime } from '$lib/helpers/timeHelpers'
-import { summaries } from 'src/mocks/testData'
+import { summaries } from '$src/mocks/testData'
 import { Url } from '$lib/constants'
 import { createProjectList } from './Stats/statHelpers'
 
