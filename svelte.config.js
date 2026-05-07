@@ -15,7 +15,10 @@ const config = {
       runtime: 'nodejs24.x',
     }),
     csrf: {
-      checkOrigin: false,
+      trustedOrigins: ['*'],
+    },
+    alias: {
+      $src: 'src',
     },
   },
   vitePlugin: {
