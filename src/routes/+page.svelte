@@ -30,7 +30,16 @@
   $: ({ durations, durationsByLanguage, profile } = data)
 
   $: maxDate = summaries.max_date ?? null
-  $: maxDateFormatted = maxDate ? fromNow(maxDate) : null
+  $: latestUpdateCandidates = [durations?.updated_at, durationsByLanguage?.updated_at, maxDate].filter(
+    (value): value is string => Boolean(value),
+  )
+  $: latestUpdatedAt =
+    latestUpdateCandidates.length > 0
+      ? latestUpdateCandidates.reduce((latest, current) =>
+          new Date(current).getTime() > new Date(latest).getTime() ? current : latest,
+        )
+      : null
+  $: maxDateFormatted = latestUpdatedAt ? fromNow(latestUpdatedAt) : null
 
   $: aiStats = summaries.data.reduce(
     (acc, day) => {
