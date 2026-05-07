@@ -23,6 +23,7 @@ const config = {
       toggleKeyCombo: 'alt-x',
       showToggleButton: 'always',
       toggleButtonPos: 'bottom-right',
+      launchEditor: 'code-insiders',
     },
   },
 }
