@@ -53,19 +53,24 @@
     const shortcutRange =
       WakaToShortcutApiRange[$selectedRange as keyof typeof WakaToShortcutApiRange]
     loading.on()
-    const responses = await Promise.all([
-      fetch(
-        `${ApiEndpoint.SupabaseProjectSummaries}?range=${$selectedRange}&project=${$page.params.projectName}`,
-      ),
-      fetch(
-        `${ApiEndpoint.SearchStories}?query=has:branch moved:${dayjs()
-          .subtract(shortcutRange, 'd')
-          .format(DateFormat.Query)}..*`,
-      ),
-    ])
-    summaries = await responses[0].json()
-    stories = await responses[1].json()
-    loading.off()
+    try {
+      const responses = await Promise.all([
+        fetch(
+          `${ApiEndpoint.SupabaseProjectSummaries}?range=${$selectedRange}&project=${$page.params.projectName}`,
+        ),
+        fetch(
+          `${ApiEndpoint.SearchStories}?query=has:branch moved:${dayjs()
+            .subtract(shortcutRange, 'd')
+            .format(DateFormat.Query)}..*`,
+        ),
+      ])
+      summaries = await responses[0].json()
+      stories = await responses[1].json()
+    } catch (err) {
+      console.error('Failed to fetch project data:', err)
+    } finally {
+      loading.off()
+    }
   }
 </script>
 

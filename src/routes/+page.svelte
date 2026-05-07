@@ -65,6 +65,8 @@
     try {
       const url = buildSummariesUrl($selectedRange, $customDateRange.start, $customDateRange.end)
       summaries = await fetch(url).then((response) => response.json())
+    } catch (err) {
+      console.error('Failed to fetch summaries:', err)
     } finally {
       loading.off()
     }
