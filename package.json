@@ -79,6 +79,7 @@
     "svelte-eslint-parser": "1.6.0",
     "svelte-fragment-component": "1.2.0",
     "svelte-htm": "1.2.0",
+    "svelte-kit-inspector": "1.0.3",
     "svelte-media": "0.1.5",
     "tailwindcss": "^4.2.4",
     "terser": "5.46.2",
