@@ -24,10 +24,10 @@
 
   export let data: PageData
 
-  // eslint-disable-next-line no-useless-assignment
-  let { summaries, durations, durationsByLanguage, profile } = data
+  let summariesOverride: typeof data.summaries | null = null
 
-  $: ({ summaries, durations, durationsByLanguage, profile } = data)
+  $: summaries = summariesOverride ?? data.summaries
+  $: ({ durations, durationsByLanguage, profile } = data)
 
   $: maxDate = summaries.max_date ?? null
   $: maxDateFormatted = maxDate ? fromNow(maxDate) : null
@@ -64,7 +64,7 @@
     loading.on()
     try {
       const url = buildSummariesUrl($selectedRange, $customDateRange.start, $customDateRange.end)
-      summaries = await fetch(url).then((response) => response.json())
+      summariesOverride = await fetch(url).then((response) => response.json())
     } catch (err) {
       console.error('Failed to fetch summaries:', err)
     } finally {
