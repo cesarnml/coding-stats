@@ -30,9 +30,11 @@
   $: ({ durations, durationsByLanguage, profile } = data)
 
   $: maxDate = summaries.max_date ?? null
-  $: latestUpdateCandidates = [durations?.updated_at, durationsByLanguage?.updated_at, maxDate].filter(
-    (value): value is string => Boolean(value),
-  )
+  $: latestUpdateCandidates = [
+    durations?.updated_at,
+    durationsByLanguage?.updated_at,
+    maxDate,
+  ].filter((value): value is string => Boolean(value))
   $: latestUpdatedAt =
     latestUpdateCandidates.length > 0
       ? latestUpdateCandidates.reduce((latest, current) =>
