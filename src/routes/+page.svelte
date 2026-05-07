@@ -84,7 +84,6 @@
     </div>
     <DateRangeSelect on:wakarange={onWakaRange} />
   </div>
-  <ActivityChart {durations} itemType="project" />
   <StatsPanel {summaries} showFullPanel />
   <div class="overflow-x-auto">
     <div class="stats bg-chart-dark shadow-lg">
@@ -125,6 +124,7 @@
       </StatPanelItem>
     </div>
   </div>
+  <ActivityChart {durations} itemType="project" />
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <AiLinesPieChart {summaries} />
     <AiTokenBarChart {summaries} />
