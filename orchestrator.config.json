@@ -5,8 +5,8 @@
   "packageManager": "pnpm",
   "ticketBoundaryMode": "cook",
   "reviewPolicy": {
-    "selfAudit": "skip_doc_only",
-    "codexPreflight": "skip_doc_only",
-    "externalReview": "disabled"
-  }
+    "subagentReview": "skip_doc_only",
+    "prReview": "skip_doc_only"
+  },
+  "prReviewAgents": [{ "login": "coderabbitai", "name": "coderabbit" }]
 }

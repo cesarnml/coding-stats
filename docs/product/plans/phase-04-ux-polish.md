@@ -1,6 +1,6 @@
 # Phase 04: UX Polish + AI Chart Redesign
 
-**Delivery status:** Not started — product definition only; no `docs/02-delivery/phase-04/` implementation plan until tickets are approved.
+**Delivery status:** Not started — product definition only; no `docs/product/delivery/phase-04/` implementation plan until tickets are approved.
 
 ## TL;DR
 

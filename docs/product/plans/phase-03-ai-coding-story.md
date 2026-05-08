@@ -1,6 +1,6 @@
 # Phase 3: AI Coding Story
 
-**Delivery status:** Not started — product definition only; no `docs/02-delivery/phase-03/` implementation plan until tickets are approved.
+**Delivery status:** Not started — product definition only; no `docs/product/delivery/phase-03/` implementation plan until tickets are approved.
 
 ## TL;DR
 

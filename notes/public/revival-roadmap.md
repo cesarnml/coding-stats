@@ -6,7 +6,7 @@
 
 ## Tier 1 — Unblock Production (✅ COMPLETE — Phase 01, merged 2026-05-02)
 
-**All 5 code PRs merged to main. Retrospective at `notes/public/phase-01-retrospective.md`.**
+**All 5 code PRs merged to main. Retrospective at `notes/public/phase-01-unblock-production-retrospective.md`.**
 
 ### ✅ Fix Sentry (#121 — P1.05)
 - Upgraded to latest stable Sentry packages
@@ -45,7 +45,7 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 ## Phase 02 — Tailwind v4 + daisyUI v5 Migration (✅ COMPLETE — merged ~2026-05-02)
 
-**Three tickets (P2.01–P2.03) merged to main. Product plan at `docs/01-product/phase-02-tailwind-v4-migration.md`.**
+**Three tickets (P2.01–P2.03) merged to main. Product plan at `docs/product/plans/phase-02-tailwind-v4-migration.md`.**
 
 ### ✅ Upgrade CSS pipeline (P2.01–P2.03)
 - `tailwindcss` v4 + `daisyui` v5 installed; `tailwind.config.ts` deleted
@@ -57,9 +57,9 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 ## Tier 2 — The AI Coding Story (✅ COMPLETE — Phase 03, merged 2026-05-03)
 
-**Both PRs (#130, #131) merged to main via closeout-stack. Retrospective at `notes/public/phase-03-retrospective.md`.**
+**Both PRs (#130, #131) merged to main via closeout-stack. Retrospective at `notes/public/phase-03-ai-coding-story-retrospective.md`.**
 
-> **Phase 03 product plan:** `docs/01-product/phase-03-ai-coding-story.md`
+> **Phase 03 product plan:** `docs/product/plans/phase-03-ai-coding-story.md`
 > **Grill-me decisions (2026-05-02):**
 > - `GET /api/v1/users/current/ai/heuristics` is paywalled — not used in Phase 03
 > - AI fields (`ai_additions`, `human_additions`, `ai_input_tokens`, etc.) are already present on the free-tier `durations` endpoint and stored in the daily `durations` blob scrape
@@ -124,7 +124,7 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 ## Phase 04 — UX Polish and AI Chart Redesign (✅ COMPLETE — 2026-05-04)
 
-**Five tickets (P4.01–P4.05), PRs #132–#136, stacked on Phase 03. Retrospective at `notes/public/phase-04-retrospective.md`.**
+**Five tickets (P4.01–P4.05), PRs #132–#136, stacked on Phase 03. Retrospective at `notes/public/phase-04-ux-polish-retrospective.md`.**
 
 ### ✅ Activity chart clamp + promote to top slot (P4.01)
 - Negative minute bars clamped to zero (client-side guard against ingestion model artifact)
@@ -332,7 +332,7 @@ What needs to happen is a **conversion pass**:
 
 | Roadmap item | Son-of-Anton artifact |
 |---|---|
-| Each tier → | `docs/02-delivery/phase-NN/implementation-plan.md` |
+| Each tier → | `docs/product/delivery/phase-NN/implementation-plan.md` |
 | Each bullet → | `ticket-NN-*.md` with Outcome / Red / Green / Refactor / Review Focus |
 | Tier title → | Phase exit condition prose |
 | "Known issues" section → | Stop conditions + explicit deferrals |
@@ -369,10 +369,10 @@ Quick wins fold into whichever phase they're adjacent to — they're not a phase
 5. Run grill-me on the revival roadmap                            ← refine plan before committing
    └── outputs locked decisions that become ticket files
 
-6. Convert roadmap tiers → docs/02-delivery/phase-NN/ structure   ← 2 hours, manual
+6. Convert roadmap tiers → docs/product/delivery/phase-NN/ structure   ← 2 hours, manual
    └── implementation-plan.md + ticket-NN-*.md per tier
 
-7. pnpm run deliver --plan docs/02-delivery/phase-01/implementation-plan.md start
+7. pnpm run deliver --plan docs/product/delivery/phase-01/implementation-plan.md start
    └── son-of-anton takes over from here
 ```
 

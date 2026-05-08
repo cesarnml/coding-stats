@@ -48,7 +48,7 @@ When this phase is complete:
 - ESLint passes with `eslint-plugin-svelte` + flat config
 - CLAUDE.md updated with fixed items
 - Revival roadmap Phase 01 marked complete
-- Retrospective written to `notes/public/phase-01-retrospective.md`
+- Retrospective written to `notes/public/phase-01-unblock-production-retrospective.md`
 
 **Phase 01 complete.** Next: Phase 02 — The AI Coding Story.
 

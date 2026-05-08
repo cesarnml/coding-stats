@@ -29,4 +29,4 @@ The app has been dormant ~2 years. Three specific gaps make it unsafe to build o
 
 ## Delivery
 
-See `docs/02-delivery/phase-01/implementation-plan.md`.
+See `docs/product/delivery/phase-01/implementation-plan.md`.

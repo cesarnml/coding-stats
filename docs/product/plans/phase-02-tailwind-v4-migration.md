@@ -1,6 +1,6 @@
 # Phase 2: Tailwind v4 + daisyUI v5 Migration
 
-**Delivery status:** In progress — implementation plan and tickets at `docs/02-delivery/phase-02/`.
+**Delivery status:** In progress — implementation plan and tickets at `docs/product/delivery/phase-02/`.
 
 ## TL;DR
 

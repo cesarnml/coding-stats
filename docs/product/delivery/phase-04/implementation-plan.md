@@ -4,7 +4,7 @@
 
 ## Epic
 
-Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/01-product/phase-04-ux-polish.md`.
+Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/product/plans/phase-04-ux-polish.md`.
 
 ## Product contract
 

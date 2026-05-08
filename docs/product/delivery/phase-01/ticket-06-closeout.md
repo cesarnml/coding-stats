@@ -6,7 +6,7 @@ Size: 1 point
 
 - `CLAUDE.md` updated to reflect any decisions or constraints that surfaced during phase 01
 - `notes/public/revival-roadmap.md` updated: phase 01 marked complete, any deferrals logged
-- Retrospective written to `notes/public/phase-01-retrospective.md`
+- Retrospective written to `notes/public/phase-01-unblock-production-retrospective.md`
 - Implementation plan exit condition confirmed
 
 ## Doc Update Checklist
@@ -22,4 +22,4 @@ All Phase 01 tickets (P1.01–05) completed and merged. Updated:
 - **revival-roadmap.md** — marked Tier 1 complete with PR references (#117–121); flagged post-Phase 01 follow-ups (Node 20 bump, sourcemap validation, last_scraped_at)
 - **implementation-plan.md** — confirmed exit condition met; all scope items shipped
 
-Retrospective written to `notes/public/phase-01-retrospective.md` (covers what went well, pain points, surprises, and what to do differently in Phase 02).
+Retrospective written to `notes/public/phase-01-unblock-production-retrospective.md` (covers what went well, pain points, surprises, and what to do differently in Phase 02).

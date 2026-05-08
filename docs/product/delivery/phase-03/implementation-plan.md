@@ -4,7 +4,7 @@
 
 ## Epic
 
-Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/01-product/phase-03-ai-coding-story.md`.
+Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/product/plans/phase-03-ai-coding-story.md`.
 
 ## Product contract
 
