@@ -24,6 +24,7 @@ settings.json
 
 # Local agent/config secrets
 .mcp.json
+.codex/
 
 # Generated/local tooling output
 graphify-out
