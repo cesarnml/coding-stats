@@ -58,7 +58,10 @@ import {
   generateRunDeliverInvocation,
   type ResolvedOrchestratorConfig,
 } from '../runtime-config';
-import { normalizeDeliveryStateFromPersisted } from '../state';
+import {
+  normalizeDeliveryStateFromPersisted,
+  syncStateFromScratch,
+} from '../state';
 import {
   advanceToNextTicket,
   buildTicketHandoff,
@@ -139,7 +142,7 @@ describe('delivery orchestrator', () => {
     ]);
   });
 
-  it('parses ticket scope relative to the provided repo root', async () => {
+  it('parses ticket type and scope relative to the provided repo root', async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), 'pr-title-scope-'));
     const planDir = join(repoRoot, 'docs/product/delivery/phase-99');
 
@@ -147,7 +150,9 @@ describe('delivery orchestrator', () => {
       await mkdir(planDir, { recursive: true });
       await writeFile(
         join(planDir, 'ticket-01-fix-relative-scope.md'),
-        ['# P9.01 Relative Scope', '', 'Scope: CLI', ''].join('\n'),
+        ['# P9.01 Relative Scope', '', 'Type: FIX', 'Scope: CLI', ''].join(
+          '\n',
+        ),
       );
 
       const tickets = parsePlan(
@@ -173,6 +178,7 @@ describe('delivery orchestrator', () => {
           id: 'P9.01',
           title: 'Relative Scope',
           slug: 'relative-scope',
+          type: 'fix',
           scope: 'cli',
           ticketFile:
             'docs/product/delivery/phase-99/ticket-01-fix-relative-scope.md',
@@ -587,12 +593,13 @@ describe('delivery orchestrator', () => {
     ).toBe(false);
   });
 
-  it('uses the repo delivery PR title format', () => {
+  it('uses the repo delivery PR title format from ticket metadata', () => {
     expect(
       buildPullRequestTitle({
         id: 'P3.02',
         title: 'Reconcile Torrent Lifecycle From Transmission',
         ticketFile: 'ticket-02-feat-torrent-lifecycle.md',
+        type: 'feat',
       }),
     ).toBe('feat: reconcile torrent lifecycle from transmission [P3.02]');
     expect(
@@ -600,6 +607,7 @@ describe('delivery orchestrator', () => {
         id: 'P3.02',
         title: 'Reconcile Torrent Lifecycle From Transmission',
         ticketFile: 'ticket-02-feat-torrent-lifecycle.md',
+        type: 'feat',
         scope: 'transmission',
       }),
     ).toBe(
@@ -607,12 +615,13 @@ describe('delivery orchestrator', () => {
     );
   });
 
-  it('derives PR title from ticket filename type and scope field', () => {
+  it('builds PR title from ticket metadata type and scope field', () => {
     expect(
       buildPullRequestTitle({
         id: 'P1.01',
         title: 'Fix state.json sync in advance',
         ticketFile: 'ticket-01-fix-state-sync.md',
+        type: 'fix',
         scope: 'cli',
       }),
     ).toBe('fix(cli): fix state.json sync in advance [P1.01]');
@@ -621,22 +630,95 @@ describe('delivery orchestrator', () => {
         id: 'P1.01',
         title: 'Fix state.json sync in advance',
         ticketFile: 'ticket-01-fix-state-sync.md',
+        type: 'fix',
       }),
     ).toBe('fix: fix state.json sync in advance [P1.01]');
+  });
+
+  it('does not derive PR title type from ticket filename', () => {
     expect(
       buildPullRequestTitle({
         id: 'P1.01',
         title: 'Fix state.json sync in advance',
-        ticketFile: 'ticket-01-FIX-state-sync.md',
+        ticketFile: 'ticket-01-fix-state-sync.md',
       }),
     ).toBe('feat: fix state.json sync in advance [P1.01]');
-    expect(
-      buildPullRequestTitle({
-        id: 'P1.01',
-        title: 'Fix state.json sync in advance',
-        ticketFile: 'no-convention-here.md',
+  });
+
+  const syncDeps = {
+    cwd: '/tmp',
+    defaultBranch: 'main',
+    deriveBranchName: (d: { id: string; slug: string }) =>
+      `agents/${d.id.toLowerCase()}-${d.slug}`,
+    deriveWorktreePath: (cwd: string, id: string) =>
+      `${cwd}/worktree-${id.toLowerCase()}`,
+  };
+
+  it('includes type and scope in PR title when TicketDefinition has both', () => {
+    const state = syncStateFromScratch(
+      [
+        {
+          id: 'P5.03',
+          title: 'PR Scope Propagation From Ticket Metadata',
+          slug: 'pr-scope-propagation-from-ticket-metadata',
+          ticketFile:
+            'docs/product/delivery/phase-05/ticket-03-pr-scope-propagation.md',
+          type: 'fix',
+          scope: 'pr-metadata',
+        },
+      ],
+      createOptions({
+        planPath: 'docs/product/delivery/phase-05/implementation-plan.md',
       }),
-    ).toBe('feat: fix state.json sync in advance [P1.01]');
+      undefined,
+      syncDeps,
+    );
+    expect(buildPullRequestTitle(state.tickets[0])).toBe(
+      'fix(pr-metadata): pr scope propagation from ticket metadata [P5.03]',
+    );
+  });
+
+  it('type from ticket metadata overrides filename-derived type', () => {
+    const state = syncStateFromScratch(
+      [
+        {
+          id: 'P5.03',
+          title: 'PR Scope Propagation From Ticket Metadata',
+          slug: 'pr-scope-propagation-from-ticket-metadata',
+          ticketFile:
+            'docs/product/delivery/phase-05/ticket-03-pr-scope-propagation.md',
+          type: 'fix',
+        },
+      ],
+      createOptions({
+        planPath: 'docs/product/delivery/phase-05/implementation-plan.md',
+      }),
+      undefined,
+      syncDeps,
+    );
+    expect(buildPullRequestTitle(state.tickets[0])).toBe(
+      'fix: pr scope propagation from ticket metadata [P5.03]',
+    );
+  });
+
+  it('omits scope parens in PR title when TicketDefinition has no scope', () => {
+    const state = syncStateFromScratch(
+      [
+        {
+          id: 'P5.03',
+          title: 'PR Scope Propagation From Ticket Metadata',
+          slug: 'pr-scope-propagation-from-ticket-metadata',
+          ticketFile:
+            'docs/product/delivery/phase-05/ticket-03-pr-scope-propagation.md',
+        },
+      ],
+      createOptions({
+        planPath: 'docs/product/delivery/phase-05/implementation-plan.md',
+      }),
+      undefined,
+      syncDeps,
+    );
+    expect(buildPullRequestTitle(state.tickets[0])).not.toContain('(');
   });
 
   it('resolves the notifier from Telegram env vars', () => {

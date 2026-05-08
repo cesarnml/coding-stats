@@ -44,6 +44,7 @@ export function parsePlan(
     return {
       ...ticket,
       slug: slugify(ticket.title),
+      type: parseTicketType(resolve(cwd ?? '', ticketFile)),
       scope: parseTicketScope(resolve(cwd ?? '', ticketFile)),
       ticketFile,
     };
@@ -163,6 +164,16 @@ async function listImplementationPlans(
     )
     .filter((planPath) => existsSync(resolve(cwd, planPath)))
     .sort();
+}
+
+function parseTicketType(ticketFilePath: string): string | undefined {
+  try {
+    const content = readFileSync(ticketFilePath, 'utf8');
+    const match = content.match(/^Type:\s*(.+)$/im);
+    return match ? match[1]!.trim().toLowerCase() : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function parseTicketScope(ticketFilePath: string): string | undefined {

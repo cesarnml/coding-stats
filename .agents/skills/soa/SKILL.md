@@ -93,7 +93,7 @@ Take the approved `docs/product/plans/phase-N.md` and produce a detailed deliver
 1. Read the product plan at the given path (or ask for it). Refuse to proceed if no approved product plan exists — send the developer to `/soa plan` first.
 2. **Invoke the `soa-grill-me` skill** in **Mode 2 (delivery decomposition)** — pass the product plan and focus on: schema/migration strategy, API route structure, ticket granularity, PR slice boundaries, dependency order, test strategy, exit conditions per ticket.
 3. **Stop and seek developer approval of the ticket list** before writing files.
-4. Once approved, write `docs/product/delivery/phase-N/implementation-plan.md` and individual `ticket-NN-*.md` files per the format in `.son-of-anton/docs/template/templates/ticket.template.md`.
+4. Before writing any ticket file, read the canonical template at `docs/template/templates/ticket.template.md`. Do not use existing ticket files as format references — they may predate the current template and will produce format drift if copied. Then write `docs/product/delivery/phase-N/implementation-plan.md` and individual `ticket-NN-*.md` files per that template.
 
 ---
 
@@ -106,7 +106,7 @@ Begin orchestrated delivery of the named phase or epic.
 Read these files before doing anything else — they are gospel:
 
 - `.son-of-anton/docs/template/overview/start-here.md`
-- `.son-of-anton/docs/template/delivery/delivery-orchestrator.md`
+- `.son-of-anton/docs/template/delivery/delivery-orchestrator.md` (read in full)
 - `.son-of-anton/docs/template/delivery/son-of-anton.md`
 - `.son-of-anton/orchestrator.config.json`
 
@@ -126,7 +126,7 @@ Then:
 
 Resume delivery after a stopping point.
 
-1. Read `.son-of-anton/docs/template/delivery/delivery-orchestrator.md` and `orchestrator.config.json`.
+1. Read `.son-of-anton/docs/template/delivery/delivery-orchestrator.md` in full and `orchestrator.config.json`.
 2. Check `state.json` for the last recorded position, or run `git worktree list` to identify active worktrees.
 3. Read the handoff notes from the last stopping point.
 4. Continue from exactly where delivery left off — do not restart, do not re-plan.

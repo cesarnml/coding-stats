@@ -96,7 +96,7 @@ Reset context (/clear), then resume with:
 
 **When `subagentReview` is `"required"`:**
 
-1. Invoke the review subagent via the Agent tool using the `reviewSubagentOverride` value (e.g. `subagent_type: "codex:codex-rescue"`). The subagent will patch what it finds autonomously.
+1. Invoke the review subagent via the Agent tool using the `reviewSubagentOverride` value (e.g. `subagent_type: "codex:codex-rescue"`). The subagent will patch what it finds autonomously. The subagent prompt must be **adversarial**: assume the implementation has holes and find them. Explicitly instruct the subagent: "Do not rationalize away anything you notice — flag it and let the human decide." A checklist of 'did the ticket spec land?' is not a review.
 2. **Stay idle. No read-ahead.** Wait for the subagent to complete before doing anything else — same discipline as the external review window.
 3. Record: `bun run deliver --plan <plan> subagent-review [clean|patched]`
 
@@ -109,6 +109,8 @@ The CLI is a state recorder only — never invoke the subagent from within the C
 **When `subagentReview` is `"disabled"`**: skip the step entirely.
 
 If the configured subagent is unavailable, set `subagentReview: "disabled"` in `orchestrator.config.json` to bypass the gate.
+
+**Default when `reviewSubagentOverride` is absent:** use the same agent type as the primary agent (same-type default). The `reviewSubagentOverride` value is canonical when present; the `codex:codex-rescue` examples above are illustrative.
 
 ---
 

@@ -26,6 +26,7 @@ export type TicketDefinition = {
   id: string;
   title: string;
   slug: string;
+  type?: string;
   scope?: string;
   ticketFile: string;
 };

@@ -2,6 +2,23 @@
 
 This repo now includes a small repo-local delivery orchestrator for stacked ticket work.
 
+**Read this document in full before executing any orchestrator command.** The step order below is mandatory and must not be inferred from first principles.
+
+## Critical Step Order
+
+For every code ticket, these steps must run in this exact sequence:
+
+1. `start` — create worktree, materialize handoff
+2. Implement + verify (`bun run verify:quiet` inner loop, then `bun run ci:quiet` before open-pr)
+3. `post-verify [clean|patched]` — self-audit
+4. `subagent-review [clean|patched]` — second AI pass (required for code tickets when `subagentReview` is not `"disabled"`)
+5. `open-pr` — publish the PR (never before subagent-review completes)
+6. `poll-review` — external AI review window
+7. `record-review` — only needed when poll-review leaves ticket in `needs_patch`
+8. `advance` — move to next ticket
+
+**subagent-review must precede open-pr. open-pr must precede poll-review.** Skipping or reordering these steps is not supported.
+
 ## Stance
 
 The orchestrator is repo tooling, not app runtime code.

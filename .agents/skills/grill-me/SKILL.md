@@ -29,6 +29,8 @@ Questions stay at the product level:
 **Output:** An approved ticket breakdown ready to write as `implementation-plan.md` + individual ticket files.
 **Hard stop:** Do NOT write any files or invoke the orchestrator until the developer explicitly approves the breakdown.
 
+> **Before writing any ticket file:** Read the canonical ticket template at `docs/template/templates/ticket.template.md`. Do not reference existing delivery docs for format — they may predate the current template and will produce format drift if copied.
+
 Questions go deep on implementation:
 
 - Schema design and migration strategy

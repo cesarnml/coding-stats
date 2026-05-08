@@ -25,7 +25,7 @@ export function getUsage(runDeliverInvocation: string): string {
     '  repair-state',
     '  start [ticket-id]',
     '  post-verify [ticket-id] [clean|patched] [patch-commit-sha ...]',
-    '  subagent-review [ticket-id] [clean|patched] [patch-commit-sha ...]',
+    '  subagent-review [ticket-id] [clean|patched|skipped] [patch-commit-sha ...]',
     '  open-pr [ticket-id]',
     '  poll-review [ticket-id]',
     '  reconcile-late-review <ticket-id>',
