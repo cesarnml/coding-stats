@@ -1,5 +1,5 @@
 ---
-name: grill-me
+name: soa-grill-me
 description: Stress-test a plan or design by questioning every key assumption until the decision tree is resolved.
 ---
 
@@ -9,26 +9,28 @@ Question the plan aggressively until key decisions, dependencies, and tradeoffs 
 
 This skill is invoked in two distinct contexts. **Read the invoking command before asking a single question.**
 
-### Mode 1: `/soa plan` → Product Plan (`docs/01-product/phase-N.md`)
+### Mode 1: `/soa plan` → Product Plan (`docs/product/plans/phase-N.md`)
 
-**What:** Stress-test scope, goals, and success criteria — the *what* and *why*.
-**Output:** A filled-out `docs/01-product/phase-N.md` using the product-plan template.
-**Hard stop:** Do NOT ask about schema design, API routes, ticket breakdown, PR slicing, or implementation details. Those belong in Mode 2. If the developer drifts toward implementation, redirect: *"That's a decompose question — let's lock the product plan first."*
+**What:** Stress-test scope, goals, and success criteria — the _what_ and _why_.
+**Output:** A filled-out `docs/product/plans/phase-N.md` using the product-plan template.
+**Hard stop:** Do NOT ask about schema design, API routes, ticket breakdown, PR slicing, or implementation details. Those belong in Mode 2. If the developer drifts toward implementation, redirect: _"That's a decompose question — let's lock the product plan first."_
 
 Questions stay at the product level:
+
 - What problem does this phase solve?
 - What does success look like to a user?
 - What is explicitly out of scope?
 - What are the dependencies on other phases or external systems?
 - What could kill this phase before it ships?
 
-### Mode 2: `/soa decompose` → Delivery Plan (`docs/02-delivery/phase-N/`)
+### Mode 2: `/soa decompose` → Delivery Plan (`docs/product/delivery/phase-N/`)
 
-**What:** Stress-test implementation approach, ticket granularity, and sequencing — the *how*.
+**What:** Stress-test implementation approach, ticket granularity, and sequencing — the _how_.
 **Output:** An approved ticket breakdown ready to write as `implementation-plan.md` + individual ticket files.
 **Hard stop:** Do NOT write any files or invoke the orchestrator until the developer explicitly approves the breakdown.
 
 Questions go deep on implementation:
+
 - Schema design and migration strategy
 - API route structure and failure modes
 - Ticket sequencing and PR slice boundaries
