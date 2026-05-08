@@ -9,6 +9,7 @@ Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/product/plans/p
 ## Product contract
 
 When this phase is complete:
+
 - The Activity chart is the first thing a visitor sees and never renders a bar below zero
 - Every chart in the app shows a meaningful empty state instead of blank axes, broken needles, or grey circles when no data exists for the selected range
 - The AI section shows a 5-stat row (ai_additions, ai_deletions, human_additions, human_deletions, total tokens) plus two half-width panels: a lines pie chart and an adaptive token bar chart

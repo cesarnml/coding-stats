@@ -18,6 +18,7 @@ Size: 1 point
 ## Rationale
 
 All Phase 01 tickets (P1.01–05) completed and merged. Updated:
+
 - **CLAUDE.md** — removed 6 fixed issues (Sentry, getSession/getUser, axios, eslint-plugin-svelte3, coverage-c8, flat config); added 2 remaining issues (CI Node bump deferred, Sentry sourcemaps deferred)
 - **revival-roadmap.md** — marked Tier 1 complete with PR references (#117–121); flagged post-Phase 01 follow-ups (Node 20 bump, sourcemap validation, last_scraped_at)
 - **implementation-plan.md** — confirmed exit condition met; all scope items shipped

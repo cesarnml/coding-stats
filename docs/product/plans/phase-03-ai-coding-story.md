@@ -7,11 +7,13 @@
 **Goal:** Surface AI vs. human coding activity on the main dashboard so the portfolio tells a transparent, differentiated story about how work gets done.
 
 **Ships:**
+
 - "AI vs Human Lines" stacked bar chart on `/`, scoped to the selected date range
 - "AI Coding Activity" stat panel on `/` showing `ai_additions` total for the range
 - Graceful empty state on both with a note that AI data accumulates daily from ship date
 
 **Defers:**
+
 - `/ai` detail route with per-file breakdown and `top_files` table (Tier 5)
 - `ai/heuristics` endpoint integration — paywalled on current plan
 - Extracting AI fields from the `durations` JSON blob into typed columns (Tier 3 — Data Model Health covers all blob columns)

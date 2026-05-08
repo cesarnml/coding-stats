@@ -9,6 +9,7 @@ Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/product/plans/p
 ## Product contract
 
 When this phase is complete:
+
 - The main dashboard at `/` shows an "AI vs Human Lines" stacked bar chart scoped to the selected date range
 - A stat panel displays total `ai_additions` for the selected range alongside existing panels
 - Both components show a graceful empty state when no AI data exists for the range
@@ -40,6 +41,7 @@ The main dashboard shows an "AI vs Human Lines" stacked bar chart and an "AI Cod
 ## CI Baseline
 
 Recorded at P3.01 start on `main` (2026-05-03):
+
 - `pnpm check`: 0 errors, 28 warnings (self-closing tag ambiguity + missing `@types/node` — pre-existing, not introduced by this phase)
 
 ## Review Rules

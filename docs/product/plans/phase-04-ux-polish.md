@@ -7,6 +7,7 @@
 **Goal:** Make the dashboard client-presentable — fix broken charts, surface a data freshness signal, redesign the AI section into two focused panels, and unlock arbitrary date range exploration.
 
 **Ships:**
+
 - Activity chart promoted to top position; AI section replaced by two half-width charts (lines pie + token bar)
 - Consistent empty state component used across all charts
 - Activity chart bars clamped to `>= 0` (defensive chart-side fix)
@@ -14,6 +15,7 @@
 - Custom date range picker backed by Supabase summaries
 
 **Defers:**
+
 - `is_finalized` column + ingestion contract rewrite → Tier 3 data-model phase
 - `HOUR_GOAL` configurability + Discipline Gauge goal editing → post-auth-decision
 - Auth removal → separate phase

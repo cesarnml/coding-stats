@@ -9,6 +9,7 @@ Tier 1 of `notes/public/revival-roadmap.md`.
 ## Product contract
 
 When this phase is complete:
+
 - Sentry is receiving errors from production
 - Auth cookie validation is server-verified (not client-trusted)
 - `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` are absent from `package.json`
@@ -42,6 +43,7 @@ When this phase is complete:
 ## Exit Condition
 
 ✅ **Exit condition confirmed met (2026-05-02):**
+
 - All 6 PRs merged to main (#117–121 + retrospective)
 - Sentry dashboard receiving production errors
 - `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` removed from `package.json`

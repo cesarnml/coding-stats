@@ -9,36 +9,43 @@
 **All 5 code PRs merged to main. Retrospective at `notes/public/phase-01-unblock-production-retrospective.md`.**
 
 ### ✅ Fix Sentry (#121 — P1.05)
+
 - Upgraded to latest stable Sentry packages
 - Uncommented both client and server hooks
 - Sourcemap uploads disabled (deferred to standalone PR)
 - Errors now flowing to Sentry dashboard in production
 
 ### ✅ Swap `getSession()` → `getUser()` in hooks.server.ts (#117 — P1.01)
+
 - Migrated to server-side JWT validation
 - Closes auth surface vulnerability
 
 ### ✅ Drop zombie dependencies (#118–120 — P1.02–04)
+
 - `eslint-plugin-svelte3` → `eslint-plugin-svelte` (full migration to flat config) — #119
 - `@vitest/coverage-c8` removed (coverage now via `@vitest/coverage-v8`) — #118
 - `axios` → native `fetch` for all internal API calls (7 files migrated) — #120
 - MSW v1→v2 API incompatibility resolved (migrated to `http.get` / `HttpResponse`)
 
 ### ✅ ESLint flat config migration (#119 — P1.03)
+
 - ESLint `eslint.config.js` flat config + `eslint-plugin-svelte` complete
 - Lint job ready; Test job awaits CI Node 20.x bump
 
 **Exit condition met:** Sentry receiving errors. Auth server-validated. Zero `axios`/`eslint-plugin-svelte3`/`@vitest/coverage-c8` in `package.json`. ESLint runs with flat config.
 
 **Follow-up (post-Phase 01):**
+
 1. ✅ Bump CI Node to 24 and re-enable Test + Lint jobs (merged b48db57)
 2. ✅ Validate Sentry error traces are readable without sourcemaps — confirmed 2026-05-02. File names and line numbers visible in production errors without sourcemap upload.
 3. Add `last_scraped_at` to `profiles` table (Phase 02 or 03)
 
 ### ✅ CI — Lint and Test jobs re-enabled (merged b48db57)
+
 Node bumped to 24, both Lint and Test jobs active on push/PR to main.
 
 ### CI — Playwright workflow still disabled
+
 Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview deployments are password-protected, so `wait-for-vercel-preview` always times out with 401. Fix: either make previews public, or pass a Vercel bypass token (`VERCEL_AUTOMATION_BYPASS_SECRET`) as a workflow secret so the health-check step gets a 200.
 
 ---
@@ -48,6 +55,7 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 **Three tickets (P2.01–P2.03) merged to main. Product plan at `docs/product/plans/phase-02-tailwind-v4-migration.md`.**
 
 ### ✅ Upgrade CSS pipeline (P2.01–P2.03)
+
 - `tailwindcss` v4 + `daisyui` v5 installed; `tailwind.config.ts` deleted
 - `app.postcss` → `app.css`; all config moved to CSS-first `@import` / `@plugin` / `@theme`
 - `autoprefixer`, `@tailwindcss/forms`, `@tailwindcss/typography` removed
@@ -61,23 +69,27 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 
 > **Phase 03 product plan:** `docs/product/plans/phase-03-ai-coding-story.md`
 > **Grill-me decisions (2026-05-02):**
+>
 > - `GET /api/v1/users/current/ai/heuristics` is paywalled — not used in Phase 03
 > - AI fields (`ai_additions`, `human_additions`, `ai_input_tokens`, etc.) are already present on the free-tier `durations` endpoint and stored in the daily `durations` blob scrape
 > - Phase 03 ships against the existing blob — no new table, no new cron
 > - Backfill is forward-only on the free plan (durations limited to last 7 days)
 
 ### ✅ Wire in WakaTime AI data endpoints (P3.01, P3.02)
+
 - Typed `WakaGrandTotal` and all AI fields on `summaries.grand_total` and `durations` — P3.01
 - AI vs. human activity chart (stacked bar) added to dashboard — P3.02
 - AI coding activity stat panel added to dashboard — P3.02
 - Sourced entirely from existing page data; no new route, no new Supabase read
 
 **Follow-up (post-Phase 03):**
+
 1. Add orchestrator safeguard: sync `state.json`, `handoffs/`, `reviews/` to primary checkout when each ticket reaches `done`
 2. Add repo policy: validate schema-affecting changes against a live WakaTime payload when public docs may have drifted
 3. Switch `closeout-stack` from `bun run …` to direct script execution in fresh working trees
 
 ### Historical AI heuristics backfill (future — requires premium subscription)
+
 - `GET /api/v1/users/current/ai/heuristics` returns richer data: `follow_up_events`, `files_with_follow_up_percent`, `top_files[]` with per-file AI/human line breakdown
 - This endpoint is paywalled — returns `{"error": "You've discovered a premium feature!"}` on the free plan
 - **Plan:** Subscribe for one month to unlock years of historical data. Use the subscription window to slowly backfill `ai_heuristics` data into a new Supabase table, then unsubscribe.
@@ -86,6 +98,7 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 - **Do not store the API key in a cron after unsubscribing** — the endpoint will 402 and the cron will log noise. Disable the `ai_heuristics` cron route after the backfill window closes; re-enable if subscribing again.
 
 ### Add AI coding share to the client-facing pitch
+
 - Total hours + language breakdown + AI usage rate = the strongest version of the "show clients my effort" story
 - Positions you as transparent about AI use, not hiding it
 - The `/ai` detail route (Tier 5) expands this with per-file breakdown once the heuristics data is backfilled
@@ -95,12 +108,14 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 ## Tier 3 — Data Model Health
 
 ### Migrate JSON blob columns to typed columns
+
 - `summaries.languages`, `summaries.grand_total`, `durations.data` etc. are opaque JSON
-- Can't index, filter, or aggregate server-side without `->>`  gymnastics
+- Can't index, filter, or aggregate server-side without `->>` gymnastics
 - Migration path: add typed columns, backfill from JSON, drop blobs
 - Unlocks: server-side filtering by language/project, proper aggregation queries, faster loads
 
 ### Confirm the scraper is alive and monitored
+
 - The WakaTime → Supabase ingestion script is not in this repo
 - If it silently fails, stats go stale with no alert
 - At minimum: add a `last_scraped_at` timestamp to `profiles` and surface a stale-data warning in the UI if > 24h
@@ -110,11 +125,13 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 ## Tier 4 — Simplification
 
 ### Evaluate the Shortcut integration
+
 - Full OpenAPI-generated client, iteration routes, WakaTime↔Shortcut range mappings
 - Shortcut is not a tool most clients use — this is permanent maintenance surface for narrow value
 - Decision: keep behind a feature flag, or extract to a separate optional integration
 
 ### Consolidate dev workflow scripts (already done)
+
 - `dev:fresh` — full remote sync + reset + seed + types + vite
 - `dev:resume` — local-only restart (skip remote dump)
 - `sb:stop` — convenience wrapper
@@ -127,29 +144,35 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 **Five tickets (P4.01–P4.05), PRs #132–#136, stacked on Phase 03. Retrospective at `notes/public/phase-04-ux-polish-retrospective.md`.**
 
 ### ✅ Activity chart clamp + promote to top slot (P4.01)
+
 - Negative minute bars clamped to zero (client-side guard against ingestion model artifact)
 - Chart promoted above the stats panel to the top of the dashboard
 
 ### ✅ EmptyState component + apply to 8 charts (P4.02)
+
 - Consistent `EmptyState` component: "No data for this range" message across all chart views
 - Applied to: ActivityChart, BreakdownChart, WeekdaysBarChart, StackedBarChart (×2), PieChart, DailyGauge, TimelineChart (×2)
 
 ### ✅ AI section redesign (P4.03)
+
 - Replaced the single stacked-bar AI chart with a focused 5-stat row (AI additions, AI deletions, human additions, human deletions, total tokens)
 - Added `AiLinesPieChart` and `AiTokenBarChart` as dedicated panels
 - Last-remainder correction applied to pie slices to guarantee 100% sum
 
 ### ✅ Data freshness signal (P4.04)
+
 - `max_date` added to summaries route via global `MAX(date)` query (independent of range filter)
 - "Data through [date]" displayed in dashboard header; hidden when table is empty
 
 ### ✅ Custom date range picker (P4.05)
+
 - `WakaApiRange.Custom` entry added (not in `WakaToShortcutApiRange` — bypasses shortcut mapping)
 - `customDateRange` store holds `{ start: string | null, end: string | null }`
 - Native `<input type="date">` inputs rendered when Custom is selected; profile sync skipped for Custom
 - `buildSummariesUrl` helper routes to `?start=&end=` or `?range=` depending on mode
 
 **Deferred from Phase 04:**
+
 - Full `{start,end}` store migration for all named ranges — requires `profiles.range` schema migration (Tier 3, do not attempt without it)
 - `is_finalized` ingestion contract for `durations` (Tier 3, schema migration required)
 - `last_scraped_at` on `profiles` + stale-data warning (Tier 3)
@@ -160,7 +183,9 @@ Trigger remains `workflow_dispatch` (manual only). Root cause: Vercel preview de
 ## Tier 5 — UX / Empty States (screenshots 2026-05-01)
 
 ### Empty state handling is broken across most charts
+
 Screenshots show the following rendering with no data or broken state:
+
 - **Languages pie chart** — renders a blank grey circle with no label, no message
 - **Discipline Gauge** — shows `NaN% of Avg` and `AVG:` with no value; emojis render but the needle/number are broken
 - **Project Breakdown** — empty axes, no "no data" message
@@ -171,6 +196,7 @@ Screenshots show the following rendering with no data or broken state:
 Every chart needs a consistent empty state: a short message ("No data for this range"), optionally a CTA ("Try a wider date range").
 
 ### Activity chart shows negative minutes (screenshot 2026-05-01, Apr 30th view)
+
 - The Activity bar chart renders bars below zero (e.g. -55min at 3p on Apr 30)
 - Root cause: today's in-progress WakaTime data is partial — durations are cumulative snapshots, not deltas. When a later poll overwrites an earlier one without diffing correctly, the subtraction goes negative
 - This is a scraper + data model problem, not a chart problem — the chart is rendering what's in the DB faithfully
@@ -178,19 +204,23 @@ Every chart needs a consistent empty state: a short message ("No data for this r
 - Chart-side guard: clamp bars to `>= 0` as a short-term defensive fix to stop the visual corruption
 
 ### Today vs. yesterday data resolution strategy
+
 Current situation: a GitHub Actions cron polls WakaTime every 10–30 min during the day. WakaTime's API returns cumulative durations for the current day that grow as you code — they are not finalized until midnight. Yesterday's data is complete and authoritative; today's is a live, partial snapshot.
 
 Problems this causes:
+
 - If the scraper stores each poll as a delta or appends, you get double-counting and negative bars (see screenshot)
 - If it blindly upserts the daily total, you lose intraday resolution
 - The `durations` table has a `UNIQUE (date)` constraint — one row per day — so today's row keeps getting overwritten, which is correct, but the `data` JSON blob inside may be getting merged instead of replaced
 
 Recommended ingestion contract:
+
 - **Today**: always full-replace the row (`ON CONFLICT (date) DO UPDATE SET data = EXCLUDED.data`). Never diff or append. Accept that the row is a live snapshot.
 - **Yesterday** (and older): write once, mark finalized. Add a `is_finalized boolean DEFAULT false` column to `durations`. The cron skips rows where `is_finalized = true`. On the day rollover (first poll where `date < today`), write the final snapshot and set `is_finalized = true`.
 - **UI signal**: show a subtle "live" badge on today's data so users know it's a partial count
 
 ### Add a custom date range picker
+
 - Current `DateRangeSelect` only exposes WakaTime's fixed ranges (Today, Last 7 Days, Last 30 Days, etc.)
 - No way to pick an arbitrary start/end date — users can't explore specific sprints, months, or client engagements
 - Add a date range picker (e.g. `daterangepicker` or a lightweight calendar component) that maps to WakaTime's custom range API param
@@ -254,6 +284,7 @@ son-of-anton/
 **How the skills connect to the CLI:**
 
 `son-of-anton-ethos` is the entry-point skill (triggers on "start/implement/continue/deliver"). It:
+
 - Reads `docs/01-delivery/delivery-orchestrator.md` in full before doing anything
 - Drives the per-ticket loop: implement → verify → `bun run deliver post-verify-self-audit` → `codex-preflight` → `open-pr` → `poll-review` → patch → `record-review` → `advance`
 - Invokes `ai-code-review` skill during `poll-review` which runs `fetch_ai_pr_comments.sh` + `triage_ai_review.sh`
@@ -275,6 +306,7 @@ Option C — **copy-on-init**: a bootstrap script copies the template files into
 ### Immediate action
 
 Before onboarding son-of-anton to this repo, extract it from Pirate-Claw first:
+
 1. Create `cesarnml/son-of-anton` repo
 2. Move `tools/delivery/` → root of new repo
 3. Move the template/format docs from Pirate-Claw docs into new repo
@@ -326,20 +358,21 @@ Son-of-Anton is a ticket-scoped delivery orchestrator. It manages a lifecycle pe
 
 **Yes as raw material. No as-is.** Here's the gap:
 
-The revival roadmap tiers are good *product thinking* — they identify what's broken, why it matters, and roughly what order to fix it. That's the "grill-me" pre-work pirate-claw requires before any code. But son-of-Anton's orchestrator can't consume this file — `parsePlan()` expects a precise markdown contract.
+The revival roadmap tiers are good _product thinking_ — they identify what's broken, why it matters, and roughly what order to fix it. That's the "grill-me" pre-work pirate-claw requires before any code. But son-of-Anton's orchestrator can't consume this file — `parsePlan()` expects a precise markdown contract.
 
 What needs to happen is a **conversion pass**:
 
-| Roadmap item | Son-of-Anton artifact |
-|---|---|
-| Each tier → | `docs/product/delivery/phase-NN/implementation-plan.md` |
-| Each bullet → | `ticket-NN-*.md` with Outcome / Red / Green / Refactor / Review Focus |
-| Tier title → | Phase exit condition prose |
-| "Known issues" section → | Stop conditions + explicit deferrals |
+| Roadmap item             | Son-of-Anton artifact                                                 |
+| ------------------------ | --------------------------------------------------------------------- |
+| Each tier →              | `docs/product/delivery/phase-NN/implementation-plan.md`               |
+| Each bullet →            | `ticket-NN-*.md` with Outcome / Red / Green / Refactor / Review Focus |
+| Tier title →             | Phase exit condition prose                                            |
+| "Known issues" section → | Stop conditions + explicit deferrals                                  |
 
 Ticket ID prefix suggestion: **`CS<phase>.<seq>`** (e.g. `CS1.01 Fix Sentry`, `CS1.02 Swap getSession to getUser`).
 
 The tiers already map well to phases:
+
 - `CS1` — Tier 1: Unblock Production (4 tickets, ~2pts each)
 - `CS2` — Tier 2: AI Coding Story (2 tickets, 3pts each — bigger)
 - `CS3` — Tier 3: Data Model Health (2 tickets)
