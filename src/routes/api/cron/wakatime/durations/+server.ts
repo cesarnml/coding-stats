@@ -3,9 +3,10 @@ import type { RequestHandler } from './$types'
 import dayjs from 'dayjs'
 import type { DurationsResult } from '$src/types/wakatime'
 import { ApiEndpoint } from '$lib/constants'
+import { DateFormat } from '$lib/helpers/timeHelpers'
 
 export const GET: RequestHandler = async ({ fetch, locals: { supabase } }) => {
-  const yesterday = dayjs().utc().subtract(1, 'day').format('YYYY-MM-DD')
+  const yesterday = dayjs().utc().subtract(1, 'day').format(DateFormat.Query)
 
   const response = await fetch(`${ApiEndpoint.Durations}?date=${yesterday}`)
   const durationsResult: DurationsResult = await response.json()
