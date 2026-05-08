@@ -3,9 +3,10 @@ import dayjs from 'dayjs'
 import type { RequestHandler } from './$types'
 import { ApiEndpoint, WakaSliceBy } from '$lib/constants'
 import type { DurationsResult } from '$src/types/wakatime'
+import { DateFormat } from '$lib/helpers/timeHelpers'
 
 export const GET: RequestHandler = async ({ fetch, locals: { supabase } }) => {
-  const today = dayjs().format('YYYY-MM-DD')
+  const today = dayjs().format(DateFormat.Query)
 
   const response = await fetch(
     `${ApiEndpoint.Durations}?date=${today}&slice_by=${WakaSliceBy.Language}`,
