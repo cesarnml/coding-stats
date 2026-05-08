@@ -881,16 +881,14 @@ function parsePostVerifyArgs(positionals: string[]): {
 } {
   const positional0 = positionals[0];
   const positional1 = positionals[1];
-  const auditOutcome: ReviewOutcome | undefined =
-    positional0 === 'clean' || positional0 === 'patched'
-      ? positional0
-      : positional1 === 'clean' || positional1 === 'patched'
-        ? positional1
-        : undefined;
-  const auditTicketId =
-    positional0 !== 'clean' && positional0 !== 'patched'
-      ? positional0
+  const isOutcome = (s: string | undefined): s is ReviewOutcome =>
+    s === 'clean' || s === 'patched' || s === 'skipped';
+  const auditOutcome: ReviewOutcome | undefined = isOutcome(positional0)
+    ? positional0
+    : isOutcome(positional1)
+      ? positional1
       : undefined;
+  const auditTicketId = !isOutcome(positional0) ? positional0 : undefined;
   const auditPatchCommitArgs = auditTicketId
     ? positionals.slice(2)
     : positionals.slice(1);

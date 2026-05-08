@@ -1,4 +1,4 @@
-import { basename, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import type {
   AiReviewComment,
@@ -1165,10 +1165,9 @@ export function buildReviewMetadataRefreshBody(
 }
 
 export function buildPullRequestTitle(
-  ticket: Pick<TicketState, 'id' | 'title' | 'ticketFile' | 'scope'>,
+  ticket: Pick<TicketState, 'id' | 'title' | 'ticketFile' | 'type' | 'scope'>,
 ): string {
-  const typeMatch = basename(ticket.ticketFile).match(/^ticket-\d+-([a-z]+)-/);
-  const type = typeMatch?.[1] ?? 'feat';
+  const type = ticket.type ?? 'feat';
   const scopePart = ticket.scope ? `(${ticket.scope})` : '';
   const subject = ticket.title.toLowerCase();
   return `${type}${scopePart}: ${subject} [${ticket.id}]`;

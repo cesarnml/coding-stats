@@ -289,6 +289,8 @@ function syncStateWithPlan(
         title: definition.title,
         slug: definition.slug,
         ticketFile: definition.ticketFile,
+        type: definition.type,
+        scope: definition.scope,
         status: selectStatusValue(previous?.status, inferredTicket?.status),
         branch: resolvedBranch,
         baseBranch:

@@ -64,3 +64,5 @@ Self-audit is required. `codex-preflight` is optional but recommended for non-tr
 | `docs/template/delivery/issue-tracking.md`                | Issue sizing and Fibonacci point conventions                                        |
 | `docs/template/delivery/phase-implementation-guidance.md` | Implementation plan format contract                                                 |
 | `.agents/skills/son-of-anton-ethos/SKILL.md`              | `soa-son-of-anton-ethos` behavioral contract for orchestrated delivery              |
+
+> **Canonical templates:** Planning and decomposition outputs must use the templates at `docs/template/templates/` as their format reference — never model a new ticket or implementation plan on existing docs under `docs/product/delivery/`. Older phases predate the current template and will produce format drift if copied. Use [`docs/template/templates/ticket.template.md`](../templates/ticket.template.md) for tickets and [`docs/template/templates/implementation-plan.template.md`](../templates/implementation-plan.template.md) for implementation plans.

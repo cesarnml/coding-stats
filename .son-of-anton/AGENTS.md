@@ -9,6 +9,15 @@
 - Final merge of stacked PR slices requires developer approval. Close completed phases with `bun run closeout-stack --plan <plan-path>`.
 - PR titles: Conventional-Commit-style subject + active ticket suffix (e.g. `[P3.02]`) when the ticket is clear from branch/docs/diff. Apply even when the user did not type `pr`.
 
+## Subagent Review Rules
+
+When invoking a review subagent during orchestrated delivery:
+
+- **Same-type default:** when `reviewSubagentOverride` is absent in `orchestrator.config.json`, use the same agent type as the primary agent.
+- **Override is canonical:** when `reviewSubagentOverride` is present, use that value exactly.
+- **Adversarial prompt required:** the subagent prompt must assume the implementation has holes and find them. Do not rationalize away anything you notice — flag it and let the human decide. A checklist of "did the ticket spec land?" is not a review.
+- **No rationalizing away findings:** the subagent must not suppress or downplay what it finds. Flag everything; the human decides what to act on.
+
 ## Pre-Commit
 
 Before committing: run the repo's format and verify commands for touched files. Run a spellcheck when docs, Markdown, config examples, PR text, or user-facing copy changed.

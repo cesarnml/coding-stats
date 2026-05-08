@@ -426,7 +426,7 @@ export function recordPostVerify(
 
 export function recordSubagentReview(
   state: DeliveryState,
-  outcome?: 'clean' | 'patched',
+  outcome?: 'clean' | 'patched' | 'skipped',
   isDocOnly?: boolean,
   policy: ReviewPolicyStageValue = 'skip_doc_only',
   patchCommits?: InternalReviewPatchCommit[],
@@ -457,13 +457,18 @@ export function recordSubagentReview(
   const docOnly = isDocOnly ?? !!target.docOnly;
   let resolvedOutcome: SubagentReviewOutcome;
 
-  if (policy === 'skip_doc_only' && docOnly) {
+  if (outcome === 'skipped' || (policy === 'skip_doc_only' && docOnly)) {
+    if (outcome === 'skipped' && policy === 'required') {
+      throw new Error(
+        `Ticket ${target.id} subagentReview is set to "required" — cannot record skipped. Pass \`clean\` or \`patched\`.`,
+      );
+    }
     resolvedOutcome = 'skipped';
   } else if (outcome === 'clean' || outcome === 'patched') {
     resolvedOutcome = outcome;
   } else {
     throw new Error(
-      `Ticket ${target.id} requires a subagent review outcome. Pass \`clean\` or \`patched\`.`,
+      `Ticket ${target.id} requires a subagent review outcome. Pass \`clean\`, \`patched\`, or \`skipped\`.`,
     );
   }
   validateInternalReviewPatchCommits({
@@ -507,7 +512,10 @@ export function openPullRequest(
       },
     ) => string;
     buildPullRequestTitle: (
-      ticket: Pick<TicketState, 'id' | 'title' | 'ticketFile' | 'scope'>,
+      ticket: Pick<
+        TicketState,
+        'id' | 'title' | 'ticketFile' | 'type' | 'scope'
+      >,
     ) => string;
     subagentReviewPolicy?: ReviewPolicyStageValue;
     createPullRequest: (
@@ -571,7 +579,7 @@ export function openPullRequest(
   ) {
     throw createWorkflowContractError(
       'workflow.open_pr.requires_subagent_review',
-      `Ticket ${target.id} is at status verified and requires subagent-review before opening a PR. Run \`bun run deliver --plan ${state.planPath} subagent-review <clean|patched>\` after completing the subagent review step. If the subagent is unavailable, set subagentReview to "disabled" in orchestrator.config.json to bypass.`,
+      `Ticket ${target.id} is at status verified and requires subagent-review before opening a PR. Run \`bun run deliver --plan ${state.planPath} subagent-review <clean|patched|skipped>\` after completing the subagent review step. If the subagent is unavailable, set subagentReview to "disabled" in orchestrator.config.json to bypass.`,
     );
   }
 

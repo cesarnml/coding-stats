@@ -8,5 +8,7 @@
     "subagentReview": "skip_doc_only",
     "prReview": "skip_doc_only"
   },
-  "prReviewAgents": [{ "login": "coderabbitai", "name": "coderabbit" }]
+  "prReviewAgents": [
+    { "login": "coderabbitai", "name": "coderabbit", "resolveThreads": true }
+  ]
 }
