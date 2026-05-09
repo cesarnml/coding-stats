@@ -629,7 +629,7 @@ When those env vars are absent, the notifier stays disabled and the orchestrator
 
 Fetched review output is written under:
 
-- `.agents/delivery/<plan-key>/reviews/`
+- `docs/product/delivery/<plan-key>/reviews/`
 
 Generated handoff artifacts are written under:
 
@@ -651,20 +651,20 @@ Fetched review artifacts under `reviews/` and generated handoff artifacts under 
 
 - After each successful `advance`, refresh the **primary / `main` checkout** so tooling run from `main` stays aligned with reality.
 - Copy **`state.json`** from the worktree where that advance just ran (only that file carries the authoritative stack index: PR numbers, branch names, ticket statuses).
-- **Merge** **`reviews/`** and **`handoffs/`** from that same worktree into the primary checkout (per-ticket filenames normally do not collide). Periodically — and **always before `closeout-stack`** if you did not mirror after every ticket — walk **every** ticket worktree for the plan and copy any missing `reviews/*` and `handoffs/*` into primary so **all** local review and handoff evidence lives under the primary `.agents/delivery/<plan-key>/`, not stranded in an older worktree.
+- **Merge** **`reviews/`** and **`handoffs/`** from that same worktree into the primary checkout — `reviews/` to `docs/product/delivery/<plan-key>/reviews/` and `handoffs/` to `.agents/delivery/<plan-key>/handoffs/` (per-ticket filenames normally do not collide). Periodically — and **always before `closeout-stack`** if you did not mirror after every ticket — walk **every** ticket worktree for the plan and copy any missing `reviews/*` and `handoffs/*` into primary so **all** local review and handoff evidence lives in the primary checkout, not stranded in an older worktree.
 
 Example (adjust paths and plan key; `final-wt` is the worktree that completed the last ticket):
 
 ```bash
-mkdir -p /path/to/main-clone/.agents/delivery/<plan-key>/reviews \
+mkdir -p /path/to/main-clone/docs/product/delivery/<plan-key>/reviews \
          /path/to/main-clone/.agents/delivery/<plan-key>/handoffs
 
 cp /path/to/final-wt/.agents/delivery/<plan-key>/state.json \
    /path/to/main-clone/.agents/delivery/<plan-key>/state.json
 
 for wt in /path/to/phase-wt-01 /path/to/phase-wt-02 /path/to/phase-wt-NN; do
-  cp -R "$wt/.agents/delivery/<plan-key>/reviews/"* \
-        /path/to/main-clone/.agents/delivery/<plan-key>/reviews/ 2>/dev/null || true
+  cp -R "$wt/docs/product/delivery/<plan-key>/reviews/"* \
+        /path/to/main-clone/docs/product/delivery/<plan-key>/reviews/ 2>/dev/null || true
   cp -R "$wt/.agents/delivery/<plan-key>/handoffs/"* \
         /path/to/main-clone/.agents/delivery/<plan-key>/handoffs/ 2>/dev/null || true
 done

@@ -58,4 +58,4 @@
 Retrospective: required
 Why: [Why a retrospective is warranted for this phase.]
 Trigger: Developer approval of final PR merge.
-Artifact: `notes/public/pp<N>-retrospective.md`
+Artifact: `docs/product/retrospectives/phase-<N>-<slug>-retrospective.md`

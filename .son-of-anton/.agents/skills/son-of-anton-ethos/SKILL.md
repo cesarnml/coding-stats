@@ -160,4 +160,4 @@ If not blocked, keep executing.
 
 ## On Phase or Epic Completion
 
-Write the retrospective to `notes/public/<plan-path>-retrospective.md` using the `soa-write-retrospective` skill at `.agents/skills/write-retrospective/SKILL.md` for section structure and placement conventions.
+Write the retrospective to `docs/product/retrospectives/<plan-path>-retrospective.md` using the `soa-write-retrospective` skill at `.agents/skills/write-retrospective/SKILL.md` for section structure and placement conventions.

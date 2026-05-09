@@ -8,6 +8,7 @@
     "subagentReview": "skip_doc_only",
     "prReview": "skip_doc_only"
   },
+  "reviewSubagentOverride": "codex:codex-rescue",
   "prReviewAgents": [
     { "login": "coderabbitai", "name": "coderabbit", "resolveThreads": true }
   ]

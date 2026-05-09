@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-05-09T10:08:55.465Z",
+  "reviewedHeadSha": "203e48600019d238d50e966246bfc014ab3ec0f5",
+  "outcome": "clean",
+  "note": "Qodo billing notification only; CodeRabbit clean",
+  "actionSummary": "Escalated 1 unclear comment(s) for follow-up.",
+  "prBodyRefresh": {
+    "attemptedAt": "2026-05-09T10:08:58.220Z",
+    "status": "updated"
+  }
+}

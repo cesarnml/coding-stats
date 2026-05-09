@@ -6,6 +6,7 @@
   "scripts": {
     "deliver": "bun run ./scripts/deliver.ts",
     "closeout-stack": "bun run ./scripts/closeout-stack.ts",
+    "sync": "bash scripts/soa-sync.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

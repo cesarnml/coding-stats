@@ -51,13 +51,14 @@ Small bounded changes that don't warrant a full phase (bug fixes, doc updates, c
 bun run deliver ai-review [--pr <number>]
 ```
 
-Self-audit is required. `codex-preflight` is optional but recommended for non-trivial changes.
+Self-audit is required. A `codex:codex-rescue` subagent review is optional but recommended for non-trivial changes.
 
 ## Key files
 
 | File                                                      | Purpose                                                                             |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `orchestrator.config.json`                                | Runtime config (boundary mode, review policy, package manager)                      |
+| `scripts/soa-sync.sh`                                     | Consumer sync script — links skills, injects agent rules, runs migrations           |
 | `docs/template/delivery/delivery-orchestrator.md`         | Full command reference, including stable workflow-contract and optional-DI guidance |
 | `docs/template/delivery/son-of-anton.md`                  | Doctrine: why this workflow exists                                                  |
 | `docs/template/delivery/tdd-workflow.md`                  | Red-green-refactor contract for ticket implementation                               |
