@@ -59,6 +59,11 @@ write_soa_version() {
 # ---------------------------------------------------------------------------
 
 run_migration_1() {
+  # When .agents is a symlink, review files are never git-tracked — nothing to move.
+  if [ -L "$REPO_ROOT/.agents" ]; then
+    return
+  fi
+
   local old_base="$REPO_ROOT/.agents/delivery"
   local new_base="$REPO_ROOT/docs/product/delivery"
 
@@ -198,6 +203,14 @@ if [ "$IS_SOURCE_REPO" = false ]; then
   # Inject agent-rule blocks into AGENTS.md and CLAUDE.md
   inject_soa_block ".son-of-anton/AGENTS.soa.md" "AGENTS.md"
   inject_soa_block ".son-of-anton/CLAUDE.soa.md" "CLAUDE.md"
+
+  # Refresh the global Claude Code entrypoint skill if previously installed.
+  # The global skill is a manual one-time install that otherwise drifts silently.
+  GLOBAL_SOA_SKILL="$HOME/.claude/skills/soa/SKILL.md"
+  if [ -f "$GLOBAL_SOA_SKILL" ]; then
+    cp "$REPO_ROOT/.son-of-anton/.agents/skills/soa/SKILL.md" "$GLOBAL_SOA_SKILL"
+    echo "  refreshed: ~/.claude/skills/soa/SKILL.md"
+  fi
 
   echo "soa-sync: add .son-of-anton/ to your lint/format ignore configuration (e.g. .prettierignore, .eslintignore)"
 fi
