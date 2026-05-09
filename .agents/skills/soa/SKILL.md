@@ -56,12 +56,16 @@ stale `soa-*` helper symlinks before relinking the current helper set.
 
 **Trigger:** `/soa ideate [topic]`
 
-Turn a developer feature ideation storm into one or more draft epic/phase plans.
+**Optional.** Use when developer intention is too half-formed to yield a concrete plan directly. Skip this and go straight to `/soa plan` when the idea is already clear or comes from a retrospective follow-up.
+
+Turn a developer ideation storm into a draft phase plan that feeds `/soa plan`.
 
 1. Ask the developer open-ended questions to surface goals, constraints, and unknowns. Be relentless — this is the `soa-grill-me` stage for ideas, not plans.
-2. Synthesize the conversation into a concise draft epic/phase summary (title, goal, proposed phases or epics, open questions).
+2. Synthesize the conversation into a concise draft phase summary (title, goal, proposed scope, open questions).
 3. **Stop and seek developer approval of the summary before writing any files.**
-4. Once approved, write the draft to `docs/template/templates/` or the path the developer specifies.
+4. Once approved, write the draft to `docs/product/drafts/<slug>.md`.
+
+> The next step is `/soa plan docs/product/drafts/<slug>.md`.
 
 ---
 
@@ -71,7 +75,7 @@ Turn a developer feature ideation storm into one or more draft epic/phase plans.
 
 **Output: `docs/product/plans/phase-N.md` only — the "what" and "why". No tickets. No implementation details.**
 
-Take an existing rough plan or roadmap section and run an `soa-grill-me` session scoped to product-level decisions: goals, success criteria, scope, explicit deferrals, and dependencies. The session ends when `docs/product/plans/phase-N.md` is written and approved.
+Accepts a concrete idea (inline description), a draft from `/soa ideate` (`docs/product/drafts/<slug>.md`), or any existing rough plan. Runs an `soa-grill-me` session scoped to product-level decisions: goals, success criteria, scope, explicit deferrals, and dependencies. The session ends when `docs/product/plans/phase-N.md` is written and approved.
 
 1. Read the plan if a file path is given. Otherwise use the inline description.
 2. **Invoke the `soa-grill-me` skill** in **Mode 1 (product plan)** — pass the plan content and instruct it to stay at the product level (scope, goals, success criteria, deferrals, risks). Explicitly tell it: no schema design, no API routes, no ticket breakdown.

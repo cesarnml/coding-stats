@@ -6,6 +6,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -115,6 +116,62 @@ describe('P6.01 soa-sync migration runner', () => {
       const mtimeAfter = statSync(migratedFile).mtimeMs;
 
       expect(mtimeAfter).toBe(mtimeBefore);
+    } finally {
+      rmSync(tmp, { force: true, recursive: true });
+    }
+  });
+
+  it('skips git mv and writes .soa-sync-version=1 when .agents is a symlink', () => {
+    // This is the topology every consumer repo has: soa-sync.sh itself creates
+    // .agents as a symlink → .son-of-anton/.agents. Delivery files there are
+    // git-ignored, so git mv would abort with "source directory is empty".
+    const tmp = mkdtempSync(join(tmpdir(), 'p6-01-sym-'));
+    try {
+      initConsumerFixture(tmp);
+
+      // Wire .agents as a symlink — same structure soa-sync.sh creates.
+      symlinkSync('.son-of-anton/.agents', join(tmp, '.agents'));
+
+      // Simulate untracked review artifacts that live under the symlinked path.
+      mkdirSync(
+        join(
+          tmp,
+          '.son-of-anton',
+          '.agents',
+          'delivery',
+          'phase-aa',
+          'reviews',
+        ),
+        { recursive: true },
+      );
+      writeFileSync(
+        join(
+          tmp,
+          '.son-of-anton',
+          '.agents',
+          'delivery',
+          'phase-aa',
+          'reviews',
+          'stub.json',
+        ),
+        '{}',
+      );
+
+      const result = runSync(tmp);
+      expect(result.status).toBe(0);
+
+      // Version file must be written — migration is considered complete.
+      const versionFile = join(tmp, '.soa-sync-version');
+      expect(existsSync(versionFile)).toBe(true);
+      expect(readFileSync(versionFile, 'utf8').trim()).toBe('1');
+
+      // No docs/product/delivery path should have been created by the migration
+      // (the guard returned early; nothing was moved).
+      expect(
+        existsSync(
+          join(tmp, 'docs', 'product', 'delivery', 'phase-aa', 'reviews'),
+        ),
+      ).toBe(false);
     } finally {
       rmSync(tmp, { force: true, recursive: true });
     }
