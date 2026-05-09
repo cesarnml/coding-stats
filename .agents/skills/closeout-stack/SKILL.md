@@ -25,14 +25,14 @@ Closeout reads `.agents/delivery/<plan-key>/state.json` from the repo you run th
 Before `closeout-stack` (or any command you run from the primary checkout), mirror delivery artifacts into that checkout:
 
 - **`state.json`:** copy from the **ticket worktree where the final ticket was advanced to `done`** (or whichever worktree last wrote state). That file is the single control-plane index; earlier worktrees hold stale partial state.
-- **`reviews/` and `handoffs/`:** copy **from every ticket worktree** used during the phase into the primary tree’s `.agents/delivery/<plan-key>/`, **merging** into existing `reviews/` and `handoffs/` directories (per-ticket filenames normally do not collide). Goal: **all** review fetch/triage artifacts and **all** handoff markdown files exist on `main`, not only the set generated in the final worktree.
+- **`reviews/` and `handoffs/`:** copy **from every ticket worktree** used during the phase into the primary tree — `reviews/` to `docs/product/delivery/<plan-key>/reviews/` and `handoffs/` to `.agents/delivery/<plan-key>/handoffs/`, **merging** per-ticket filenames (they normally do not collide). Goal: **all** review fetch/triage artifacts and **all** handoff markdown files exist on `main`, not only the set generated in the final worktree.
 
 If you skip this, `closeout-stack` may see wrong PR numbers, and the primary checkout loses local review and handoff evidence that never left an older worktree. See `docs/template/delivery/delivery-orchestrator.md` (State file and primary checkout).
 
 Example (adjust paths and plan key):
 
 ```bash
-mkdir -p .agents/delivery/<plan-key>/reviews .agents/delivery/<plan-key>/handoffs
+mkdir -p docs/product/delivery/<plan-key>/reviews .agents/delivery/<plan-key>/handoffs
 
 # Authoritative stack index — from the worktree that completed the last ticket
 cp /path/to/final-ticket-worktree/.agents/delivery/<plan-key>/state.json \
@@ -40,7 +40,7 @@ cp /path/to/final-ticket-worktree/.agents/delivery/<plan-key>/state.json \
 
 # Merge every ticket worktree’s reviews and handoffs back to primary
 for wt in /path/to/phase-wt-01 /path/to/phase-wt-02 /path/to/phase-wt-NN; do
-  cp -R "$wt/.agents/delivery/<plan-key>/reviews/"* .agents/delivery/<plan-key>/reviews/ 2>/dev/null || true
+  cp -R "$wt/docs/product/delivery/<plan-key>/reviews/"* docs/product/delivery/<plan-key>/reviews/ 2>/dev/null || true
   cp -R "$wt/.agents/delivery/<plan-key>/handoffs/"* .agents/delivery/<plan-key>/handoffs/ 2>/dev/null || true
 done
 ```
@@ -69,7 +69,7 @@ If closeout fails mid-flight (including after an automatic cherry-pick attempt),
    ```
 4. Confirm `origin/main` has expected squash commits in ticket order.
 5. Sync delivery artifacts to the primary `main` checkout: copy **`state.json`** from the worktree that last advanced the stack; **merge** all **`reviews/`** and **`handoffs/`** files from **every** ticket worktree used in the phase so nothing stays stranded off `main`.
-6. Write `notes/public/<plan>-retrospective.md` if not already done.
+6. Write `docs/product/retrospectives/<plan>-retrospective.md` if not already done.
 
 ## Key Rules
 

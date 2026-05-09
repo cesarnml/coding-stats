@@ -1,6 +1,6 @@
 ---
 name: soa-write-retrospective
-description: Write a phase or engineering epic retrospective. Use when completing a phase, epic, or significant standalone PR. Output goes to notes/public/<plan-path>-retrospective.md or notes/public/ee<N>-retrospective.md.
+description: Write a phase or engineering epic retrospective. Use when completing a phase, epic, or significant standalone PR. Output goes to docs/product/retrospectives/<plan-path>-retrospective.md or docs/product/retrospectives/ee<N>-retrospective.md.
 ---
 
 # Write Retrospective
@@ -42,11 +42,11 @@ Concrete next actions. Avoid "consider X" — prefer "fix the stale test asserti
 ## What to omit
 
 - **Timeline evidence** — delivery debugging artifact, not a learning. If a timeline is needed, it belongs in an incident report or effectiveness evaluation, not here.
-- **Ticket-by-ticket tables** — effectiveness evaluation material. Use `notes/public/<plan>-effectiveness-evaluation.md` for that.
+- **Ticket-by-ticket tables** — effectiveness evaluation material. Use `docs/product/retrospectives/<plan>-effectiveness-evaluation.md` for that.
 - **Vague summaries** — "overall the phase went well" without evidence. If you can't point to something specific, skip the sentence.
 
 ## Naming and placement
 
-- Product Phase: `notes/public/pp<N>-retrospective.md` (match existing convention in the repo)
-- Engineering epic: `notes/public/ee<N>-retrospective.md`
+- Product Phase: `docs/product/retrospectives/phase-<N>-<slug>-retrospective.md`
+- Engineering epic: `docs/product/retrospectives/ee<N>-<slug>-retrospective.md`
 - Close with: `_Created: <date>. PR #N open/merged._` or equivalent factual closer.

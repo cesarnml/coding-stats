@@ -92,7 +92,7 @@ Default:
 Every new phase plan should include `## Phase Closeout`:
 
 - whether a retrospective is `required` or `skip`
-- where the artifact goes if required (`notes/public/<phase>-retrospective.md`)
+- where the artifact goes if required (`docs/product/retrospectives/<phase>-<slug>-retrospective.md`)
 - whether the final docs/phase-exit ticket must include retrospective writing in scope
 
 ## Ticket Metadata Contract

@@ -198,7 +198,7 @@ describe('delivery orchestrator', () => {
       planPath: 'docs/product/delivery/phase-03/implementation-plan.md',
       planKey: 'phase-03',
       statePath: '.agents/delivery/phase-03/state.json',
-      reviewsDirPath: '.agents/delivery/phase-03/reviews',
+      reviewsDirPath: 'docs/product/delivery/phase-03/reviews',
       handoffsDirPath: '.agents/delivery/phase-03/handoffs',
       reviewPollIntervalMinutes: 6,
       reviewPollMaxWaitMinutes: 12,

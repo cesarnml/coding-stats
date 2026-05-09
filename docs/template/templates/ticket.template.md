@@ -26,6 +26,7 @@ Scope: <conventional-commit-scope> (optional — lowercase letters, digits, and 
 
 - [Extract, rename, or simplify without changing behavior]
 - [Only refactor what you touched — no opportunistic cleanup]
+- If this ticket moves tracked files to a new location: bump `SOA_TARGET_VERSION` in `scripts/soa-sync.sh` and add a `run_migration_N()` function that moves the files idempotently using `git mv`.
 
 ## Review Focus
 

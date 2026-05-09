@@ -81,7 +81,7 @@ export function createOptions(input: {
     planPath,
     planKey,
     statePath: `.agents/delivery/${planKey}/state.json`,
-    reviewsDirPath: `.agents/delivery/${planKey}/reviews`,
+    reviewsDirPath: `docs/product/delivery/${planKey}/reviews`,
     handoffsDirPath: `.agents/delivery/${planKey}/handoffs`,
     reviewPollIntervalMinutes: DEFAULT_REVIEW_POLLING_PROFILE.intervalMinutes,
     reviewPollMaxWaitMinutes: DEFAULT_REVIEW_POLLING_PROFILE.maxWaitMinutes,

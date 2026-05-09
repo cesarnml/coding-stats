@@ -34,4 +34,4 @@ Before closing a delivery ticket:
 
 ## On Phase or Epic Completion
 
-Write `notes/public/<plan-path>-retrospective.md` using the `soa-write-retrospective` skill at `.agents/skills/write-retrospective/SKILL.md` for section structure and placement conventions.
+Write `docs/product/retrospectives/<plan-path>-retrospective.md` using the `soa-write-retrospective` skill at `.agents/skills/write-retrospective/SKILL.md` for section structure and placement conventions.
