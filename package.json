@@ -94,7 +94,7 @@
   "dependencies": {
     "@sentry/opentelemetry": "10.51.0",
     "@sentry/sveltekit": "10.51.0",
-    "@supabase/ssr": "0.10.2",
+    "@supabase/ssr": "0.10.3",
     "@sveltejs/vite-plugin-svelte": "6.2.4"
   }
 }
