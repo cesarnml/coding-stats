@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-05-10T06:00:43.328Z",
+  "reviewedHeadSha": "17dcdf01faa23cfce61d08789150e33ffc9e9b78",
+  "outcome": "patched",
+  "note": "patched null runPolicy guard in normalizeRunPolicy; skipped workpad spellcheck (pre-existing baseline)",
+  "actionSummary": "Flagged 1 finding comment(s) for follow-up.",
+  "nonActionSummary": "Left 1 unclear comment(s) for manual judgment.",
+  "threadResolutions": [
+    {
+      "status": "resolved",
+      "threadId": "PRRT_kwDOSR4wrM6A1Riw",
+      "url": "https://github.com/cesarnml/son-of-anton/pull/23#discussion_r3213422687",
+      "vendor": "coderabbit"
+    }
+  ],
+  "prBodyRefresh": {
+    "attemptedAt": "2026-05-10T06:00:47.366Z",
+    "status": "updated"
+  }
+}

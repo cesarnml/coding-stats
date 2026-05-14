@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-05-13T17:28:18.385Z",
+  "reviewedHeadSha": "14ffa5ba9f0e156199f3035361596d4d84283961",
+  "outcome": "needs_patch",
+  "note": "Actionable AI review findings were detected and still need follow-up.",
+  "actionSummary": "Flagged 1 finding comment(s) for follow-up.",
+  "nonActionSummary": "Left 1 unclear comment(s) for manual judgment.",
+  "prBodyRefresh": {
+    "attemptedAt": "2026-05-13T17:28:22.768Z",
+    "status": "updated"
+  }
+}

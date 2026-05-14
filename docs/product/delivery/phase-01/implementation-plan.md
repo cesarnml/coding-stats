@@ -1,77 +1,64 @@
-# Phase 1 — Unblock Production
+# Phase 01 — CLI Bug Fixes
 
-> Restore error visibility, close the auth security gap, and eliminate unmaintained/zombie dependencies.
+> Fix two delivery CLI bugs that have caused real failures across coding-stats phases 03 and 04.
 
 ## Epic
 
-Tier 1 of `notes/public/revival-roadmap.md`.
+[docs/product/plans/phase-01.md](../../01-product/phase-01.md)
 
 ## Product contract
 
-When this phase is complete:
+After this phase ships:
 
-- Sentry is receiving errors from production
-- Auth cookie validation is server-verified (not client-trusted)
-- `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` are absent from `package.json`
-- ESLint is running on a maintained plugin with full config migration
+- `closeout-stack` runs cleanly after a multi-worktree gated delivery without manual `state.json` edits
+- Every PR opened by the orchestrator has a title in the form `type(scope): subject [PXX.XX]` derived from the ticket, never from the red test commit
 
 ## Grill-Me decisions locked
 
-- **Sentry scope** → upgrade to latest stable + uncomment both hooks (client + server); sourcemap uploads disabled (deferred to standalone PR)
-- **Axios scope** → full removal: all 7 files (6 server routes + `+page.svelte`), drop from `package.json`
-- **ESLint migration** → full config migration to `eslint-plugin-svelte`, not a minimal fix
-- **Ticket order** → auth fix first (proves CI baseline), Sentry last (most uncertain, avoids gating earlier PRs)
+- **`codex-preflight` guard fix deferred** → command is disabled in current config and killed in Phase 02; fixing it is waste
+- **Ticket type source → filename convention** (`ticket-NN-<type>-<slug>.md`) → AI writes all tickets; filename and content are consistent, no drift risk
+- **Ticket scope source → `Scope:` metadata line in ticket doc** → parsed at plan-load time into `TicketDefinition`; scope describes the area of codebase touched; omitted if absent
+- **`buildPullRequestTitle` removes `commitSubject` param entirely** → title derives from ticket fields only; commit order becomes irrelevant
 
 ## Ticket Order
 
-1. `P1.01 getSession → getUser`
-2. `P1.02 Remove @vitest/coverage-c8`
-3. `P1.03 eslint-plugin-svelte3 → eslint-plugin-svelte full migration`
-4. `P1.04 Replace axios with native fetch`
-5. `P1.05 Upgrade + uncomment Sentry, sourcemaps off`
-6. `P1.06 Phase Closeout — Docs + Retrospective`
+1. `P1.01 Fix state.json sync in advance`
+2. `P1.02 PR title derived from ticket content`
 
 ## Ticket Files
 
-- `ticket-01-get-user.md`
-- `ticket-02-drop-coverage-c8.md`
-- `ticket-03-eslint-svelte-migration.md`
-- `ticket-04-axios-to-fetch.md`
-- `ticket-05-sentry.md`
-- `ticket-06-closeout.md`
+- `ticket-01-fix-state-sync.md`
+- `ticket-02-feat-pr-title.md`
 
 ## Exit Condition
 
-✅ **Exit condition confirmed met (2026-05-02):**
+Both tickets merged to main with passing CI. `closeout-stack` runs end-to-end on a multi-worktree delivery without intervention. PRs opened by the orchestrator show `fix(cli): ...` and `feat(pr-metadata): ...` style titles.
 
-- All 6 PRs merged to main (#117–121 + retrospective)
-- Sentry dashboard receiving production errors
-- `axios`, `eslint-plugin-svelte3`, and `@vitest/coverage-c8` removed from `package.json`
-- ESLint passes with `eslint-plugin-svelte` + flat config
-- CLAUDE.md updated with fixed items
-- Revival roadmap Phase 01 marked complete
-- Retrospective written to `notes/public/phase-01-unblock-production-retrospective.md`
+## CI Baseline
 
-**Phase 01 complete.** Next: Phase 02 — The AI Coding Story.
+> Baseline recorded: historical placeholder — this repo uses Bun, not pnpm. For new baselines, run `bun test` or the repo's current verification gate instead of `pnpm test`.
 
 ## Review Rules
 
 - Tickets must be merged in order.
 - Each ticket PR must pass CI before the next ticket starts.
+- Pre-existing CI failures documented in **CI Baseline** do not block a ticket; newly introduced failures do.
 
 ## Explicit Deferrals
 
-- Sentry sourcemap uploads — deferred to a standalone PR after phase closes
-- Client-side Sentry Replay integration — not in scope
-- Any ESLint rule tuning beyond getting lint passing — not in scope
-- `getSession` usages outside `hooks.server.ts` — not in scope
+- `codex-preflight patched <sha>` guard inversion (Phase 02 kills the command)
+- `post-verify-self-audit` → `post-verify` rename (Phase 02)
+- `selfAudit` removal from config schema (Phase 02)
+- `RESUME COMMAND` guard in generated handoff (Phase 02)
+- Orchestrator ergonomics: worktree guard, `status` next-command, doc-only early failure (Phase 03)
 
 ## Stop Conditions
 
-- Broken CI that cannot be resolved within the ticket scope
-- Sentry upgrade introduces a SvelteKit incompatibility that requires a major version decision
+- Broken CI that cannot be resolved within the ticket scope.
+- `findPrimaryWorktreePath` returns unexpected results in the advance test environment — pause and investigate before writing the sync logic.
+- Ambiguous triage where the right action is genuinely unclear.
 
 ## Phase Closeout
 
-Retrospective: yes — `ticket-06-closeout.md`
-Trigger: after P1.05 is merged and Sentry is confirmed receiving errors
+Retrospective: skip
+Why: Targeted bug fixes with no workflow or operator behavior changes.

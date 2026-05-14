@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-05-10T06:21:38.331Z",
+  "reviewedHeadSha": "308068555178cd75ec6b52c8e538ba891c1f8519",
+  "outcome": "patched",
+  "note": "patched whitespace-only --review-subagent guard (trim + blank check); rejected duplicate-flag last-write-wins finding (standard CLI behavior, no invariant broken)",
+  "actionSummary": "Flagged 1 finding comment(s) for follow-up.",
+  "nonActionSummary": "Left 1 unclear comment(s) for manual judgment.",
+  "threadResolutions": [
+    {
+      "status": "resolved",
+      "threadId": "PRRT_kwDOSR4wrM6A4N63",
+      "url": "https://github.com/cesarnml/son-of-anton/pull/24#discussion_r3214416168",
+      "vendor": "coderabbit"
+    }
+  ],
+  "prBodyRefresh": {
+    "attemptedAt": "2026-05-10T06:21:42.074Z",
+    "status": "updated"
+  }
+}
