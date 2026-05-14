@@ -1,0 +1,22 @@
+{
+  "extends": ["web-recommended", "accessibility", "progressive-web-apps"],
+  "hints": {
+    "css-prefix-order": "off", // auto-prefixer don't care
+    "content-type": "off", // old fashion
+    "compat-api/css": "off",
+    "compat-api/html": "warning", // complains about theme-color
+    "http-compression": "off", // too complainy
+    "detect-css-reflows/composite": "off", // tailwind
+    "detect-css-reflows/layout": "off", // tailwind
+    "detect-css-reflows/paint": "off", // tailwind
+    "http-cache": "warning", // sveltekit
+    "x-content-type-options": "off", // sveltekit
+    "strict-transport-security": "warning", // iconify-icon
+    "axe/parsing": [
+      "error",
+      {
+        "duplicate-id": "warning" // echarts constantly violates this
+      }
+    ]
+  }
+}

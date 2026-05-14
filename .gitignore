@@ -1,8 +1,35 @@
-node_modules/
-.agents/delivery/
-*.local
+.DS_Store
+node_modules
+/build
+/.svelte-kit
+/package
 .env
 .env.*
 !.env.example
-notes/private
-.vscode/settings.json
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Custom
+coverage
+test-results
+html
+*.icloud
+.vercel
+.vite-inspect
+hint-report
+reports
+playwright-report
+config.toml
+settings.json
+
+# Local agent/config secrets
+.mcp.json
+.codex/
+
+# Generated/local tooling output
+graphify-out
+
+# Supabase local data dumps
+*.backup
+supabase/seed.sql
+.qodo

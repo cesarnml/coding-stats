@@ -1,0 +1,27 @@
+name: Yesterday Crons
+
+on:
+  schedule:
+    - cron: '01 01 * * *'
+  workflow_dispatch:
+
+env:
+  CRON_BASE_URL: https://codingstats.vercel.app
+
+jobs:
+  http-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Yesterday Durations
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations"
+      - name: Yesterday Durations By Language
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations-by-language"
+      - name: Yesterday Summaries
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/summaries"
+      - name: Yesterday Project Summaries
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/project-summaries"

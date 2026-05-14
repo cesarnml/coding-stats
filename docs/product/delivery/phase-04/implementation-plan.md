@@ -1,72 +1,82 @@
-# Phase 04 — Orchestrator Contract Stability
+# Phase 4 — UX Polish + AI Chart Redesign
 
-> Make delivery-tool workflow contracts resilient to non-behavioral change so iterative improvements do not look like regressions.
+> Make the dashboard client-presentable: fix broken charts, surface data freshness, redesign the AI section into two focused panels, and unlock arbitrary date range exploration.
 
 ## Epic
 
-[docs/product/plans/phase-04-orchestrator-contract-stability.md](../../plans/phase-04-orchestrator-contract-stability.md)
+Tier 2 of `notes/public/revival-roadmap.md`. Product plan: `docs/product/plans/phase-04-ux-polish.md`.
 
 ## Product contract
 
-After this phase ships:
+When this phase is complete:
 
-- Wording-only improvements to targeted workflow/state-guard errors do not break unrelated tests because those tests assert a stable contract rather than incidental prose
-- Adding a new optional DI hook to the targeted delivery helpers does not change behavior unless the hook is explicitly supplied
-- Contributors can identify which delivery-tool workflow errors are machine-stable, how optional DI must be extended, and how those surfaces should be tested
+- The Activity chart is the first thing a visitor sees and never renders a bar below zero
+- Every chart in the app shows a meaningful empty state instead of blank axes, broken needles, or grey circles when no data exists for the selected range
+- The AI section shows a 5-stat row (ai_additions, ai_deletions, human_additions, human_deletions, total tokens) plus two half-width panels: a lines pie chart and an adaptive token bar chart
+- The dashboard displays "Data through [date]" reflecting the most recently ingested date regardless of selected range
+- The owner can select an arbitrary start and end date and receive correct summaries data from Supabase for that window
 
 ## Grill-Me decisions locked
 
-- **Two tickets only** -> `P4.01` contains all code and test work; `P4.02` is docs + retrospective only
-- **One small delivery-local workflow error contract** -> no repo-wide error framework; only workflow/state-guard and closely related orchestrator guard failures get stable machine-readable identity
-- **One small optional-DI helper/pattern** -> avoid ad hoc per-call-site fixes so optional hooks remain no-ops unless explicitly provided
-- **Migration boundary stays narrow** -> target state-guarded workflow errors and closely related orchestrator guard failures only; low-level config/platform/runtime errors are deferred
-- **`P4.01` proves both structure and behavior** -> primitives/patterns must exist and targeted regression tests must demonstrate the old failure modes are gone
-- **`P4.02` is zero-code by rule** -> all durable docs land there; `P4.01` may use only minimal inline comments if needed for code readability
+- **max_date source** → `SELECT MAX(date)` added to the summaries route handler response; global freshness, not range-scoped tail
+- **Custom range store shape** → `'Custom'` added to `WakaApiRange`; parallel `customDateRange` store `{ start, end }`; profile sync skips custom; `WakaToShortcutApiRange` mapping untouched
+- **AI chart files** → `AiActivityChart/` deleted; two new component directories: `AiLinesPieChart/` and `AiTokenBarChart/`, each with own helpers file
+- **AI stat panels** → existing single AI stat replaced by 5-stat row: ai_additions, ai_deletions, human_additions, human_deletions, total tokens
+- **EmptyState placement** → internal to each chart component; `EmptyState` tested once as a unit, not per-chart
+- **Full {start,end} store migration deferred** → converting all named ranges to materialized dates requires `profiles.range` schema migration (Tier 3) and special-casing Today/Yesterday; deferred to the Tier 3 data-model phase
 
 ## Ticket Order
 
-1. `P4.01 Stable workflow contracts and DI safety`
-2. `P4.02 Docs, guidance, and retrospective`
+1. `P4.01 Activity chart clamp + promote to top slot`
+2. `P4.02 EmptyState component + apply to 8 charts`
+3. `P4.03 AI section redesign`
+4. `P4.04 Data freshness signal`
+5. `P4.05 Custom date range picker`
+6. `P4.06 Doc update + retrospective`
 
 ## Ticket Files
 
-- `ticket-01-stable-workflow-contracts-di-safety.md`
-- `ticket-02-docs-guidance-retrospective.md`
+- `ticket-01-activity-chart-fix.md`
+- `ticket-02-empty-state.md`
+- `ticket-03-ai-section-redesign.md`
+- `ticket-04-data-freshness.md`
+- `ticket-05-custom-date-range.md`
+- `ticket-06-doc-update.md`
 
 ## Exit Condition
 
-Targeted delivery-tool workflow/state-guard failures expose a stable machine-readable identity alongside their human guidance, and the affected test suite asserts that stable surface instead of brittle prose. Optional dependency hooks in the targeted delivery helpers are safe by default: adding a new optional hook no longer breaks existing callers that do not provide it. The docs describe which orchestrator workflow contracts are stable, how optional DI must be extended, and how to test those boundaries. The phase proves the boundary behaviorally with regression tests that would have failed before Phase 04.
+On the live Vercel deployment: (1) Activity chart is first and never renders below zero, (2) all charts show a meaningful empty state for ranges with no data, (3) AI section shows a 5-stat row and two half-width panels (lines pie + adaptive token bar) with correct hover behavior and empty states, (4) "Data through [date]" is visible and reflects global ingestion freshness, (5) owner can select arbitrary start/end dates and receive correct summaries.
 
 ## CI Baseline
 
-> Baseline recorded: 2026-05-05 - `bun test` on `main` -> 211 pass, 0 fail, 442 expect() calls. Repo verification surface now includes `bun run verify:quiet` and `bun run ci:quiet`; use those gates during delivery in addition to scoped test runs as needed.
+> To be recorded at P4.01 start on `main`.
 
 ## Review Rules
 
 - Tickets must be merged in order.
-- Each ticket PR must pass repo verification before the next ticket starts.
-- Pre-existing verification failures documented in **CI Baseline** do not block a ticket; newly introduced failures do.
-- Current execution-environment note: this repo uses `subagentReview: "skip_doc_only"` with no `reviewSubagentOverride` configured. Doc-only tickets auto-skip the subagent step; code tickets still require an explicit subagent-review result before `open-pr`.
-- `P4.01` may touch only the targeted delivery-tool workflow/state-guard surfaces plus the tests needed to prove the boundary.
-- `P4.02` is doc-only - reviewer should confirm zero `.ts` behavior changes.
+- P4.03 has a hard dependency on P4.02 (`EmptyState` component must exist before AI charts use it).
+- P4.04 and P4.05 both touch `summaries/+server.ts`; merge P4.04 before starting P4.05 to avoid conflicts.
+- Each ticket PR must pass CI before the next ticket starts.
+- Pre-existing CI failures documented in **CI Baseline** above do not block a ticket; newly introduced failures do.
 
 ## Explicit Deferrals
 
-- Repo-wide typed/custom error framework adoption outside delivery tooling
-- Migrating all delivery-tool errors, including config/platform/runtime failures, to the stable contract
-- Global CLI message unification outside the targeted workflow/state-guard surfaces
-- Standalone PR review-state recording beyond the current behavior-first `ai-review` flow
+- **Full `{start,end}` store migration** — converting named ranges to materialized dates requires `profiles.range` schema migration and Today/Yesterday special-casing; belongs in Tier 3 alongside the JSON blob migration
+- **`is_finalized` column + ingestion contract rewrite** — root cause of negative Activity bars; Tier 3
+- **`HOUR_GOAL` config + Discipline Gauge goal editing** — depends on auth direction
+- **Auth removal** — separate phase
+- **Per-day token trend beyond 7-day threshold** — future full-width drill-down chart
+- **`last_scraped_at` column on profiles** — Tier 3
 
 ## Stop Conditions
 
-- Broken verification that cannot be resolved within the ticket scope.
-- Discovery that the stable workflow error contract must expand into low-level config/platform/runtime failures to remain coherent.
-- Discovery that optional-DI safety cannot be implemented as a narrow helper/pattern without reopening broader delivery-tool dependency design.
-- Ambiguous triage where the right action is genuinely unclear.
+- `summaries.grand_total` AI fields (`ai_additions`, `ai_input_tokens`, etc.) are absent or zero for all DB rows — verify against a live API response before assuming a chart bug.
+- CI failure introduced by the `WakaApiRange` type addition that cannot be resolved within P4.05 scope.
+- Date picker library choice produces a bundle size regression — pause and evaluate before merging.
 
 ## Phase Closeout
 
 Retrospective: required
-Why: This phase changes a durable technical/process boundary inside the orchestrator and should be judged by whether later workflow-copy or DI changes stop producing false regressions.
-Trigger: Developer approval of final PR merge.
-Artifact: `notes/public/phase-04-orchestrator-contract-stability-retrospective.md`
+Why: phase introduces a durable custom-range exploration pattern; defers a significant store refactor whose rationale should be recorded for the Tier 3 phase; retro cadence being tuned in son-of-anton to default required.
+Trigger: Developer approval of P4.06 PR merge.
+Artifact: `notes/public/pp4-retrospective.md`

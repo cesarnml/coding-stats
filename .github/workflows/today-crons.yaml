@@ -1,0 +1,27 @@
+name: Today Crons
+
+on:
+  schedule:
+    - cron: '*/45 * * * *'
+  workflow_dispatch:
+
+env:
+  CRON_BASE_URL: https://codingstats.vercel.app
+
+jobs:
+  http-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Daily Durations
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations/today"
+      - name: Daily Durations By Language
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/durations-by-language/today"
+      - name: Daily Summaries
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/summaries/today"
+      - name: Daily Project Summaries
+        run: |
+          curl --fail-with-body --show-error --silent --location "$CRON_BASE_URL/api/cron/wakatime/project-summaries/today"
