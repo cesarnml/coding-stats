@@ -54,6 +54,7 @@ external callers can import from one stable path.
 | `review.ts`            | Review polling lifecycle, fetcher/triager adapters, artifact parsing                                   |
 | `cli-runner.ts`        | `runDeliveryOrchestrator` dispatch switch and explicit command-helper wiring                           |
 | `cli.ts`               | Argument parsing (`parseCliArgs`, `getUsage`)                                                          |
+| `subagent-runner.ts`   | Runner types and functions (`tryRunner`, `buildRunnerArtifact`, `validateRunnerArtifact`)              |
 | `orchestrator.ts`      | Pure re-export barrel — no logic                                                                       |
 
 Each source module has a corresponding test file under `tools/delivery/test/`.
@@ -103,7 +104,6 @@ behavior, and review policy are not hardcoded:
     "subagentReview": "skip_doc_only",
     "prReview": "skip_doc_only"
   },
-  "reviewSubagentOverride": "codex:codex-rescue",
   "prReviewAgents": [
     { "login": "coderabbitai", "name": "coderabbit" },
     { "login": "qodo-merge", "name": "qodo" }
@@ -129,7 +129,7 @@ Valid `reviewPolicy` stage values are:
 
 Invalid values and unknown keys are rejected at config load with a clear error.
 
-`reviewPolicy.subagentReview` governs the pre-PR internal agent review step (`subagent-review` command). `reviewPolicy.prReview` governs the external AI PR review polling window. `reviewSubagentOverride` sets the subagent invocation string for the `subagent-review` step (e.g. `"codex:codex-rescue"`). `prReviewAgents` is a list of `{ login, name }` entries used by the fetcher script to identify external review bots by GitHub login — replaces the old hardcoded vendor list.
+`reviewPolicy.subagentReview` governs the pre-PR internal agent review step (`subagent-review` command). `reviewPolicy.prReview` governs the external AI PR review polling window. `prReviewAgents` is a list of `{ login, name }` entries used by the fetcher script to identify external review bots by GitHub login. Runner selection for `subagent-review` is done at invocation time via `--preferred-runner <claude-cli|codex-exec>` — not in config.
 
 Supported `ticketBoundaryMode` values are:
 
@@ -270,6 +270,34 @@ For ticket `01`, `start` is the command that initializes the first ticket contex
 
 **No read-ahead during the review window.** The agent does nothing while waiting on external AI review. The wait is free (LLM idle during subprocess sleep). Read-ahead during the window burns context that is dead weight at the next ticket boundary. Be sabaai sabaai.
 
+## Runtime Policy Overrides
+
+Pass explicit flags to override delivery policy for a single run without editing `orchestrator.config.json`. The resolved policy persists in `state.json` as `runPolicy` and governs the entire run.
+
+**Available flags:**
+
+| Flag                       | Values                              | Effect                                                                                    |
+| -------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `--boundary-mode`          | `cook\|gated\|glide`                | Override ticket-boundary mode                                                             |
+| `--subagent-review-policy` | `required\|skip_doc_only\|disabled` | Override subagent review gate                                                             |
+| `--pr-review-policy`       | `required\|skip_doc_only\|disabled` | Override PR review gate                                                                   |
+| `--preferred-runner`       | `claude-cli\|codex-exec`            | Declare execution agent identity; tries preferred first, then the other, then honest skip |
+| `--baseline`               | `orchestrator\|run-policy`          | Resolve divergence on resume (see below)                                                  |
+
+**Divergence recovery:** If `orchestrator.config.json` changes between runs, resume detects drift on the four bounded policy fields and refuses to continue until the operator resolves it:
+
+```bash
+# Adopt current repo config as the new active policy:
+bun run deliver --plan <plan> --baseline orchestrator <command>
+
+# Re-apply the persisted runPolicy — it governs execution for this invocation (not just state):
+bun run deliver --plan <plan> --baseline run-policy <command>
+```
+
+Both baselines accept additional override flags to fine-tune the resolved policy before persisting it.
+
+**Status output:** The active persisted `runPolicy` appears as `run_policy=... [persisted]` in `status` output, below the config-baseline `boundary_mode` and `review_policy` lines. Divergence between those lines is resolved with `--baseline`.
+
 ## Ticket Boundary Modes
 
 EE7 makes the ticket-boundary policy explicit.
@@ -352,21 +380,26 @@ When `reviewPolicy.subagentReview` is `"required"`, the agent must record a suba
 **Role split:**
 
 - **Primary agent** executes and patches during build and post-verify mode.
-- **Review subagent** (configured via `reviewSubagentOverride`, e.g. `"codex:codex-rescue"`) reviews and patches its own findings autonomously — a second AI pass before the PR is published. The primary agent does not triage subagent output; the subagent acts on what it finds.
+- **Review subagent** reviews and patches its own findings autonomously — a second AI pass before the PR is published. The primary agent does not triage subagent output; the subagent acts on what it finds.
 - **External AI vendors** (e.g. CodeRabbit, Qodo) review post-publication during `poll-review`.
+
+**Runner selection:** The execution agent declares its own identity via `--preferred-runner <claude-cli|codex-exec>`. The CLI tries the preferred runner first, falls back to the other, and records an honest `skipped` artifact if neither is available. No config change is needed when switching agent platforms (Claude Code, Codex, Cursor, etc.).
+
+The runner writes a `SubagentRunnerArtifact` to `reviews/<ticket>-subagent-runner.json`. `open-pr` fails closed when `subagentReview` is not `"disabled"` and a non-skipped outcome is recorded but the artifact file is missing.
 
 **Running subagent review:**
 
-1. Invoke the review subagent via the Agent tool using the `reviewSubagentOverride` value (e.g. `subagent_type: "codex:codex-rescue"`). The subagent will patch what it finds autonomously.
-2. **Stay idle. No read-ahead.** Wait for the subagent to complete before doing anything else.
-3. Record the outcome. When the outcome is `patched`, include one or more patch-commit SHAs:
+1. Read `docs/template/delivery/adversarial-review-template.md`. Fill in invariants, attack surfaces, and diff context from the current ticket diff and spec. Pass the completed template as the runner's prompt.
+2. The runner executes, patches what it finds, and exits. Outcome is detected via `git status --porcelain` (changes present → `patched`; no changes → `clean`).
+3. **Stay idle. No read-ahead.** Wait for the runner to complete before doing anything else.
+4. Record the outcome.
 
 ```bash
 bun run deliver --plan <plan> subagent-review clean    # subagent found nothing worth patching
 bun run deliver --plan <plan> subagent-review patched <sha...>  # subagent findings were applied
 ```
 
-The CLI is a state recorder only — it does not invoke the subagent. The primary agent runs the subagent skill, then calls this command. A recorded subagent patch commit must use a subject suffix of `[subagent-review]`.
+The CLI is a state recorder only — it does not invoke the subagent or runner. A recorded subagent patch commit must use a subject suffix of `[subagent-review]`.
 
 **Doc-only tickets** auto-skip subagent review only when `reviewPolicy.subagentReview` is `"skip_doc_only"`.
 
@@ -420,6 +453,7 @@ Current examples:
 
 - `workflow.open_pr.requires_post_verify`
 - `workflow.open_pr.requires_subagent_review`
+- `workflow.open_pr.requires_runner_review`
 - `workflow.open_pr.invalid_state`
 - `workflow.advance.requires_reviewed_ticket`
 - `workflow.worktree_guard.wrong_worktree`
@@ -542,7 +576,7 @@ With `subagentReview: "required"` in `orchestrator.config.json`, the subagent st
 ```bash
 bun run deliver --plan docs/product/delivery/phase-NN/implementation-plan.md start
 bun run deliver --plan docs/product/delivery/phase-NN/implementation-plan.md post-verify [clean|patched] [patch-commit-sha ...]
-# invoke subagent (reviewSubagentOverride value), apply prudent findings, then record:
+# execution agent passes --preferred-runner <its-identity>; runner patches findings, then record:
 bun run deliver --plan docs/product/delivery/phase-NN/implementation-plan.md subagent-review [clean|patched] [patch-commit-sha ...]
 bun run deliver --plan docs/product/delivery/phase-NN/implementation-plan.md open-pr
 bun run deliver --plan docs/product/delivery/phase-NN/implementation-plan.md poll-review
@@ -579,7 +613,7 @@ For standalone PRs, the internal review contract is behavior-first, not state-re
 - use `verify:quiet` for the fast inner loop
 - run `ci:quiet` before publication for non-doc code changes so the final local gate matches the pre-push hook
 - run the post-verify diff review and re-check risky areas
-- for non-trivial code changes, run `codex:codex-rescue` informally before `ai-review`
+- for non-trivial code changes, run a same-type review subagent informally before `ai-review`
 - run standalone `ai-review` as the orchestrator-visible external review gate
 
 In standalone mode, `post-verify` and `subagent-review` are expected preflight discipline, not orchestrator gates. The orchestrator can tell the agent to do them, but without standalone state it cannot verify, audit, or block on them. Only standalone `ai-review` is an orchestrator-visible gate today.
@@ -679,7 +713,7 @@ PR descriptions are maintained as delivery metadata, not one-shot text.
 - `open-pr` creates the initial PR body
 - `open-pr` uses a human-readable Conventional-Commit-style title plus the delivery ticket suffix, for example `feat: add user-facing behavior [PN.NN]`
 - rerunning `open-pr` refreshes the existing PR title/body instead of failing on an already-open branch
-- `record-review` stores the triage result and optional note
+- `record-review` stores the triage result and optional note; when run inside a git checkout it then **stages and commits** the updated `*-ai-review.triage.json` (and the paired `*-ai-review.fetch.json` when present on disk) so the working tree does not stay dirty after a `needs_patch` → `record-review` cycle
 - `record-review ... patched` also makes a best-effort attempt to resolve mapped native GitHub inline review threads for patched findings
 - `poll-review` auto-records `clean` when no `pr-review` feedback is detected by the final check and refreshes the PR body immediately
 - PR-body AI-review notes now distinguish current-head review from stale-history review when the reviewed SHA no longer matches the branch head

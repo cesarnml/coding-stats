@@ -204,15 +204,55 @@ if [ "$IS_SOURCE_REPO" = false ]; then
   inject_soa_block ".son-of-anton/AGENTS.soa.md" "AGENTS.md"
   inject_soa_block ".son-of-anton/CLAUDE.soa.md" "CLAUDE.md"
 
+  # Scaffold orchestrator.config.json if absent.
+  # Detects packageManager from lock files; defaults to bun if none found.
+  SOA_CONFIG="$REPO_ROOT/orchestrator.config.json"
+  if [ ! -f "$SOA_CONFIG" ]; then
+    if [ -f "$REPO_ROOT/pnpm-lock.yaml" ]; then
+      _pm="pnpm"; _rt="node"
+    elif [ -f "$REPO_ROOT/yarn.lock" ]; then
+      _pm="yarn"; _rt="node"
+    elif [ -f "$REPO_ROOT/package-lock.json" ]; then
+      _pm="npm"; _rt="node"
+    else
+      _pm="bun"; _rt="bun"
+    fi
+    cat > "$SOA_CONFIG" <<EOF_CONFIG
+{
+  "defaultBranch": "main",
+  "planRoot": "docs",
+  "runtime": "$_rt",
+  "packageManager": "$_pm",
+  "ticketBoundaryMode": "cook",
+  "reviewPolicy": {
+    "subagentReview": "skip_doc_only",
+    "prReview": "disabled"
+  }
+}
+EOF_CONFIG
+    echo "  created: orchestrator.config.json (review defaultBranch, runtime, packageManager)"
+  fi
+
   # Refresh the global Claude Code entrypoint skill if previously installed.
   # The global skill is a manual one-time install that otherwise drifts silently.
+  SOURCE_SOA_SKILL="$REPO_ROOT/.son-of-anton/.agents/skills/soa/SKILL.md"
   GLOBAL_SOA_SKILL="$HOME/.claude/skills/soa/SKILL.md"
-  if [ -f "$GLOBAL_SOA_SKILL" ]; then
-    cp "$REPO_ROOT/.son-of-anton/.agents/skills/soa/SKILL.md" "$GLOBAL_SOA_SKILL"
+  if [ -f "$SOURCE_SOA_SKILL" ] && [ -f "$GLOBAL_SOA_SKILL" ]; then
+    cp "$SOURCE_SOA_SKILL" "$GLOBAL_SOA_SKILL"
     echo "  refreshed: ~/.claude/skills/soa/SKILL.md"
   fi
 
-  echo "soa-sync: add .son-of-anton/ to your lint/format ignore configuration (e.g. .prettierignore, .eslintignore)"
+  echo ""
+  echo "soa-sync: setup complete."
+  echo ""
+  echo "  Prerequisites:"
+  echo "    bun    (global) — required for all delivery commands: https://bun.sh"
+  echo "    gh     (global) — required for PR creation and review polling: https://cli.github.com"
+  echo "    claude (global) — optional, enables programmatic subagent review via --preferred-runner claude-cli"
+  echo "    codex  (global) — optional, enables programmatic subagent review via --preferred-runner codex-exec"
+  echo ""
+  echo "  Add .son-of-anton/ to your lint/format ignore config (e.g. .prettierignore, .eslintignore)"
+  echo "  Review orchestrator.config.json, then run: bun run deliver --plan <plan-path> start"
 fi
 
 echo "soa-sync: done"

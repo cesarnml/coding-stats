@@ -1,7 +1,19 @@
-import { existsSync, realpathSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs';
 import { realpath } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { getUsage, parseCliArgs, resolveOptionsForCommand } from './cli';
+import { dirname, resolve } from 'node:path';
+import {
+  getUsage,
+  parseCliArgs,
+  resolveOptionsForCommand,
+  resolveRuntimePolicyOverrides,
+} from './cli';
 import { ensureEnvReady as ensureEnvReadyImpl } from './env';
 import {
   generateRunDeliverInvocation,
@@ -46,7 +58,13 @@ import {
   resolvePlanPathForBranch as resolvePlanPathForBranchImpl,
 } from './planning';
 import {
+  applyRunPolicyToConfig,
+  deriveRunPolicyFromConfig,
+  detectRunPolicyDivergence,
+  formatRunPolicyDivergenceError,
   loadState as loadStateImpl,
+  normalizeRunPolicy,
+  patchRunPolicyWithFlags,
   repairState as repairStateImpl,
   saveState as saveStateImpl,
   summarizeStateDifferences as summarizeStateDifferencesImpl,
@@ -97,10 +115,16 @@ import {
   materializeTicketContext,
   openPullRequest as openPullRequestImpl,
   recordSubagentReview as recordSubagentReviewImpl,
+  recordPostRed as recordPostRedImpl,
   recordPostVerify as recordPostVerifyImpl,
   restackTicket as restackTicketImpl,
   startTicket as startTicketImpl,
 } from './ticket-flow';
+import {
+  buildRunnerArtifact,
+  tryRunner,
+  validateRunnerArtifact,
+} from './subagent-runner';
 
 export const WORKTREE_EXEMPT = new Set(['status', 'sync', 'start']);
 
@@ -115,6 +139,7 @@ export function assertWorktreeGuard(
 
   const activeTicket =
     state.tickets.find((t) => t.status === 'in_progress') ??
+    state.tickets.find((t) => t.status === 'red_complete') ??
     state.tickets.find((t) => t.status === 'verified') ??
     state.tickets.find((t) => t.status === 'subagent_review_complete') ??
     state.tickets.find((t) => t.status === 'in_review') ??
@@ -169,6 +194,11 @@ export async function runDeliveryOrchestrator(
         planPath?: string;
         prNumber?: number;
         boundaryMode?: TicketBoundaryMode;
+        subagentReviewPolicy?: ReviewPolicyStageValue;
+        prReviewPolicy?: ReviewPolicyStageValue;
+        preferredRunner?: 'claude-cli' | 'codex-exec';
+        redCommitSha?: string;
+        baseline?: 'orchestrator' | 'run-policy';
       }
     | undefined;
 
@@ -183,13 +213,10 @@ export async function runDeliveryOrchestrator(
     );
     parsed = parseCliArgs(argv, usage);
     const resolvedConfig = resolveOrchestratorConfig(
-      {
-        ...rawConfig,
-        ticketBoundaryMode: parsed.boundaryMode ?? rawConfig.ticketBoundaryMode,
-      },
+      resolveRuntimePolicyOverrides(parsed, rawConfig),
       cwd,
     );
-    const context = createDeliveryOrchestratorContext(resolvedConfig);
+    let context = createDeliveryOrchestratorContext(resolvedConfig);
     const platform = context.platform;
     const notifier = resolveNotifier();
     if (parsed.command === 'ai-review') {
@@ -232,7 +259,77 @@ export async function runDeliveryOrchestrator(
       return 0;
     }
 
-    const state = await loadState(cwd, options, context.config);
+    const { state: loadedState, hadPersistedRunPolicy }: LoadStateResult =
+      await loadState(cwd, options, context.config);
+
+    // Divergence check: when a run is in-progress (runPolicy was already
+    // persisted) and the current config has drifted, refuse to continue
+    // silently. Skip diagnostic/idempotent commands that do not consume policy.
+    const DIVERGENCE_EXEMPT = new Set([
+      // Diagnostic / idempotent commands that do not consume runPolicy.
+      'status',
+      'sync',
+      'repair-state',
+      'record-review',
+      'reconcile-late-review',
+      // start: re-stamps runPolicy from current config when explicit flags are
+      // present, so blocking it on divergence is counter-productive — let
+      // start-time stamping resolve the conflict.
+      'start',
+    ]);
+    let state = loadedState;
+    if (
+      hadPersistedRunPolicy &&
+      !DIVERGENCE_EXEMPT.has(parsed.command) &&
+      loadedState.runPolicy != null
+    ) {
+      const currentRunPolicy = deriveRunPolicyFromConfig(resolvedConfig);
+      const divergedFields = detectRunPolicyDivergence(
+        loadedState.runPolicy,
+        currentRunPolicy,
+      );
+      if (divergedFields.length > 0) {
+        const runDeliverInvocation = generateRunDeliverInvocation(
+          context.config.packageManager,
+        );
+        const commandArgs = [
+          '--plan',
+          state.planPath,
+          parsed.command,
+          ...parsed.positionals,
+        ].join(' ');
+        const recoveryInvocation = `${runDeliverInvocation} ${commandArgs}`;
+
+        if (parsed.baseline === undefined) {
+          throw new Error(
+            formatRunPolicyDivergenceError(
+              loadedState.runPolicy,
+              currentRunPolicy,
+              divergedFields,
+              recoveryInvocation,
+            ),
+          );
+        }
+
+        // Operator provided --baseline: resolve and persist the new runPolicy.
+        const resolvedRunPolicy =
+          parsed.baseline === 'orchestrator'
+            ? deriveRunPolicyFromConfig(resolvedConfig)
+            : patchRunPolicyWithFlags(loadedState.runPolicy, parsed);
+
+        state = { ...loadedState, runPolicy: resolvedRunPolicy };
+        await saveState(cwd, state);
+      }
+    }
+
+    // Apply persisted runPolicy so all downstream call sites use the governing
+    // policy values from state, not the current config.
+    if (hadPersistedRunPolicy && state.runPolicy != null) {
+      context = {
+        ...context,
+        config: applyRunPolicyToConfig(context.config, state.runPolicy),
+      };
+    }
 
     const resolvedCwd = await realpath(cwd).catch(() => cwd);
     assertWorktreeGuard(
@@ -254,8 +351,27 @@ export async function runDeliveryOrchestrator(
         return 0;
       }
       case 'start': {
+        // When explicit policy flags are provided, re-stamp runPolicy from the
+        // current resolved config so the persisted state reflects the operator's
+        // explicit overrides. Without explicit flags, the existing runPolicy (or
+        // normalizeRunPolicy-derived baseline) is preserved.
+        const hasExplicitPolicyFlags =
+          parsed.boundaryMode !== undefined ||
+          parsed.subagentReviewPolicy !== undefined ||
+          parsed.prReviewPolicy !== undefined;
+        const stateForStart = hasExplicitPolicyFlags
+          ? { ...state, runPolicy: deriveRunPolicyFromConfig(resolvedConfig) }
+          : state;
+        // When explicit flags are provided, stateForStart.runPolicy reflects the
+        // new policy derived from CLI flags. Re-anchor context.config to the
+        // flag-resolved config so startTicket and status output use the
+        // operator's intended values, not the persisted policy stamped by the
+        // merge block above.
+        if (hasExplicitPolicyFlags) {
+          context = { ...context, config: resolvedConfig };
+        }
         const nextState = await startTicket(
-          state,
+          stateForStart,
           cwd,
           context,
           parsed.positionals[0],
@@ -298,55 +414,171 @@ export async function runDeliveryOrchestrator(
           auditTicketId,
           auditOutcome,
           context.config,
-          { hasLocalBranchCommits: context.platform.hasLocalBranchCommits },
+          {
+            getWorkingTreeStatus: context.platform.getWorkingTreeStatus,
+            hasLocalBranchCommits: context.platform.hasLocalBranchCommits,
+            hasUncommittedChanges: context.platform.hasUncommittedChanges,
+            warn: (message: string) => console.log(message),
+          },
           auditPatchCommits,
         );
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
         return 0;
       }
+      case 'post-red': {
+        const nextState = await recordPostRed(
+          state,
+          parsed.positionals[0],
+          context,
+          {},
+          parsed.redCommitSha,
+        );
+        await saveState(cwd, nextState);
+        console.log(formatStatus(nextState, context.config));
+        return 0;
+      }
       case 'subagent-review': {
-        const {
-          auditOutcome: subagentOutcome,
-          auditPatchCommitArgs: subagentPatchCommitArgs,
-          auditTicketId: subagentTicketId,
-        } = parsePostVerifyArgs(parsed.positionals);
+        const subagentTicketId = parsed.positionals[0];
         const subagentTarget =
           (subagentTicketId
             ? state.tickets.find((t) => t.id === subagentTicketId)
             : state.tickets.find((t) => t.status === 'verified')) ?? undefined;
-        const isDocOnly = subagentTarget
-          ? isPlatformLocalBranchDocOnly(
-              subagentTarget.worktreePath,
-              subagentTarget.baseBranch,
-              context.config.runtime,
-            )
-          : false;
+
+        if (!subagentTarget) {
+          throw new Error(
+            subagentTicketId
+              ? `Unknown ticket ${subagentTicketId}.`
+              : 'No ticket at verified status found.',
+          );
+        }
+
+        const isDocOnly = isPlatformLocalBranchDocOnly(
+          subagentTarget.worktreePath,
+          subagentTarget.baseBranch,
+          context.config.runtime,
+        );
+        const policy = context.config.reviewPolicy.subagentReview;
+
+        // Auto-skip doc-only tickets under skip_doc_only policy.
+        if (policy === 'skip_doc_only' && isDocOnly) {
+          const nextState = recordSubagentReview(
+            state,
+            'skipped',
+            true,
+            policy,
+            undefined,
+            undefined,
+            undefined,
+            subagentTarget.id,
+          );
+          console.log('Doc-only ticket — subagent review auto-skipped.');
+          await saveState(cwd, nextState);
+          console.log(formatStatus(nextState, context.config));
+          return 0;
+        }
+
+        // Build runner order: preferred first, other second.
+        const preferredRunner = parsed.preferredRunner;
+        const runnerOrder: Array<'claude-cli' | 'codex-exec'> =
+          preferredRunner === 'codex-exec'
+            ? ['codex-exec', 'claude-cli']
+            : ['claude-cli', 'codex-exec'];
+
+        const worktreePath = subagentTarget.worktreePath;
+        const headSha = context.platform.readCurrentBranch
+          ? (() => {
+              try {
+                return spawnSync('git', ['rev-parse', 'HEAD'], {
+                  cwd: worktreePath,
+                  encoding: 'utf-8',
+                }).stdout.trim();
+              } catch {
+                return 'unknown';
+              }
+            })()
+          : 'unknown';
+
+        const reviewPrompt =
+          `Assume this implementation has holes — find them. ` +
+          `Review all code changes introduced in the current branch versus its base branch (${subagentTarget.baseBranch}). ` +
+          `Make any fixes you judge necessary. Commit all fixes with messages ending with " [subagent-review]". ` +
+          `Skip ticket doc files under docs/product/delivery/. ` +
+          `Do not rationalize away anything you notice — flag it and let the human decide.`;
+
+        const RUNNER_TIMEOUT_MS = 10 * 60 * 1000;
+
+        let outcome: 'clean' | 'patched' | 'skipped' = 'skipped';
+        let usedRunner: 'claude-cli' | 'codex-exec' | 'skipped' = 'skipped';
+
+        for (const runner of runnerOrder) {
+          const result = tryRunner(
+            () => {
+              const args =
+                runner === 'claude-cli'
+                  ? ['--print', reviewPrompt, '--output-format', 'text']
+                  : [reviewPrompt];
+              const bin = runner === 'claude-cli' ? 'claude' : 'codex';
+              const spawned = spawnSync(bin, args, {
+                cwd: worktreePath,
+                timeout: RUNNER_TIMEOUT_MS,
+                encoding: 'utf-8',
+              });
+              return {
+                exitCode: spawned.status,
+                timedOut:
+                  spawned.signal === 'SIGTERM' ||
+                  spawned.error?.message?.includes('timed out') ||
+                  false,
+              };
+            },
+            () => {
+              const status = spawnSync('git', ['status', '--porcelain'], {
+                cwd: worktreePath,
+                encoding: 'utf-8',
+              });
+              return (status.stdout ?? '').trim().length > 0;
+            },
+          );
+
+          if (result.status === 'ran') {
+            outcome = result.outcome;
+            usedRunner = runner;
+            break;
+          }
+
+          console.log(
+            `Runner ${runner} unavailable${result.status === 'timeout' ? ' (timed out)' : ''}, trying fallback...`,
+          );
+        }
+
+        // Write runner artifact.
+        const artifact = buildRunnerArtifact(usedRunner, headSha, outcome);
+        const artifactRelPath = `${state.reviewsDirPath}/${subagentTarget.id}-subagent-runner.json`;
+        const artifactAbsPath = resolve(cwd, artifactRelPath);
+        mkdirSync(dirname(artifactAbsPath), { recursive: true });
+        writeFileSync(
+          artifactAbsPath,
+          JSON.stringify(artifact, null, 2) + '\n',
+          'utf-8',
+        );
+
         const nextState = recordSubagentReview(
           state,
-          subagentOutcome,
+          outcome,
           isDocOnly,
-          context.config.reviewPolicy.subagentReview,
-          subagentOutcome === 'patched'
-            ? resolveInternalReviewPatchCommits(
-                subagentTarget?.worktreePath ?? cwd,
-                context,
-                subagentPatchCommitArgs,
-                '[subagent-review]',
-                'Subagent review',
-              )
-            : undefined,
-          context.config.reviewSubagentOverride,
-          subagentTicketId,
+          policy,
+          undefined,
+          undefined,
+          undefined,
+          subagentTarget.id,
+          artifactRelPath,
         );
-        const justRecorded = nextState.tickets.find(
-          (t) =>
-            t.status === 'subagent_review_complete' &&
-            state.tickets.find((prev) => prev.id === t.id)?.status ===
-              'verified',
-        );
-        if (justRecorded?.subagentReviewOutcome === 'skipped') {
-          console.log('Doc-only ticket — subagent review auto-skipped.');
+
+        if (outcome === 'skipped') {
+          console.log(
+            'All runners unavailable — subagent review honestly skipped.',
+          );
         }
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
@@ -643,12 +875,17 @@ export function createOptions(input: {
   return createOptionsImpl(input);
 }
 
+export type LoadStateResult = {
+  state: DeliveryState;
+  hadPersistedRunPolicy: boolean;
+};
+
 export async function loadState(
   cwd: string,
   options: OrchestratorOptions,
   config: ResolvedOrchestratorConfig,
-): Promise<DeliveryState> {
-  return loadStateImpl(cwd, options, {
+): Promise<LoadStateResult> {
+  const raw = await loadStateImpl(cwd, options, {
     cwd,
     defaultBranch: config.defaultBranch,
     runtime: config.runtime,
@@ -656,6 +893,8 @@ export async function loadState(
     deriveWorktreePath,
     findExistingBranch,
   });
+  const hadPersistedRunPolicy = raw.runPolicy != null;
+  return { state: normalizeRunPolicy(raw, config), hadPersistedRunPolicy };
 }
 
 async function repairState(
@@ -663,7 +902,7 @@ async function repairState(
   options: OrchestratorOptions,
   config: ResolvedOrchestratorConfig,
 ): Promise<RepairStateResult> {
-  return repairStateImpl(cwd, options, {
+  const result = await repairStateImpl(cwd, options, {
     cwd,
     defaultBranch: config.defaultBranch,
     runtime: config.runtime,
@@ -671,6 +910,13 @@ async function repairState(
     deriveWorktreePath,
     findExistingBranch,
   });
+  const normalized = normalizeRunPolicy(result.state, config);
+
+  if (normalized !== result.state) {
+    await saveState(cwd, normalized);
+  }
+
+  return { ...result, state: normalized };
 }
 
 export async function inferPlanPathFromBranch(
@@ -782,7 +1028,10 @@ export async function recordPostVerify(
       runtime: Runtime,
     ) => boolean;
     hasLocalBranchCommits?: (cwd: string, baseBranch: string) => boolean;
+    hasUncommittedChanges?: (cwd: string) => boolean;
+    getWorkingTreeStatus?: (cwd: string) => string;
     postVerifyPolicy?: ReviewPolicyStageValue;
+    warn?: (message: string) => void;
   } = {},
   patchCommits?: InternalReviewPatchCommit[],
 ): Promise<DeliveryState> {
@@ -793,7 +1042,8 @@ export async function recordPostVerify(
   const target =
     (ticketId
       ? state.tickets.find((ticket) => ticket.id === ticketId)
-      : state.tickets.find((ticket) => ticket.status === 'in_progress')) ??
+      : (state.tickets.find((ticket) => ticket.status === 'red_complete') ??
+        state.tickets.find((ticket) => ticket.status === 'in_progress'))) ??
     undefined;
   const subagentReviewPolicy =
     dependencies.postVerifyPolicy ?? config.reviewPolicy.subagentReview;
@@ -805,6 +1055,37 @@ export async function recordPostVerify(
       target.baseBranch,
       config.runtime,
     );
+
+  if (target) {
+    try {
+      if (dependencies.hasUncommittedChanges?.(target.worktreePath) === true) {
+        let statusOutput = '';
+
+        try {
+          statusOutput =
+            dependencies.getWorkingTreeStatus?.(target.worktreePath) ?? '';
+        } catch {
+          // Keep post-verify non-blocking if status lookup fails.
+        }
+
+        const warningLines = [
+          'Warning: working tree has uncommitted changes.',
+          'Confirm these are intentional before recording post-verify clean.',
+        ];
+
+        if (statusOutput.trim().length > 0) {
+          warningLines.push(
+            'Uncommitted files:',
+            ...statusOutput.split('\n').map((line) => `  ${line}`),
+          );
+        }
+
+        dependencies.warn?.(warningLines.join('\n'));
+      }
+    } catch {
+      // Keep post-verify non-blocking if dirty-worktree inspection fails.
+    }
+  }
 
   if (isDocOnly && target && dependencies.hasLocalBranchCommits !== undefined) {
     const hasCommits = dependencies.hasLocalBranchCommits(
@@ -832,7 +1113,114 @@ export async function recordPostVerify(
     );
   }
 
+  if (
+    outcome === 'skipped' &&
+    (!isDocOnly || subagentReviewPolicy === 'required')
+  ) {
+    throw new Error(
+      isDocOnly
+        ? `Ticket ${target.id} requires an explicit post-verify outcome. Pass \`clean\` or \`patched\`.`
+        : `Ticket ${target.id} cannot record \`skipped\` for post-verify on a code ticket. Pass \`clean\` or \`patched\`.`,
+    );
+  }
+
+  if (target?.status === 'in_progress' && !isDocOnly) {
+    throw createWorkflowContractError(
+      'workflow.post_verify.requires_post_red',
+      `Ticket ${target.id} is at status in_progress. Run \`bun run deliver --plan ${state.planPath} post-red ${target.id}\` before post-verify on a code ticket.`,
+    );
+  }
+
   return recordPostVerifyImpl(state, ticketId, outcome, patchCommits);
+}
+
+export async function recordPostRed(
+  state: DeliveryState,
+  ticketId: string | undefined,
+  context: DeliveryOrchestratorContext,
+  dependencies: {
+    isLocalBranchDocOnly?: (
+      cwd: string,
+      baseBranch: string,
+      runtime: Runtime,
+    ) => boolean;
+    readHeadSha?: (cwd: string) => string;
+    readLatestCommitSubject?: (cwd: string) => string;
+    runVerify?: (cwd: string) => {
+      exitCode: number;
+      stderr: string;
+      stdout: string;
+    };
+  } = {},
+  redCommitSha?: string,
+): Promise<DeliveryState> {
+  const target =
+    (ticketId
+      ? state.tickets.find((ticket) => ticket.id === ticketId)
+      : state.tickets.find((ticket) => ticket.status === 'in_progress')) ??
+    undefined;
+
+  if (!target) {
+    throw new Error('No in-progress ticket found to mark red_complete.');
+  }
+
+  if (target.status === 'red_complete') {
+    console.log(`Ticket ${target.id} is already red_complete.`);
+    return state;
+  }
+
+  const isDocOnly = (
+    dependencies.isLocalBranchDocOnly ?? isPlatformLocalBranchDocOnly
+  )(target.worktreePath, target.baseBranch, context.config.runtime);
+
+  if (isDocOnly) {
+    console.log('Doc-only branch — post-red skipped.');
+    return state;
+  }
+
+  // When --red-commit-sha is provided the operator is asserting that the named
+  // commit was the red commit. Skip the HEAD subject check and CI check — both
+  // are designed for the sequential red-then-green workflow where HEAD is still
+  // the red commit. With a named SHA the red evidence is already in history.
+  if (redCommitSha !== undefined) {
+    console.log(
+      `post-red: recording against named red commit ${redCommitSha} (skipping HEAD and CI checks).`,
+    );
+    return recordPostRedImpl(state, {
+      headSha: redCommitSha,
+      latestCommitSubject: '[red]',
+      ticketId,
+      verifyExitCode: 1,
+    });
+  }
+
+  const latestCommitSubject =
+    dependencies.readLatestCommitSubject ??
+    context.platform.readLatestCommitSubject;
+  const readHeadSha = dependencies.readHeadSha ?? context.platform.readHeadSha;
+  const runVerify =
+    dependencies.runVerify ??
+    ((cwd: string) =>
+      context.platform.runProcessResult(cwd, [
+        context.config.packageManager,
+        'run',
+        'ci',
+      ]));
+
+  const verifyResult = runVerify(target.worktreePath);
+
+  if (verifyResult.exitCode === 0) {
+    throw new Error(
+      `Ticket ${target.id} post-red requires a failing verification run before delivery can advance.`,
+    );
+  }
+
+  return recordPostRedImpl(state, {
+    headSha: readHeadSha(target.worktreePath),
+    latestCommitSubject: latestCommitSubject(target.worktreePath),
+    ticketId,
+    verifyExitCode: verifyResult.exitCode,
+  });
 }
 
 export function recordSubagentReview(
@@ -921,6 +1309,45 @@ export async function openPullRequest(
   ticketId?: string,
 ): Promise<DeliveryState> {
   const resolvedTicketId = ticketId;
+
+  if (context.config.reviewPolicy.subagentReview !== 'disabled') {
+    const targetTicket = resolvedTicketId
+      ? state.tickets.find((t) => t.id === resolvedTicketId)
+      : (state.tickets.find((t) => t.status === 'subagent_review_complete') ??
+        state.tickets.find((t) => t.status === 'verified') ??
+        state.tickets.find((t) => t.status === 'in_review'));
+
+    if (
+      targetTicket !== undefined &&
+      targetTicket.subagentReviewOutcome != null &&
+      targetTicket.subagentReviewOutcome !== 'skipped'
+    ) {
+      const rawArtifactPath = targetTicket.subagentRunnerArtifactPath;
+      const artifactPath = rawArtifactPath
+        ? resolve(cwd, rawArtifactPath)
+        : undefined;
+      const artifactExists =
+        artifactPath !== undefined && existsSync(artifactPath);
+      const artifact = artifactExists
+        ? (() => {
+            try {
+              return validateRunnerArtifact(
+                JSON.parse(readFileSync(artifactPath, 'utf-8')),
+              );
+            } catch {
+              return null;
+            }
+          })()
+        : null;
+      if (!artifact) {
+        throw createWorkflowContractError(
+          'workflow.open_pr.requires_runner_review',
+          `Ticket ${targetTicket.id} requires a valid runner review artifact before opening a PR. subagentReviewOutcome="${targetTicket.subagentReviewOutcome}" but no artifact found at ${rawArtifactPath ?? '(path not set)'}. Re-run subagent-review to regenerate the artifact.`,
+        );
+      }
+    }
+  }
+
   const platform = context.platform;
   const nextState = openPullRequestImpl(state, cwd, resolvedTicketId, {
     assertReviewerFacingMarkdown,

@@ -17,7 +17,7 @@ Son of Anton drives approved work to completion. How ticket boundaries are handl
 2. **When to use.** Smaller bounded changes ship as standalone PRs without a new phase/epic. Use `bun run deliver ai-review [--pr <number>]` — not the ticketed stacked flow (`--plan …`, `poll-review`, `advance`, etc.).
 3. **Review discipline.** Complete implement → fast verification (`bun run verify:quiet` + scoped tests as needed) → final publication gate (`bun run ci:quiet` for non-doc code changes) → named self-audit (re-read diff, second-pass risky areas). Standalone PRs do not use the ticket-only `post-verify` or `subagent-review` recorders because the flow is stateless, so these remain expected preflight behaviors rather than orchestrator-enforced gates.
    - Self-audit is required for every standalone PR.
-   - For non-trivial code changes, invoke `codex:codex-rescue` via the Agent tool (subagent_type: "codex:codex-rescue") before `ai-review`; doc-only or genuinely trivial changes may skip it.
+   - For non-trivial code changes, invoke a review subagent via the Agent tool before `ai-review`. Fill in `docs/template/delivery/adversarial-review-template.md` from the diff and use it as the prompt — do not substitute a vague "find holes" directive. Doc-only or genuinely trivial changes may skip this step.
    - Standalone `ai-review` is the only orchestrator-visible review gate on this path.
    - If the change needs recorded self-audit / Codex gates to feel safe, it likely should not stay a standalone PR unless the repo first adds lightweight standalone review state.
 4. **Running `ai-review`.** Uses real wall-clock polling. Surface that before starting; do not hide the time cost.
@@ -58,7 +58,7 @@ Commit the delivery plan and all ticket docs to the default branch before creati
    6. Open / refresh PR — `open-pr`
    7. Run AI-review polling — `poll-review` (see [External Review](#external-review))
    8. Patch prudent findings
-   9. Record review — `record-review` (**skip** when `poll-review` already auto-recorded `clean` or `skipped`; only needed when `poll-review` leaves ticket in `needs_patch` state)
+   9. Record review — `record-review` (**skip** when `poll-review` already auto-recorded `clean` or `skipped`; only needed when `poll-review` leaves ticket in `needs_patch` state). The orchestrator commits updated `*-ai-review.{fetch,triage}.json` after a successful `record-review` when the ticket worktree is a git checkout — do **not** add a second manual commit for those files unless you changed something else in the same step.
    10. Advance — `advance`
 5. During the external review window, stay idle.
 6. Do not write ahead across ticket boundaries.
@@ -91,26 +91,25 @@ Reset context (/clear), then resume with:
 **Role split:**
 
 - **Primary agent** executes and patches (build mode and post-verify).
-- **Review subagent** (configured via `reviewSubagentOverride`, e.g. `"codex:codex-rescue"`) reviews and patches its own findings autonomously — a second AI pass before the PR is published. The primary agent does not triage subagent output; the subagent acts on what it finds.
+- **Review subagent** reviews and patches its own findings autonomously — a second AI pass before the PR is published. The primary agent does not triage subagent output; the subagent acts on what it finds.
 - **External AI vendors** (e.g. CodeRabbit, Qodo) review post-publication via `poll-review`.
 
 **When `subagentReview` is `"required"`:**
 
-1. Invoke the review subagent via the Agent tool using the `reviewSubagentOverride` value (e.g. `subagent_type: "codex:codex-rescue"`). The subagent will patch what it finds autonomously. The subagent prompt must be **adversarial**: assume the implementation has holes and find them. Explicitly instruct the subagent: "Do not rationalize away anything you notice — flag it and let the human decide." A checklist of 'did the ticket spec land?' is not a review.
-2. **Stay idle. No read-ahead.** Wait for the subagent to complete before doing anything else — same discipline as the external review window.
-3. Record: `bun run deliver --plan <plan> subagent-review [clean|patched]`
+1. **Read `docs/template/delivery/adversarial-review-template.md`.** Fill in the template from the current diff and ticket spec — invariants, attack surfaces, diff context. This takes real work; do not skip it or pass a vague prompt. The filled template becomes the subagent's complete prompt.
+2. Invoke the review subagent via the Agent tool. Pass the completed template as the prompt. Use a different model family from the primary agent when available (cross-model review breaks shared blind spots). Same-type is acceptable when cross-model is unavailable.
+3. **Stay idle. No read-ahead.** Wait for the subagent to complete before doing anything else — same discipline as the external review window.
+4. Record: `bun run deliver --plan <plan> subagent-review [clean|patched]`
 
 The CLI is a state recorder only — never invoke the subagent from within the CLI.
 
-**Subagent scope contract:** The review subagent reviews and patches implementation code only. Ticket doc files under `docs/product/delivery/` — including `## Rationale` sections written during implementation — are part of the ticket deliverable and must not be reverted by the subagent. Brief the subagent to skip ticket doc files when invoking it.
+**Subagent scope contract:** The review subagent reviews and patches implementation code only. Ticket doc files under `docs/product/delivery/` — including `## Rationale` sections written during implementation — are part of the ticket deliverable and must not be reverted by the subagent. The template already encodes this constraint; do not remove it.
 
 **When `subagentReview` is `"skip_doc_only"`** (repo default): code tickets still require the subagent step before `open-pr`; doc-only tickets auto-record `skipped`.
 
 **When `subagentReview` is `"disabled"`**: skip the step entirely.
 
 If the configured subagent is unavailable, set `subagentReview: "disabled"` in `orchestrator.config.json` to bypass the gate.
-
-**Default when `reviewSubagentOverride` is absent:** use the same agent type as the primary agent (same-type default). The `reviewSubagentOverride` value is canonical when present; the `codex:codex-rescue` examples above are illustrative.
 
 ---
 

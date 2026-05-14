@@ -79,7 +79,7 @@ Accepts a concrete idea (inline description), a draft from `/soa ideate` (`docs/
 
 1. Read the plan if a file path is given. Otherwise use the inline description.
 2. **Invoke the `soa-grill-me` skill** in **Mode 1 (product plan)** — pass the plan content and instruct it to stay at the product level (scope, goals, success criteria, deferrals, risks). Explicitly tell it: no schema design, no API routes, no ticket breakdown.
-3. After `soa-grill-me` closes, write `docs/product/plans/phase-N.md` using the product-plan template at `.son-of-anton/docs/template/templates/product-plan.template.md`.
+3. After `soa-grill-me` closes, write `docs/product/plans/phase-N.md` using the product-plan template at `.son-of-anton/docs/template/stubs/product-plan.template.md`.
 4. **Hard stop.** Ask the developer to approve the product plan. Do not proceed to tickets.
 
 > The next step after approval is `/soa decompose docs/product/plans/phase-N.md`.
@@ -97,7 +97,7 @@ Take the approved `docs/product/plans/phase-N.md` and produce a detailed deliver
 1. Read the product plan at the given path (or ask for it). Refuse to proceed if no approved product plan exists — send the developer to `/soa plan` first.
 2. **Invoke the `soa-grill-me` skill** in **Mode 2 (delivery decomposition)** — pass the product plan and focus on: schema/migration strategy, API route structure, ticket granularity, PR slice boundaries, dependency order, test strategy, exit conditions per ticket.
 3. **Stop and seek developer approval of the ticket list** before writing files.
-4. Before writing any ticket file, read the canonical template at `docs/template/templates/ticket.template.md`. Do not use existing ticket files as format references — they may predate the current template and will produce format drift if copied. Then write `docs/product/delivery/phase-N/implementation-plan.md` and individual `ticket-NN-*.md` files per that template.
+4. Before writing any ticket file, read the canonical template at `docs/template/stubs/ticket.template.md`. Do not use existing ticket files as format references — they may predate the current template and will produce format drift if copied. Then write `docs/product/delivery/phase-N/implementation-plan.md` and individual `ticket-NN-*.md` files per that template.
 
 ---
 

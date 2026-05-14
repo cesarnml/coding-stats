@@ -1,5 +1,11 @@
 # Docs Index
 
+<!-- This directory ships inside the son-of-anton subtree. Consumer repos see it as
+     .son-of-anton/docs/template/. The "template/" subdir is named from the consumer's
+     perspective — it holds the files consumers copy and reference. Son-of-Anton uses
+     its own orchestrator to build itself (ouroboros), so these docs double as live
+     delivery guidance for this repo and as the shipped template layer for all consumers. -->
+
 ## Recommended Reading Order
 
 1. `docs/template/overview/start-here.md` — onboarding and immediate next action
@@ -11,8 +17,8 @@
 
 ## Templates
 
-- `docs/template/templates/implementation-plan.template.md` — copy this when starting a new phase
-- `docs/template/templates/ticket.template.md` — copy this for each ticket in the phase
+- `docs/template/stubs/implementation-plan.template.md` — copy this when starting a new phase
+- `docs/template/stubs/ticket.template.md` — copy this for each ticket in the phase
 
 ## Folder Structure
 
@@ -28,7 +34,7 @@
 - `issue-tracking.md`: Fibonacci sizing and issue conventions
 - `phase-implementation-guidance.md`: implementation plan format contract
 
-### `template/templates` — Starter files for new phases and tickets
+### `template/stubs` — Starter files for new phases and tickets
 
 - `implementation-plan.template.md`
 - `ticket.template.md`

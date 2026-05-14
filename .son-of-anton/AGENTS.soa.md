@@ -15,13 +15,12 @@ via `git subtree add --prefix .son-of-anton`.
 
 When invoking a review subagent during orchestrated delivery:
 
-- **Same-type default:** when `reviewSubagentOverride` is absent in `orchestrator.config.json`, use the same agent type as the primary agent.
-- **Override is canonical:** when `reviewSubagentOverride` is present, use that value exactly.
+- **Preferred-runner:** pass `--preferred-runner <claude-cli|codex-exec>` to `subagent-review`. The CLI tries the preferred runner first, then the other, then records an honest `skipped` if neither is available. No config changes needed when switching agent platforms.
 - **Adversarial prompt required:** the subagent prompt must assume the implementation has holes and find them. Do not rationalize away anything you notice — flag it and let the human decide. A checklist of "did the ticket spec land?" is not a review.
 - **No rationalizing away findings:** the subagent must not suppress or downplay what it finds. Flag everything; the human decides what to act on.
 
 ## Pre-Commit Discipline
 
-Before committing: run the repo's format and verify commands for touched files. Run a spellcheck when docs, Markdown, config examples, PR text, or user-facing copy changed.
+**Prerequisite:** Son-of-Anton requires a global `bun` install. All CLI delivery commands run via `bun run deliver …`.
 
-If this repo uses Son-of-Anton's default commands: `bun run format`, `bun run verify`, `bun run verify:quiet`, `bun run ci`, `bun run ci:quiet`.
+Before committing: run `bun run format`, then `bun run verify` (or `bun run verify:quiet` for a quieter pass). Run `bun run spellcheck` when docs, Markdown, config examples, PR text, or user-facing copy changed. Use `bun run ci:quiet` as the final publication gate before opening a PR.

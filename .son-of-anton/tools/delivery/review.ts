@@ -968,12 +968,81 @@ async function writeCleanTriageArtifact(
   return triageArtifactPath;
 }
 
+async function commitAiReviewArtifactsAfterRecordReview(
+  repoRoot: string,
+  ticketId: string,
+  absolutePaths: string[],
+  relativeToRepo: (cwd: string, absolutePath: string) => string,
+  runProcess: (cwd: string, cmd: string[]) => string,
+): Promise<void> {
+  try {
+    runProcess(repoRoot, ['git', 'rev-parse', '--git-dir']);
+  } catch {
+    return;
+  }
+
+  const relPaths: string[] = [];
+  for (const abs of absolutePaths) {
+    if (!existsSync(abs)) {
+      continue;
+    }
+
+    const rel = relativeToRepo(repoRoot, abs);
+    if (rel.length > 0) {
+      relPaths.push(rel);
+    }
+  }
+
+  const unique = [...new Set(relPaths)];
+  if (unique.length === 0) {
+    return;
+  }
+
+  for (const rel of unique) {
+    try {
+      runProcess(repoRoot, ['git', 'add', '--', rel]);
+    } catch (error) {
+      console.warn(
+        `Could not stage review artifact ${rel} for commit: ${formatError(error)}`,
+      );
+    }
+  }
+
+  const stagedNames = (() => {
+    try {
+      return runProcess(repoRoot, ['git', 'diff', '--cached', '--name-only']);
+    } catch {
+      return '';
+    }
+  })();
+
+  if (!stagedNames.trim()) {
+    return;
+  }
+
+  try {
+    runProcess(repoRoot, [
+      'git',
+      'commit',
+      '-m',
+      `chore(delivery): commit AI review artifacts after record-review ${ticketId}`,
+    ]);
+  } catch (error) {
+    console.warn(
+      `Could not commit staged review artifacts for ${ticketId}: ${formatError(error)}`,
+    );
+  }
+}
+
 async function applyTicketReviewUpdate(
   cwd: string,
   state: DeliveryState,
   ticketId: string,
   updateTicket: (ticket: TicketState) => TicketState,
-  dependencies: Pick<TicketReviewDependencies, 'updatePullRequestBody'>,
+  dependencies: Pick<
+    TicketReviewDependencies,
+    'updatePullRequestBody' | 'relativeToRepo' | 'runProcess'
+  >,
 ): Promise<DeliveryState> {
   const updatedTickets = state.tickets.map((ticket) =>
     ticket.id === ticketId ? updateTicket(ticket) : ticket,
@@ -1054,6 +1123,25 @@ async function applyTicketReviewUpdate(
         },
       }));
     }
+  }
+
+  const fetchPath = persistedTarget.reviewFetchArtifactPath
+    ? resolve(cwd, persistedTarget.reviewFetchArtifactPath)
+    : undefined;
+  const triagePath = persistedTarget.reviewTriageArtifactPath
+    ? resolve(cwd, persistedTarget.reviewTriageArtifactPath)
+    : undefined;
+  const artifactPaths = [triagePath, fetchPath].filter(
+    (p): p is string => p !== undefined,
+  );
+  if (artifactPaths.length > 0) {
+    await commitAiReviewArtifactsAfterRecordReview(
+      cwd,
+      ticketId,
+      artifactPaths,
+      dependencies.relativeToRepo,
+      dependencies.runProcess,
+    );
   }
 
   return nextState;
@@ -1798,7 +1886,7 @@ export async function recordTicketReview(
     }));
   }
 
-  return applyTicketReviewUpdate(
+  const nextState = await applyTicketReviewUpdate(
     cwd,
     state,
     ticketId,
@@ -1823,4 +1911,6 @@ export async function recordTicketReview(
     }),
     dependencies,
   );
+
+  return nextState;
 }

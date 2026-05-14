@@ -14,7 +14,7 @@ Every phase requires **two explicit planning stages** before any code is written
 
 **Output:** `docs/product/plans/phase-N-[slug].md` — written to the product plans directory and committed to `main` before Stage 2 begins.
 
-**Template:** `docs/template/templates/product-plan.template.md`
+**Template:** `docs/template/stubs/product-plan.template.md`
 
 **Gate:** Developer approves the product plan before decomposition starts.
 
@@ -26,7 +26,7 @@ Every phase requires **two explicit planning stages** before any code is written
 
 **Output:** `docs/product/delivery/phase-N/implementation-plan.md` + `ticket-NN-*.md` files — committed to `main` before the orchestrator creates any branches.
 
-**Template:** `docs/template/templates/implementation-plan.template.md`
+**Template:** `docs/template/stubs/implementation-plan.template.md`
 
 **Gate:** Developer approves the ticket breakdown before execution starts.
 

@@ -9,6 +9,8 @@ import {
   findOpenPullRequest as findPlatformOpenPullRequest,
   hasMergedPullRequestForBranch as hasPlatformMergedPullRequestForBranch,
   hasLocalBranchCommits as hasPlatformLocalBranchCommits,
+  hasUncommittedChanges as hasPlatformUncommittedChanges,
+  getWorkingTreeStatus as getPlatformWorkingTreeStatus,
   listCommitSubjectsBetween as listPlatformCommitSubjectsBetween,
   readCommitSubject as readPlatformCommitSubject,
   readCurrentBranch as readPlatformCurrentBranch,
@@ -77,6 +79,8 @@ export type PlatformAdapters = {
   ) => PullRequestSummary | undefined;
   hasMergedPullRequestForBranch: (cwd: string, branch: string) => boolean;
   hasLocalBranchCommits: (cwd: string, baseBranch: string) => boolean;
+  hasUncommittedChanges: (cwd: string) => boolean;
+  getWorkingTreeStatus: (cwd: string) => string;
   listCommitSubjectsBetween: (
     cwd: string,
     reviewedHeadSha: string,
@@ -186,6 +190,12 @@ export function createPlatformAdapters(
     },
     hasLocalBranchCommits(cwd, baseBranch) {
       return hasPlatformLocalBranchCommits(cwd, baseBranch, config.runtime);
+    },
+    hasUncommittedChanges(cwd) {
+      return hasPlatformUncommittedChanges(cwd, config.runtime);
+    },
+    getWorkingTreeStatus(cwd) {
+      return getPlatformWorkingTreeStatus(cwd, config.runtime);
     },
     listCommitSubjectsBetween(cwd, reviewedHeadSha, currentHeadSha, maxCount) {
       return listPlatformCommitSubjectsBetween(

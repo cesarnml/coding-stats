@@ -16,7 +16,7 @@ bun run closeout-stack --plan <plan-path>
 
 Processes each ticket in stack order via `git merge --squash` (3-way, robust against parent patches). For each ticket: fetch + reset local `main` to `origin/main`, squash-merge the ticket branch, commit with PR title, push to `origin/main`, close PR, delete remote branch. Produces one squash commit per ticket on `main` when squash succeeds.
 
-If `merge --squash` hits conflicts (common after earlier tickets were squash-merged so SHAs diverge from the stacked branches), `closeout-stack` resets to `origin/main`, reads the PR’s commits via `gh pr view --json commits`, and lands them in order with `git cherry-pick` (merge commits use `-m 1`). That may yield multiple commits on `main` for one ticket. If cherry-pick also fails, recover manually using the checklist below.
+If `merge --squash` hits conflicts (common after earlier tickets were squash-merged so SHAs diverge from the stacked branches), `closeout-stack` resets to `origin/main`, reads the PR’s commits via `gh pr view --json commits`, and lands them in order with `git cherry-pick` (merge commits use `-m 1`). When a picked commit is already fully present on `main` (empty patch), it runs `git cherry-pick --skip` and continues. That may yield multiple commits on `main` for one ticket. If cherry-pick fails for any other reason, recover manually using the checklist below.
 
 ### Delivery artifact mirror (`state.json`, `reviews/`, `handoffs/`)
 

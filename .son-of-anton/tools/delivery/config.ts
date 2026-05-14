@@ -18,8 +18,6 @@ export type ReviewPolicyStageValue =
 export type ReviewPolicy = {
   subagentReview?: ReviewPolicyStageValue;
   prReview?: ReviewPolicyStageValue;
-  /** @deprecated Use prReview instead. Accepted for migration; maps to prReview. */
-  externalReview?: ReviewPolicyStageValue;
 };
 
 export type ResolvedReviewPolicy = {
@@ -40,7 +38,6 @@ export type OrchestratorConfig = {
   packageManager?: 'bun' | 'npm' | 'pnpm' | 'yarn';
   ticketBoundaryMode?: TicketBoundaryMode;
   reviewPolicy?: ReviewPolicy;
-  reviewSubagentOverride?: string;
   prReviewAgents?: PrReviewAgent[];
 };
 
@@ -51,7 +48,6 @@ export type ResolvedOrchestratorConfig = {
   packageManager: 'bun' | 'npm' | 'pnpm' | 'yarn';
   ticketBoundaryMode: TicketBoundaryMode;
   reviewPolicy: ResolvedReviewPolicy;
-  reviewSubagentOverride?: string;
   prReviewAgents?: PrReviewAgent[];
 };
 
@@ -114,19 +110,23 @@ export async function loadOrchestratorConfig(
     'orchestrator.config.json',
   );
 
+  for (const retired of [
+    'reviewSubagentOverride',
+    'subagentReviewRunner',
+  ] as const) {
+    if (retired in raw) {
+      throw new Error(
+        `orchestrator.config.json: "${retired}" has been removed. Delete it from your config.`,
+      );
+    }
+  }
+
   const reviewPolicy =
     raw.reviewPolicy !== undefined
       ? parseReviewPolicy(raw.reviewPolicy)
       : undefined;
 
-  const reviewSubagentOverride = optionalNonBlankString(
-    raw.reviewSubagentOverride,
-    'reviewSubagentOverride',
-    'orchestrator.config.json',
-  );
-
-  const resolvedPrReview =
-    reviewPolicy?.prReview ?? reviewPolicy?.externalReview ?? undefined;
+  const resolvedPrReview = reviewPolicy?.prReview ?? undefined;
   const prReviewAgents =
     raw.prReviewAgents !== undefined
       ? parsePrReviewAgents(raw.prReviewAgents)
@@ -150,7 +150,6 @@ export async function loadOrchestratorConfig(
     ticketBoundaryMode:
       raw.ticketBoundaryMode as OrchestratorConfig['ticketBoundaryMode'],
     reviewPolicy,
-    reviewSubagentOverride,
     prReviewAgents,
   };
 }
@@ -177,12 +176,8 @@ export function resolveOrchestratorConfig(
     ticketBoundaryMode: raw.ticketBoundaryMode ?? 'cook',
     reviewPolicy: {
       subagentReview: raw.reviewPolicy?.subagentReview ?? 'skip_doc_only',
-      prReview:
-        raw.reviewPolicy?.prReview ??
-        raw.reviewPolicy?.externalReview ??
-        'skip_doc_only',
+      prReview: raw.reviewPolicy?.prReview ?? 'skip_doc_only',
     },
-    reviewSubagentOverride: raw.reviewSubagentOverride,
     prReviewAgents: raw.prReviewAgents,
   };
 }
@@ -220,7 +215,7 @@ function parseReviewPolicy(raw: unknown): ReviewPolicy {
     );
   }
 
-  const KNOWN_KEYS = ['subagentReview', 'prReview', 'externalReview'] as const;
+  const KNOWN_KEYS = ['subagentReview', 'prReview'] as const;
 
   for (const unknownKey of Object.keys(obj)) {
     if (!KNOWN_KEYS.includes(unknownKey as (typeof KNOWN_KEYS)[number])) {

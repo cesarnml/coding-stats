@@ -3,6 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import type { DeliveryState, TicketState } from '../types';
 import {
   getCloseoutTicketChain,
+  isEmptyCherryPickFailure,
   orderCommitsForCherryPick,
   parseCloseoutStackArgs,
 } from '../closeout-stack';
@@ -118,6 +119,27 @@ describe('closeout-stack', () => {
           { oid: 'a', authoredDate: '2026-01-01T00:00:00Z' },
         ]),
       ).toEqual(['z', 'a']);
+    });
+  });
+
+  describe('isEmptyCherryPickFailure', () => {
+    it('detects the standard git empty cherry-pick message', () => {
+      expect(
+        isEmptyCherryPickFailure(
+          `The previous cherry-pick is now empty, possibly due to conflict resolution.
+If you wish to commit it anyway, use:
+
+    git commit --allow-empty`,
+        ),
+      ).toBe(true);
+    });
+
+    it('returns false for unrelated cherry-pick errors', () => {
+      expect(
+        isEmptyCherryPickFailure(
+          'error: could not apply abc1234... patch failed at file.txt',
+        ),
+      ).toBe(false);
     });
   });
 });

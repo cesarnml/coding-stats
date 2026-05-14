@@ -160,18 +160,34 @@ function listPullRequestCommitOidsAscending(
   return orderCommitsForCherryPick(raw.commits ?? []);
 }
 
+/** True when `git cherry-pick` stopped because the patch is already on HEAD (empty commit). */
+export function isEmptyCherryPickFailure(output: string): boolean {
+  return /cherry-pick is now empty/i.test(output);
+}
+
 function cherryPickCommitOntoHead(cwd: string, oid: string): void {
   const parents = runProcess(cwd, ['git', 'show', '-s', '--format=%P', oid])
     .trim()
     .split(/\s+/)
     .filter((token) => token.length > 0);
 
-  if (parents.length > 1) {
-    runProcess(cwd, ['git', 'cherry-pick', '-m', '1', oid]);
+  const pickCmd =
+    parents.length > 1
+      ? ['git', 'cherry-pick', '-m', '1', oid]
+      : ['git', 'cherry-pick', oid];
+
+  const result = runProcessResult(cwd, pickCmd);
+  if (result.exitCode === 0) {
     return;
   }
 
-  runProcess(cwd, ['git', 'cherry-pick', oid]);
+  const detail = `${result.stderr}\n${result.stdout}`;
+  if (isEmptyCherryPickFailure(detail)) {
+    runProcess(cwd, ['git', 'cherry-pick', '--skip']);
+    return;
+  }
+
+  throw new Error(`${pickCmd.join(' ')} failed: ${detail.trim()}`);
 }
 
 function resolveRepoSlug(cwd: string): string {
@@ -325,7 +341,7 @@ export async function runCloseoutStack(
     const config = resolveOrchestratorConfig(rawConfig, cwd);
     closeoutPlatform = createPlatformAdapters(config);
     const options = createOptions({ planPath: parsed.planPath });
-    const state = await loadState(cwd, options, config);
+    const { state } = await loadState(cwd, options, config);
     const tickets = getCloseoutTicketChain(state);
     const repo = resolveRepoSlug(cwd);
     const summary: CloseoutSummary = {

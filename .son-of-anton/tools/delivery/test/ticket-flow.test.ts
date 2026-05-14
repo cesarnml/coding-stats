@@ -308,9 +308,18 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
     ],
   };
 
+  const basePostRedState: DeliveryState = {
+    ...baseInProgressState,
+    tickets: baseInProgressState.tickets.map((ticket) => ({
+      ...ticket,
+      status: 'red_complete',
+      redCommitSha: 'red123',
+    })),
+  };
+
   it('records verifyOutcome: clean when outcome arg is "clean"', async () => {
     const nextState = await recordPostVerify(
-      baseInProgressState,
+      basePostRedState,
       undefined,
       'clean',
       baseConfig,
@@ -321,7 +330,7 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
 
   it('records verifyOutcome: patched when outcome arg is "patched"', async () => {
     const nextState = await recordPostVerify(
-      baseInProgressState,
+      basePostRedState,
       undefined,
       'patched',
       baseConfig,
@@ -345,7 +354,7 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
 
   it('defaults verifyOutcome to clean when no outcome arg is passed', async () => {
     const nextState = await recordPostVerify(
-      baseInProgressState,
+      basePostRedState,
       undefined,
       undefined,
       baseConfig,
@@ -380,7 +389,7 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
 
   it('renders verifyOutcome in formatStatus alongside timestamp', async () => {
     const state = await recordPostVerify(
-      baseInProgressState,
+      basePostRedState,
       undefined,
       'patched',
       baseConfig,
@@ -398,7 +407,7 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
 
   it('rejects patched post-verify outcomes without recorded patch commits', async () => {
     await expect(
-      recordPostVerify(baseInProgressState, undefined, 'patched', baseConfig),
+      recordPostVerify(basePostRedState, undefined, 'patched', baseConfig),
     ).rejects.toThrow(
       /Post-verify recorded as patched requires at least one patch commit/,
     );
@@ -416,6 +425,42 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
     expect(output).toContain(
       'review_policy=subagentReview:required prReview:required',
     );
+  });
+
+  it('preserves redCommitSha when syncStateFromExisting rebuilds state', () => {
+    const options = createOptions({
+      planPath: 'docs/product/delivery/phase-03/implementation-plan.md',
+    });
+    const existing: DeliveryState = {
+      ...options,
+      planKey: options.planKey,
+      tickets: [
+        {
+          id: 'P3.01',
+          title: 'Persist Transmission Identity For Queued Torrents',
+          slug: 'persist-transmission-identity-for-queued-torrents',
+          ticketFile:
+            'docs/product/delivery/phase-03/ticket-01-persist-transmission-identity-for-queued-torrents.md',
+          status: 'red_complete',
+          branch:
+            'agents/p3-01-persist-transmission-identity-for-queued-torrents',
+          baseBranch: 'main',
+          worktreePath: '/tmp/p3_01',
+          redCommitSha: 'red123',
+        },
+      ],
+    };
+
+    const rebuilt = syncStateFromExisting(
+      existing,
+      existing.tickets,
+      '/tmp',
+      options,
+      baseConfig,
+      existing,
+    );
+
+    expect(rebuilt.tickets[0]?.redCommitSha).toBe('red123');
   });
 
   it('parses reviewPolicy config with all valid stage values', async () => {
@@ -660,7 +705,7 @@ describe('EE8.02 — codex preflight command, status, and gate', () => {
     ).toThrow(/requires a subagent review outcome/);
   });
 
-  it('statusRank orders: verified < subagent_review_complete < in_review', () => {
+  it('statusRank orders: red_complete < verified < subagent_review_complete < in_review', () => {
     // Verify via syncStateFromExisting status selection: higher rank wins
     const options = createOptions({
       planPath: 'docs/product/delivery/phase-03/implementation-plan.md',
@@ -688,7 +733,7 @@ describe('EE8.02 — codex preflight command, status, and gate', () => {
       ...existing,
       tickets: existing.tickets.map((t) => ({
         ...t,
-        status: 'verified' as const,
+        status: 'red_complete' as const,
       })),
     };
     const synced = syncStateFromExisting(
@@ -986,9 +1031,16 @@ describe('P2.01 — post-verify transitions to verified; subagent-review transit
     ],
   };
 
-  it('in_progress → verified via post-verify', async () => {
+  it('red_complete → verified via post-verify', async () => {
     const nextState = await recordPostVerify(
-      baseInProgressState2,
+      {
+        ...baseInProgressState2,
+        tickets: baseInProgressState2.tickets.map((ticket) => ({
+          ...ticket,
+          status: 'red_complete',
+          redCommitSha: 'red123',
+        })),
+      },
       undefined,
       'clean',
       baseConfig,

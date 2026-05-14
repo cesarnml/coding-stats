@@ -2,6 +2,11 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
+import type {
+  ResolvedOrchestratorConfig,
+  ReviewPolicyStageValue,
+  TicketBoundaryMode,
+} from './config';
 import {
   listLocalBranches,
   listMergedPullRequests,
@@ -14,10 +19,125 @@ import { parsePlan } from './planning';
 import type {
   DeliveryState,
   OrchestratorOptions,
+  RunPolicy,
   TicketDefinition,
   TicketState,
   TicketStatus,
 } from './types';
+
+// ─── Run-policy divergence helpers ──────────────────────────────────────────
+
+export function detectRunPolicyDivergence(
+  persisted: RunPolicy,
+  current: RunPolicy,
+): string[] {
+  const fields: string[] = [];
+  if (persisted.ticketBoundaryMode !== current.ticketBoundaryMode) {
+    fields.push('ticketBoundaryMode');
+  }
+  if (persisted.subagentReview !== current.subagentReview) {
+    fields.push('subagentReview');
+  }
+  if (persisted.prReview !== current.prReview) {
+    fields.push('prReview');
+  }
+  return fields;
+}
+
+export function formatRunPolicyDivergenceError(
+  persisted: RunPolicy,
+  current: RunPolicy,
+  divergedFields: string[],
+  runDeliverInvocation: string,
+): string {
+  const lines: string[] = [
+    'Run-policy divergence detected. The persisted run policy in state.json',
+    'differs from the current orchestrator.config.json on these fields:',
+    '',
+  ];
+
+  for (const field of divergedFields) {
+    let persistedValue: string;
+    let currentValue: string;
+
+    if (field === 'ticketBoundaryMode') {
+      persistedValue = persisted.ticketBoundaryMode;
+      currentValue = current.ticketBoundaryMode;
+    } else if (field === 'subagentReview') {
+      persistedValue = persisted.subagentReview;
+      currentValue = current.subagentReview;
+    } else {
+      persistedValue = persisted.prReview;
+      currentValue = current.prReview;
+    }
+
+    lines.push(
+      `  ${field}: persisted=${persistedValue}  current=${currentValue}`,
+    );
+  }
+
+  lines.push('');
+  lines.push('Add --baseline to your command to resolve, e.g.:');
+  lines.push(
+    `  ${runDeliverInvocation} --baseline orchestrator   # adopt current repo config`,
+  );
+  lines.push(
+    `  ${runDeliverInvocation} --baseline run-policy     # keep persisted run policy`,
+  );
+
+  return lines.join('\n');
+}
+
+export function patchRunPolicyWithFlags(
+  base: RunPolicy,
+  flags: {
+    boundaryMode?: TicketBoundaryMode;
+    subagentReviewPolicy?: ReviewPolicyStageValue;
+    prReviewPolicy?: ReviewPolicyStageValue;
+  },
+): RunPolicy {
+  return {
+    ticketBoundaryMode: flags.boundaryMode ?? base.ticketBoundaryMode,
+    subagentReview: flags.subagentReviewPolicy ?? base.subagentReview,
+    prReview: flags.prReviewPolicy ?? base.prReview,
+  };
+}
+
+export function deriveRunPolicyFromConfig(
+  config: ResolvedOrchestratorConfig,
+): RunPolicy {
+  return {
+    ticketBoundaryMode: config.ticketBoundaryMode,
+    subagentReview: config.reviewPolicy.subagentReview,
+    prReview: config.reviewPolicy.prReview,
+  };
+}
+
+export function applyRunPolicyToConfig(
+  config: ResolvedOrchestratorConfig,
+  runPolicy: RunPolicy,
+): ResolvedOrchestratorConfig {
+  return {
+    ...config,
+    ticketBoundaryMode: runPolicy.ticketBoundaryMode,
+    reviewPolicy: {
+      ...config.reviewPolicy,
+      subagentReview: runPolicy.subagentReview,
+      prReview: runPolicy.prReview,
+    },
+  };
+}
+
+export function normalizeRunPolicy(
+  state: DeliveryState,
+  config: ResolvedOrchestratorConfig,
+): DeliveryState {
+  if (state.runPolicy != null) {
+    return state;
+  }
+
+  return { ...state, runPolicy: deriveRunPolicyFromConfig(config) };
+}
 
 /** Persisted tickets may use legacy status and timestamp keys until re-saved. */
 type PersistedTicketFields = Partial<TicketState> & {
@@ -266,6 +386,7 @@ function syncStateWithPlan(
     handoffsDirPath: options.handoffsDirPath,
     reviewPollIntervalMinutes: options.reviewPollIntervalMinutes,
     reviewPollMaxWaitMinutes: options.reviewPollMaxWaitMinutes,
+    runPolicy: existing?.runPolicy,
     tickets: ticketDefinitions.map((definition, index) => {
       const previous = existingById.get(definition.id);
       const inferredTicket = inferredById.get(definition.id);
@@ -308,6 +429,7 @@ function syncStateWithPlan(
         handoffPath: previous?.handoffPath ?? inferredTicket?.handoffPath,
         handoffGeneratedAt:
           previous?.handoffGeneratedAt ?? inferredTicket?.handoffGeneratedAt,
+        redCommitSha: previous?.redCommitSha ?? inferredTicket?.redCommitSha,
         verifiedAt:
           pickVerifiedAt(previous) ??
           pickVerifiedAt(inferredTicket as PersistedTicketFields | undefined),
@@ -572,20 +694,22 @@ function statusRank(status: TicketStatus): number {
       return 0;
     case 'in_progress':
       return 1;
-    case 'verified':
+    case 'red_complete':
       return 2;
-    case 'subagent_review_complete':
+    case 'verified':
       return 3;
-    case 'in_review':
+    case 'subagent_review_complete':
       return 4;
-    case 'needs_patch':
+    case 'in_review':
       return 5;
-    case 'operator_input_needed':
+    case 'needs_patch':
       return 6;
-    case 'reviewed':
+    case 'operator_input_needed':
       return 7;
-    case 'done':
+    case 'reviewed':
       return 8;
+    case 'done':
+      return 9;
   }
 }
 

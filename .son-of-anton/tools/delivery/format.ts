@@ -8,10 +8,31 @@ import type {
   AiReviewComment,
   AiReviewThreadResolution,
   DeliveryState,
+  RunPolicy,
   StandaloneAiReviewResult,
   TicketState,
   TicketStatus,
 } from './types';
+
+/**
+ * Format the active run policy into a compact, operator-readable string
+ * suitable for display in status output.
+ *
+ * Separator convention (intentional, mirrors existing status line format):
+ * - Top-level key uses `=` (e.g. `boundary_mode=cook`)
+ * - Sub-fields within the same line use `:` (e.g. `subagentReview:skip_doc_only`),
+ *   matching the existing `review_policy=subagentReview:... prReview:...` pattern.
+ *
+ * Example output:
+ *   boundary_mode=cook subagentReview:skip_doc_only prReview:skip_doc_only
+ */
+export function formatRunPolicy(policy: RunPolicy): string {
+  return [
+    `boundary_mode=${policy.ticketBoundaryMode}`,
+    `subagentReview:${policy.subagentReview}`,
+    `prReview:${policy.prReview}`,
+  ].join(' ');
+}
 
 export type RepairStateResult = {
   state: DeliveryState;
@@ -32,6 +53,8 @@ export function resolveNextCommand(
 
   switch (status) {
     case 'in_progress':
+      return cmd('post-red');
+    case 'red_complete':
       return cmd('post-verify');
     case 'verified':
       return config.reviewPolicy.subagentReview !== 'disabled'
@@ -109,6 +132,7 @@ export function formatStatus(
 
   const activeTicket =
     state.tickets.find((t) => t.status === 'in_progress') ??
+    state.tickets.find((t) => t.status === 'red_complete') ??
     state.tickets.find((t) => t.status === 'verified') ??
     state.tickets.find((t) => t.status === 'subagent_review_complete') ??
     state.tickets.find((t) => t.status === 'in_review') ??
@@ -140,6 +164,9 @@ export function formatStatus(
     `review_poll_max_wait_minutes=${state.reviewPollMaxWaitMinutes}`,
     `boundary_mode=${config.ticketBoundaryMode}`,
     `review_policy=subagentReview:${config.reviewPolicy.subagentReview} prReview:${config.reviewPolicy.prReview}`,
+    state.runPolicy != null
+      ? `run_policy=${formatRunPolicy(state.runPolicy)} [persisted]`
+      : undefined,
     '',
     ...state.tickets.map((ticket) =>
       [
@@ -147,6 +174,9 @@ export function formatStatus(
         `title=${ticket.title}`,
         `worktree=${ticket.worktreePath}`,
         ticket.handoffPath ? `handoff=${ticket.handoffPath}` : undefined,
+        ticket.redCommitSha
+          ? `red_commit_sha=${ticket.redCommitSha}`
+          : undefined,
         ticket.verifiedAt
           ? `post_verify=completed at ${ticket.verifiedAt}${ticket.verifyOutcome ? ` (${ticket.verifyOutcome})` : ''}`
           : undefined,

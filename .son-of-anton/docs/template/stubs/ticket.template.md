@@ -11,6 +11,7 @@ Scope: <conventional-commit-scope> (optional — lowercase letters, digits, and 
 
 ## Red
 
+- **Doc-only tickets (branch touches only `.md` or `.json` files): skip the Red step entirely. No automated test is required or expected. Tests that assert exact wording in documentation couple the test suite to legitimate rewrites without adding quality signal. Human review at the PR is the gate for doc changes.**
 - [Write a failing test that proves the behavior is missing]
 - [Tests should be behavior-first, not implementation-first]
 - Run the test suite and confirm the new test fails

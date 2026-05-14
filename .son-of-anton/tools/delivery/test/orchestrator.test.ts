@@ -1991,11 +1991,12 @@ describe('delivery orchestrator', () => {
           slug: 'persist-transmission-identity-for-queued-torrents',
           ticketFile:
             'docs/product/delivery/phase-03/ticket-01-persist-transmission-identity-for-queued-torrents.md',
-          status: 'in_progress',
+          status: 'red_complete',
           branch:
             'agents/p3-01-persist-transmission-identity-for-queued-torrents',
           baseBranch: 'main',
           worktreePath: '/tmp/p3_01',
+          redCommitSha: 'red123',
         },
       ],
     };

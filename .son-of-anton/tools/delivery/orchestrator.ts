@@ -104,6 +104,16 @@ export type {
 } from './platform-adapters';
 export { parseDotEnv } from './env';
 export {
+  buildRunnerArtifact,
+  tryRunner,
+  validateRunnerArtifact,
+} from './subagent-runner';
+export type {
+  RunnerAttemptResult,
+  SubagentRunnerArtifact,
+  SubagentRunnerOutcome,
+} from './subagent-runner';
+export {
   applyAdvanceBoundaryMode,
   copyLocalBootstrapFilesIfPresent,
   copyLocalEnvIfPresent,

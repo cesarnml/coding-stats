@@ -721,7 +721,10 @@ export function isLocalBranchDocOnly(
       .split('\n')
       .map((f) => f.trim())
       .filter(Boolean);
-    return files.length > 0 && files.every((f) => f.endsWith('.md'));
+    return (
+      files.length > 0 &&
+      files.every((f) => f.endsWith('.md') || f.endsWith('.json'))
+    );
   } catch {
     return false;
   }
@@ -746,6 +749,14 @@ export function hasLocalBranchCommits(
   } catch {
     return false;
   }
+}
+
+export function getWorkingTreeStatus(cwd: string, runtime: Runtime): string {
+  return runProcess(cwd, ['git', 'status', '--short'], runtime).trimEnd();
+}
+
+export function hasUncommittedChanges(cwd: string, runtime: Runtime): boolean {
+  return getWorkingTreeStatus(cwd, runtime).trim().length > 0;
 }
 
 export function readMergeBase(

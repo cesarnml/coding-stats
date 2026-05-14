@@ -43,6 +43,30 @@ bun run deliver --plan <plan-path> start         # resume from current ticket
 
 Always read the handoff doc at `.agents/delivery/<plan-key>/handoffs/<ticket-id>.md` first.
 
+## Runtime policy overrides
+
+Override delivery policy for a single run without editing `orchestrator.config.json`:
+
+```bash
+bun run deliver --plan <plan-path> \
+  --boundary-mode <cook|gated|glide> \
+  --subagent-review-policy <required|skip_doc_only|disabled> \
+  --pr-review-policy <required|skip_doc_only|disabled> \
+  --preferred-runner <claude-cli|codex-exec> \
+  start
+```
+
+`--preferred-runner` declares the execution agent's own identity. The CLI tries the preferred runner first, then the other, then records an honest `skipped`. No config change needed when switching platforms.
+
+The resolved policy is persisted in `state.json` as `runPolicy` and governs execution for every invocation that loads it. If `orchestrator.config.json` changes between runs, the orchestrator detects divergence and refuses to continue silently — pass `--baseline orchestrator` to adopt the current config or `--baseline run-policy` to re-apply the persisted runPolicy (it governs execution for the current invocation, not just state):
+
+```bash
+bun run deliver --plan <plan-path> --baseline orchestrator <command>
+bun run deliver --plan <plan-path> --baseline run-policy   <command>
+```
+
+`status` shows the active persisted `run_policy [persisted]` line alongside the config-baseline lines.
+
 ## Standalone (non-ticketed) PRs
 
 Small bounded changes that don't warrant a full phase (bug fixes, doc updates, cleanup):
@@ -51,7 +75,7 @@ Small bounded changes that don't warrant a full phase (bug fixes, doc updates, c
 bun run deliver ai-review [--pr <number>]
 ```
 
-Self-audit is required. A `codex:codex-rescue` subagent review is optional but recommended for non-trivial changes.
+Self-audit is required. A same-type review subagent is optional but recommended for non-trivial changes.
 
 ## Key files
 
@@ -66,4 +90,4 @@ Self-audit is required. A `codex:codex-rescue` subagent review is optional but r
 | `docs/template/delivery/phase-implementation-guidance.md` | Implementation plan format contract                                                 |
 | `.agents/skills/son-of-anton-ethos/SKILL.md`              | `soa-son-of-anton-ethos` behavioral contract for orchestrated delivery              |
 
-> **Canonical templates:** Planning and decomposition outputs must use the templates at `docs/template/templates/` as their format reference — never model a new ticket or implementation plan on existing docs under `docs/product/delivery/`. Older phases predate the current template and will produce format drift if copied. Use [`docs/template/templates/ticket.template.md`](../templates/ticket.template.md) for tickets and [`docs/template/templates/implementation-plan.template.md`](../templates/implementation-plan.template.md) for implementation plans.
+> **Canonical templates:** Planning and decomposition outputs must use the templates at `docs/template/stubs/` as their format reference — never model a new ticket or implementation plan on existing docs under `docs/product/delivery/`. Older phases predate the current template and will produce format drift if copied. Use [`docs/template/stubs/ticket.template.md`](../templates/ticket.template.md) for tickets and [`docs/template/stubs/implementation-plan.template.md`](../templates/implementation-plan.template.md) for implementation plans.

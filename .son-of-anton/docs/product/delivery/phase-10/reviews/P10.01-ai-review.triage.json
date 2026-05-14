@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-05-14T06:37:57.992Z",
+  "reviewedHeadSha": "a8fe3c98dd46768b8b20123ea46878387d9deb40",
+  "outcome": "patched",
+  "note": "narrowed patchRunPolicyWithFlags runner flag type from string to SubagentReviewRunnerKind; Qodo and Greptile findings were billing-limit noise",
+  "actionSummary": "Flagged 1 finding comment(s) for follow-up.",
+  "threadResolutions": [
+    {
+      "status": "resolved",
+      "threadId": "PRRT_kwDOSR4wrM6B-xyO",
+      "url": "https://github.com/cesarnml/son-of-anton/pull/33#discussion_r3239536114",
+      "vendor": "coderabbit"
+    }
+  ],
+  "prBodyRefresh": {
+    "attemptedAt": "2026-05-14T06:38:00.734Z",
+    "status": "updated"
+  }
+}

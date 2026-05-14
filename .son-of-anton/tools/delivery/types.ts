@@ -1,6 +1,15 @@
+import type { ReviewPolicyStageValue, TicketBoundaryMode } from './config';
+
+export type RunPolicy = {
+  ticketBoundaryMode: TicketBoundaryMode;
+  subagentReview: ReviewPolicyStageValue;
+  prReview: ReviewPolicyStageValue;
+};
+
 export type TicketStatus =
   | 'pending'
   | 'in_progress'
+  | 'red_complete'
   | 'verified'
   | 'subagent_review_complete'
   | 'in_review'
@@ -86,6 +95,7 @@ export type TicketState = TicketDefinition & {
   worktreePath: string;
   handoffPath?: string;
   handoffGeneratedAt?: string;
+  redCommitSha?: string;
   verifiedAt?: string;
   verifyOutcome?: ReviewOutcome;
   verifyPatchCommits?: InternalReviewPatchCommit[];
@@ -93,6 +103,7 @@ export type TicketState = TicketDefinition & {
   subagentReviewCompletedAt?: string;
   subagentReviewPatchCommits?: InternalReviewPatchCommit[];
   subagentReviewAgent?: string;
+  subagentRunnerArtifactPath?: string;
   docOnly?: boolean;
   prNumber?: number;
   prUrl?: string;
@@ -122,6 +133,7 @@ export type DeliveryState = {
   handoffsDirPath: string;
   reviewPollIntervalMinutes: number;
   reviewPollMaxWaitMinutes: number;
+  runPolicy?: RunPolicy;
   tickets: TicketState[];
 };
 

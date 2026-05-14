@@ -1,6 +1,8 @@
 # Son of Anton
 
-**AI should do the implementation. You should own the decisions.**
+<p align="center">
+  <img src="./media/son-of-anton-workflow.gif" alt="Animated Son of Anton workflow hero" width="720">
+</p>
 
 The current default for AI-assisted development is one of two failure modes:
 you're either babysitting the agent line by line, or you've handed it the
@@ -22,7 +24,7 @@ a reason.
 ```
 /soa plan       → you approve the WHAT
 /soa decompose  → you approve the HOW
-/soa closeout   → you approve the STACK
+/soa closeout   → you approve DONE
 ```
 
 **Gate 1 — Plan the WHAT.**
@@ -35,11 +37,11 @@ You say yes or refine. The AI does not proceed until you have.
 dependency-aware, sized for review. You look at the ticket list and approve it.
 Architectural judgment belongs to you. Ticket authorship belongs to the agent.
 
-**Gate 3 — Review the STACK.**
+**Gate 3 — Approve DONE.**
 After each ticket ships, an adversarial subagent reviews the implementation
-before the PR is opened. When the full phase is done, you review the stacked
-PRs and run `/soa closeout`. That squash-merges the stack onto main.
-Nothing merges without you.
+before the PR is opened. When the full phase is done, you decide whether the
+work is complete enough to accept and run `/soa closeout`. That squash-merges
+the stack onto main. Nothing merges without you.
 
 Everything between the gates — implementation, test scaffolding, worktree
 management, PR creation, CI polling, review triage — is owned by the
@@ -60,6 +62,13 @@ orchestrator.
 /soa ideate                                  # brainstorm → docs/product/drafts/<slug>.md
 /soa plan docs/product/drafts/<slug>.md      # grill the draft → approved plan
 # then decompose → execute → closeout as above
+
+# Runtime policy overrides — no config file edits required
+/soa execute phase-N --boundary-mode gated   # override boundary mode for this run
+/soa execute phase-N --subagent-review-policy disabled --pr-review-policy skip_doc_only
+/soa resume phase-N --boundary-mode cook     # change policy mid-run on resume
+/soa resume phase-N --baseline orchestrator  # adopt current repo defaults when policy diverged
+/soa resume phase-N --baseline run-policy    # keep persisted run policy when repo config changed
 ```
 
 `/soa ideate` is optional. Use it when intention is too half-formed to yield
@@ -84,9 +93,12 @@ exactly what to type to resume.
 - **Skill layer** — behavioral instructions in `.agents/skills/` that any
   agent can read, plus per-agent adapters for platforms with specific file
   conventions (see [Agent compatibility](#agent-compatibility) below).
-- **Adversarial subagent review** — after each ticket, a second agent checks
-  the implementation assuming the first one cut corners. Findings go to you;
-  you decide what to act on.
+- **Adversarial subagent review** — after each ticket, a second AI pass checks
+  the implementation assuming the first one cut corners. When the review runs
+  through an executor-owned CLI runner (`claude-cli` or `codex-exec`), it
+  patches findings autonomously and writes a durable proof artifact. When the
+  review runs agent-to-agent, the primary agent triages findings before
+  publishing.
 - **Stacked PR model** — each ticket gets its own branch and PR, stacked in
   dependency order. Closeout squash-merges the whole phase onto main cleanly.
 - **Migration runner** — when Son of Anton ships structural changes, `bun run sync`
@@ -145,6 +157,9 @@ Add to `package.json` for convenience:
 Add `.son-of-anton/` to `.prettierignore`, `.eslintignore`, or your linter's
 equivalent. The subtree must stay tracked and unignored by git, but your
 formatter should not touch it.
+
+Add `docs/product/delivery/*/reviews/**` to your `cspell.json` `ignorePaths` to
+prevent spellcheck failures on review artifacts.
 
 Copy `orchestrator.config.json` from `.son-of-anton/` to your repo root and
 edit it to set your plan path, boundary mode, and review policy.
@@ -212,6 +227,46 @@ Migrations apply automatically on `bun run sync`.
 | `gated` | Orchestrator stops after each advance and prints a resume prompt |
 
 Start with `gated` until you trust the agent's output on your codebase.
+
+---
+
+## Runtime Policy Overrides
+
+`orchestrator.config.json` is the durable repo default. For one-off operational
+choices — changing boundary mode, disabling review stages for a single run —
+you can pass explicit flags to `/soa execute` or `/soa resume` without editing
+or committing config changes.
+
+### Supported flags
+
+| Flag                                                | Values                                  | What it overrides                                       |
+| --------------------------------------------------- | --------------------------------------- | ------------------------------------------------------- |
+| `--boundary-mode`                                   | `cook`, `gated`, `glide`                | `ticketBoundaryMode`                                    |
+| `--subagent-review-policy`                          | `required`, `skip_doc_only`, `disabled` | `reviewPolicy.subagentReview`                           |
+| `--pr-review-policy`                                | `required`, `skip_doc_only`, `disabled` | `reviewPolicy.prReview`                                 |
+| `--review-subagent <agent>`                         | agent name string                       | review subagent selection                               |
+| `--same-review-subagent`                            | _(flag)_                                | force same-type review subagent (ignores repo override) |
+| `--runner-subagent-review <claude-cli\|codex-exec>` | `claude-cli`, `codex-exec`              | use an executor-owned CLI runner for internal review    |
+
+The resolved policy is written to `state.json` at the start of every run.
+`orchestrator.config.json` is never modified.
+
+### Resume divergence
+
+If you edit `orchestrator.config.json` between tickets and the persisted run
+policy no longer matches, `/soa resume` refuses to continue silently and
+prints both policies with the exact recovery commands to use:
+
+```bash
+# adopt current repo defaults going forward
+/soa resume phase-N --baseline orchestrator
+
+# keep the policy the run started with
+/soa resume phase-N --baseline run-policy
+```
+
+Either baseline can be combined with explicit override flags to further patch
+the resolved policy for the remainder of the run.
 
 ---
 

@@ -27,13 +27,25 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 jq '
+  def is_vendor_status:
+    (.kind == "unknown")
+    and (
+      .authorLogin == "qodo-code-review"
+      or .authorLogin == "qodo-merge"
+      or .authorLogin == "coderabbitai"
+      or .authorLogin == "greptile-apps"
+    )
+    and ((.body // "") | contains("```") | not);
+
   .vendors as $vendors
   | (.comments // []) as $comments
-  | ($comments | map(select((.kind == "finding") and (.is_outdated != true) and (.is_resolved != true)))) as $findings
-  | ($comments | map(select((.kind == "finding") and ((.is_outdated == true) or (.is_resolved == true))))) as $stale_findings
-  | ($comments | map(select(.kind == "summary"))) as $summaries
-  | ($comments | map(select((.kind == "unknown") and (.is_outdated != true) and (.is_resolved != true)))) as $unknowns
-  | ($comments | map(select((.kind == "unknown") and ((.is_outdated == true) or (.is_resolved == true))))) as $stale_unknowns
+  | ($comments | map(select(is_vendor_status))) as $vendor_statuses
+  | ($comments | map(select(is_vendor_status | not))) as $relevant_comments
+  | ($relevant_comments | map(select((.kind == "finding") and (.is_outdated != true) and (.is_resolved != true)))) as $findings
+  | ($relevant_comments | map(select((.kind == "finding") and ((.is_outdated == true) or (.is_resolved == true))))) as $stale_findings
+  | ($relevant_comments | map(select(.kind == "summary"))) as $summaries
+  | ($relevant_comments | map(select((.kind == "unknown") and (.is_outdated != true) and (.is_resolved != true)))) as $unknowns
+  | ($relevant_comments | map(select((.kind == "unknown") and ((.is_outdated == true) or (.is_resolved == true))))) as $stale_unknowns
   | if ($findings | length) > 0 then
       {
         outcome: "needs_patch",
@@ -49,7 +61,8 @@ jq '
             | map(select(length > 0))
             | if length > 0 then join(" ") else null end
           ),
-        vendors: $vendors
+        vendors: $vendors,
+        vendor_status_count: ($vendor_statuses | length)
       }
     elif ($unknowns | length) > 0 then
       {
@@ -65,7 +78,8 @@ jq '
             | map(select(length > 0))
             | if length > 0 then join(" ") else null end
           ),
-        vendors: $vendors
+        vendors: $vendors,
+        vendor_status_count: ($vendor_statuses | length)
       }
     else
       {
@@ -73,7 +87,8 @@ jq '
         note: "External AI review completed without prudent follow-up changes.",
         action_summary: null,
         non_action_summary: null,
-        vendors: $vendors
+        vendors: $vendors,
+        vendor_status_count: ($vendor_statuses | length)
       }
     end
 ' "$artifact_json_path"

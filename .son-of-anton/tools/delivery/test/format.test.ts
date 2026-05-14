@@ -350,9 +350,17 @@ describe('resolveNextCommand (P3.01)', () => {
     reviewPolicy: { subagentReview: 'disabled', prReview: 'skip_doc_only' },
   };
 
-  it('in_progress → post-verify', () => {
+  it('in_progress → post-red', () => {
     expect(
       resolveNextCommand('in_progress', configSubagentEnabled, planPath),
+    ).toBe(
+      'bun run deliver --plan docs/product/delivery/phase-03/implementation-plan.md post-red',
+    );
+  });
+
+  it('red_complete → post-verify', () => {
+    expect(
+      resolveNextCommand('red_complete', configSubagentEnabled, planPath),
     ).toBe(
       'bun run deliver --plan docs/product/delivery/phase-03/implementation-plan.md post-verify',
     );

@@ -9,7 +9,7 @@ Supported external review agents: `coderabbit`, `qodo`, `greptile`, `sonarqube`.
 
 ## Boundary
 
-The orchestrator owns polling cadence, state transitions, artifact persistence, and auto-recording `clean` on the final check.
+The orchestrator owns polling cadence, state transitions, artifact persistence, and auto-recording `clean` on the final check. After `record-review`, it also **git-commits** the updated review JSON artifacts when running in a normal git checkout so the triage file is not left dirty on disk.
 
 This skill owns: fetching review data with `gh`, detection logic, normalizing comments into structured artifacts, and triage judgment.
 

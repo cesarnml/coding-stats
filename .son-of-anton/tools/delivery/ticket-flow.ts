@@ -25,6 +25,7 @@ type WorkflowContractCode =
   | 'workflow.advance.requires_reviewed_ticket'
   | 'workflow.open_pr.invalid_state'
   | 'workflow.open_pr.requires_post_verify'
+  | 'workflow.post_verify.requires_post_red'
   | 'workflow.open_pr.requires_subagent_review'
   | 'workflow.worktree_guard.wrong_worktree';
 
@@ -383,7 +384,8 @@ export function recordPostVerify(
   const target =
     (ticketId
       ? state.tickets.find((ticket) => ticket.id === ticketId)
-      : state.tickets.find((ticket) => ticket.status === 'in_progress')) ??
+      : (state.tickets.find((ticket) => ticket.status === 'red_complete') ??
+        state.tickets.find((ticket) => ticket.status === 'in_progress'))) ??
     undefined;
 
   if (!target) {
@@ -394,9 +396,9 @@ export function recordPostVerify(
     return state;
   }
 
-  if (target.status !== 'in_progress') {
+  if (target.status !== 'in_progress' && target.status !== 'red_complete') {
     throw new Error(
-      `Ticket ${target.id} must be in progress before post-verify can be recorded.`,
+      `Ticket ${target.id} must be in progress or red_complete before post-verify can be recorded.`,
     );
   }
 
@@ -424,6 +426,61 @@ export function recordPostVerify(
   };
 }
 
+export function recordPostRed(
+  state: DeliveryState,
+  input: {
+    headSha: string;
+    latestCommitSubject: string;
+    ticketId?: string;
+    verifyExitCode: number;
+  },
+): DeliveryState {
+  const target =
+    (input.ticketId
+      ? state.tickets.find((ticket) => ticket.id === input.ticketId)
+      : state.tickets.find((ticket) => ticket.status === 'in_progress')) ??
+    undefined;
+
+  if (!target) {
+    throw new Error('No in-progress ticket found to mark red_complete.');
+  }
+
+  if (target.status === 'red_complete') {
+    return state;
+  }
+
+  if (target.status !== 'in_progress') {
+    throw new Error(
+      `Ticket ${target.id} must be in progress before post-red can be recorded.`,
+    );
+  }
+
+  if (!input.latestCommitSubject.includes('[red]')) {
+    throw new Error(
+      `Ticket ${target.id} requires a HEAD commit subject containing \`[red]\` before post-red can be recorded.`,
+    );
+  }
+
+  if (input.verifyExitCode === 0) {
+    throw new Error(
+      `Ticket ${target.id} post-red requires a failing verification run before delivery can advance.`,
+    );
+  }
+
+  return {
+    ...state,
+    tickets: state.tickets.map((ticket) =>
+      ticket.id === target.id
+        ? {
+            ...ticket,
+            status: 'red_complete' as const,
+            redCommitSha: input.headSha,
+          }
+        : ticket,
+    ),
+  };
+}
+
 export function recordSubagentReview(
   state: DeliveryState,
   outcome?: 'clean' | 'patched' | 'skipped',
@@ -433,6 +490,7 @@ export function recordSubagentReview(
   agentName?: string,
   now: () => string = () => new Date().toISOString(),
   ticketId?: string,
+  artifactPath?: string,
 ): DeliveryState {
   const target =
     (ticketId
@@ -490,6 +548,7 @@ export function recordSubagentReview(
             subagentReviewCompletedAt: completedAt,
             subagentReviewPatchCommits: patchCommits,
             subagentReviewAgent: agentName,
+            subagentRunnerArtifactPath: artifactPath,
           }
         : ticket,
     ),
@@ -553,6 +612,7 @@ export function openPullRequest(
       : (state.tickets.find(
           (ticket) => ticket.status === 'subagent_review_complete',
         ) ??
+        state.tickets.find((ticket) => ticket.status === 'red_complete') ??
         state.tickets.find((ticket) => ticket.status === 'verified') ??
         state.tickets.find((ticket) => ticket.status === 'in_review') ??
         state.tickets.find((ticket) => ticket.status === 'in_progress'))) ??
@@ -565,10 +625,10 @@ export function openPullRequest(
     );
   }
 
-  if (target.status === 'in_progress') {
+  if (target.status === 'in_progress' || target.status === 'red_complete') {
     throw createWorkflowContractError(
       'workflow.open_pr.requires_post_verify',
-      `Ticket ${target.id} is at status in_progress. Complete post-verify before opening a PR.`,
+      `Ticket ${target.id} is at status ${target.status}. Complete post-verify before opening a PR.`,
     );
   }
 
