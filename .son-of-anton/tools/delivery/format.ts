@@ -2,7 +2,6 @@ import { resolve } from 'node:path';
 
 import { readReviewArtifacts } from './review-artifacts';
 import { generateRunDeliverInvocation } from './runtime-config';
-import type { TicketBoundaryMode } from './config';
 import type { ResolvedOrchestratorConfig } from './runtime-config';
 import type {
   AiReviewComment,
@@ -76,12 +75,6 @@ export function resolveNextCommand(
     case 'pending':
       return null;
   }
-}
-
-export function resolveEffectiveAdvanceBoundaryMode(
-  mode: TicketBoundaryMode,
-): 'cook' | 'gated' {
-  return mode === 'glide' ? 'gated' : mode;
 }
 
 function loadTicketReviewSnapshot(ticket: TicketState): {
@@ -227,13 +220,10 @@ export function formatAdvanceBoundaryGuidance(
     return undefined;
   }
 
-  const effectiveMode = resolveEffectiveAdvanceBoundaryMode(
-    config.ticketBoundaryMode,
-  );
   const invocation = `${generateRunDeliverInvocation(config.packageManager)} --plan ${state.planPath} start`;
   const resumePrompt = `Immediately execute \`${invocation}\`, read the locally materialized handoff artifact in the started worktree as the source of truth for context, and implement ${nextPending.id}.`;
 
-  if (effectiveMode === 'cook') {
+  if (config.ticketBoundaryMode === 'cook') {
     const startedTicket = nextState.tickets.find(
       (ticket) => ticket.id === nextPending.id,
     );
@@ -262,18 +252,10 @@ export function formatAdvanceBoundaryGuidance(
 
   return [
     'context_reset_required=true',
-    config.ticketBoundaryMode === 'glide' ? 'glide_fallback=gated' : undefined,
-    config.ticketBoundaryMode === 'glide'
-      ? `GLIDE FALLBACK before starting ${nextPending.id}.`
-      : `GATED BOUNDARY before starting ${nextPending.id}.`,
-    config.ticketBoundaryMode === 'glide'
-      ? 'Host/runtime self-reset is not supported here, so Son-of-Anton is using gated boundary behavior instead.'
-      : undefined,
+    `GATED BOUNDARY before starting ${nextPending.id}.`,
     'Reset context now. Prefer /clear for minimum token use; use /compact only if you intentionally want compressed carry-forward context.',
     `resume_prompt=${resumePrompt}`,
-  ]
-    .filter((line): line is string => line !== undefined)
-    .join('\n');
+  ].join('\n');
 }
 
 export function formatCurrentTicketStatus(

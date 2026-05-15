@@ -239,7 +239,7 @@ describe('delivery orchestrator', () => {
         ],
         getUsage('bun run deliver'),
       ),
-    ).toThrow(/Pass --boundary-mode <cook\|gated\|glide>/);
+    ).toThrow(/Pass --boundary-mode <cook\|gated>/);
   });
 
   it('rejects missing boundary-mode CLI value with a specific error', () => {
@@ -255,7 +255,7 @@ describe('delivery orchestrator', () => {
     ).toThrow(/Missing value for --boundary-mode/);
   });
 
-  it('formats status with the effective boundary mode', () => {
+  it('formats status with the configured boundary mode', () => {
     expect(
       formatStatus(
         {
@@ -274,14 +274,14 @@ describe('delivery orchestrator', () => {
           planRoot: 'docs',
           runtime: 'bun',
           packageManager: 'bun',
-          ticketBoundaryMode: 'glide',
+          ticketBoundaryMode: 'gated',
           reviewPolicy: {
             subagentReview: 'skip_doc_only',
             prReview: 'skip_doc_only',
           },
         },
       ),
-    ).toContain('boundary_mode=glide');
+    ).toContain('boundary_mode=gated');
   });
 
   it('syncs state while preserving runtime metadata and inferred branch chaining', () => {
@@ -4188,35 +4188,6 @@ describe('delivery orchestrator', () => {
       expect(
         nextState.tickets.find((ticket) => ticket.id === 'EE7.02')?.status,
       ).toBe('in_progress');
-    });
-
-    it('does not auto-start the next ticket for glide fallback', async () => {
-      const context = testContext({
-        ticketBoundaryMode: 'glide',
-      });
-
-      const advancedState: DeliveryState = {
-        ...baseState,
-        tickets: baseState.tickets.map((ticket) =>
-          ticket.id === 'EE7.01'
-            ? { ...ticket, status: 'done' as const }
-            : ticket,
-        ),
-      };
-
-      const nextState = await applyAdvanceBoundaryMode(
-        baseState,
-        advancedState,
-        '/tmp',
-        context,
-        {
-          startTicket: async () => {
-            throw new Error('should not start');
-          },
-        },
-      );
-
-      expect(nextState).toEqual(advancedState);
     });
   });
 });

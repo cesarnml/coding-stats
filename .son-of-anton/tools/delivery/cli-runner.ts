@@ -97,7 +97,6 @@ import {
   formatRepairSummary,
   formatStandaloneAiReviewResult,
   formatStatus,
-  resolveEffectiveAdvanceBoundaryMode,
   resolveNextCommand,
   type RepairStateResult,
 } from './format';
@@ -1549,11 +1548,7 @@ export async function applyAdvanceBoundaryMode(
     return advancedState;
   }
 
-  const effectiveMode = resolveEffectiveAdvanceBoundaryMode(
-    context.config.ticketBoundaryMode,
-  );
-
-  if (effectiveMode !== 'cook') {
+  if (context.config.ticketBoundaryMode !== 'cook') {
     return advancedState;
   }
 

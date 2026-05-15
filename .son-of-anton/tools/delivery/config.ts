@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-export const VALID_TICKET_BOUNDARY_MODES = ['cook', 'gated', 'glide'] as const;
+export const VALID_TICKET_BOUNDARY_MODES = ['cook', 'gated'] as const;
 
 export type TicketBoundaryMode = (typeof VALID_TICKET_BOUNDARY_MODES)[number];
 

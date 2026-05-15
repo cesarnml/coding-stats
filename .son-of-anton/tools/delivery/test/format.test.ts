@@ -3,7 +3,6 @@ import { describe, expect, it } from 'bun:test';
 import {
   formatAdvanceBoundaryGuidance,
   formatCurrentTicketStatus,
-  resolveEffectiveAdvanceBoundaryMode,
   resolveNextCommand,
 } from '../format';
 import type { ResolvedOrchestratorConfig } from '../runtime-config';
@@ -121,27 +120,6 @@ describe('formatAdvanceBoundaryGuidance (EE7 boundary output)', () => {
     );
     expect(output).toContain(
       'next_handoff_absolute=/tmp/ee7_02/.agents/delivery/engineering-epic-07/handoffs/ee7-02-handoff.md',
-    );
-  });
-
-  it('emits explicit glide fallback guidance', () => {
-    const config: ResolvedOrchestratorConfig = {
-      ...baseConfig,
-      ticketBoundaryMode: 'glide',
-    };
-
-    const output = formatAdvanceBoundaryGuidance(
-      baseState,
-      advancedState,
-      advancedState,
-      config,
-    );
-
-    expect(output).toContain('context_reset_required=true');
-    expect(output).toContain('glide_fallback=gated');
-    expect(output).toContain('GLIDE FALLBACK before starting EE7.02.');
-    expect(output).toContain(
-      'Host/runtime self-reset is not supported here, so Son-of-Anton is using gated boundary behavior instead.',
     );
   });
 });
@@ -325,12 +303,6 @@ describe('formatCurrentTicketStatus (EE6: findings block)', () => {
     expect(output).toContain('findings (2):');
     expect(output).toContain('[coderabbit]');
   });
-});
-
-it('resolves glide to gated as the effective advance boundary mode', () => {
-  expect(resolveEffectiveAdvanceBoundaryMode('cook')).toBe('cook');
-  expect(resolveEffectiveAdvanceBoundaryMode('gated')).toBe('gated');
-  expect(resolveEffectiveAdvanceBoundaryMode('glide')).toBe('gated');
 });
 
 describe('resolveNextCommand (P3.01)', () => {
