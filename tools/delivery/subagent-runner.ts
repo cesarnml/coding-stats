@@ -68,7 +68,11 @@ export function validateRunnerArtifact(
     return null;
   }
 
-  if (typeof obj['reviewedHeadSha'] !== 'string') return null;
+  if (
+    typeof obj['reviewedHeadSha'] !== 'string' ||
+    obj['reviewedHeadSha'] === ''
+  )
+    return null;
 
   if (
     typeof obj['outcome'] !== 'string' ||
@@ -77,7 +81,8 @@ export function validateRunnerArtifact(
     return null;
   }
 
-  if (typeof obj['completedAt'] !== 'string') return null;
+  if (typeof obj['completedAt'] !== 'string' || obj['completedAt'] === '')
+    return null;
 
   return {
     runnerKind: obj['runnerKind'] as SubagentRunnerArtifact['runnerKind'],

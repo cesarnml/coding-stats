@@ -94,7 +94,7 @@ export function getUsage(runDeliverInvocation: string): string {
     '  restack [ticket-id]',
     '',
     'Options:',
-    '  --boundary-mode <cook|gated|glide>',
+    '  --boundary-mode <cook|gated>',
     '  --subagent-review-policy <required|skip_doc_only|disabled>',
     '  --pr-review-policy <required|skip_doc_only|disabled>',
     '  --preferred-runner <claude-cli|codex-exec>',

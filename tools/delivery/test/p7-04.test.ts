@@ -135,14 +135,6 @@ describe('P7.04 run-policy observability', () => {
   // ─── formatRunPolicy — additional edge cases ──────────────────────────────────
 
   describe('formatRunPolicy — additional edge cases', () => {
-    it('renders glide boundary mode', () => {
-      const glidePolicy: RunPolicy = {
-        ...samTypePolicy,
-        ticketBoundaryMode: 'glide',
-      };
-      expect(formatRunPolicy(glidePolicy)).toContain('boundary_mode=glide');
-    });
-
     it('renders required subagentReview', () => {
       const policy: RunPolicy = {
         ...samTypePolicy,

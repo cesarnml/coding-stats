@@ -10,6 +10,8 @@ Five tickets shipped across a stacked PR chain:
 - **P10.04** ([PR #36](https://github.com/cesarnml/son-of-anton/pull/36)) — README "Findings go to you" overclaim corrected; `--runner-subagent-review` added to README and `delivery-orchestrator.md` flag tables; `subagentReviewRunner` config field documented; `workflow.open_pr.requires_runner_review` added to stable contracts list; `subagent-runner.ts` added to module table; subagent review section restructured into agent-to-agent and executor-owned runner paths; hardcoded `codex:codex-rescue` references generalized.
 - **P10.05** ([PR #37](https://github.com/cesarnml/son-of-anton/pull/37)) — Implementation plan delivery status updated; this retrospective.
 
+> **Post-phase note:** The `subagentReviewRunner` / `--runner-subagent-review` API surface shipped in Phase 10 was replaced by a clean-break `--preferred-runner <claude-cli|codex-exec>` flag before private beta. The `glide` boundary mode was also removed. See [`docs/overview/releases/beta-v1-status.md`](../../overview/releases/beta-v1-status.md) for a full account of what actually shipped at beta launch.
+
 ## 2. What Went Well
 
 **The executor seam generalized cleanly on the first try.** Extracting `executeRunnerReview<K>` in P10.03 needed no re-design of the P10.02 contract — `runnerKind` was the only runner-specific input, and the artifact schema was already generic enough to absorb `codex-exec` by adding a new union member. This happened because P10.02 used dependency injection (`spawnProcess`) rather than hardcoding the binary call, which meant P10.03 only needed to supply a different `runnerKind` string and the same injected function shape.

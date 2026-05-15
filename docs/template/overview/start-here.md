@@ -49,7 +49,7 @@ Override delivery policy for a single run without editing `orchestrator.config.j
 
 ```bash
 bun run deliver --plan <plan-path> \
-  --boundary-mode <cook|gated|glide> \
+  --boundary-mode <cook|gated> \
   --subagent-review-policy <required|skip_doc_only|disabled> \
   --pr-review-policy <required|skip_doc_only|disabled> \
   --preferred-runner <claude-cli|codex-exec> \

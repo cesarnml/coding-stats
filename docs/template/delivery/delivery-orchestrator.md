@@ -135,7 +135,6 @@ Supported `ticketBoundaryMode` values are:
 
 - `cook`
 - `gated`
-- `glide`
 
 The internal convention below `planRoot` is fixed: `{planRoot}/product/delivery/<phase>/implementation-plan.md`. Only the top-level directory name is configurable.
 
@@ -278,7 +277,7 @@ Pass explicit flags to override delivery policy for a single run without editing
 
 | Flag                       | Values                              | Effect                                                                                    |
 | -------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| `--boundary-mode`          | `cook\|gated\|glide`                | Override ticket-boundary mode                                                             |
+| `--boundary-mode`          | `cook\|gated`                       | Override ticket-boundary mode                                                             |
 | `--subagent-review-policy` | `required\|skip_doc_only\|disabled` | Override subagent review gate                                                             |
 | `--pr-review-policy`       | `required\|skip_doc_only\|disabled` | Override PR review gate                                                                   |
 | `--preferred-runner`       | `claude-cli\|codex-exec`            | Declare execution agent identity; tries preferred first, then the other, then honest skip |
@@ -309,9 +308,6 @@ EE7 makes the ticket-boundary policy explicit.
   guidance plus a ready-to-paste resume prompt for the next agent session.
   `advance` does **not** create the next handoff or worktree; `start` remains
   the command that initializes the next ticket.
-- `glide`: selectable but not fully supported in repo-local code. The
-  orchestrator surfaces `glide` as an explicit mode, but today it falls back to
-  `gated` because host-driven self-reset is outside the CLI's control.
 
 For `gated`, the canonical resume prompt is:
 
@@ -319,7 +315,7 @@ For `gated`, the canonical resume prompt is:
 Immediately execute `bun run deliver --plan <plan> start`, read the generated handoff artifact as the source of truth for context, and implement <next-ticket-id>.
 ```
 
-Operator reset guidance in `gated` and `glide` fallback:
+Operator reset guidance in `gated`:
 
 - prefer `/clear` for minimum token use
 - use `/compact` only when intentionally preserving compressed carry-forward
@@ -721,7 +717,6 @@ PR descriptions are maintained as delivery metadata, not one-shot text.
 - `advance` refreshes the PR body from recorded review state, marks the ticket done, then applies the configured `ticketBoundaryMode`
 - in `cook`, `advance` auto-starts the next pending ticket and prints the next handoff path
 - in `gated`, `advance` stops and prints reset guidance plus the canonical resume prompt; `start` still owns next-ticket handoff creation
-- in `glide`, `advance` currently falls back explicitly to `gated`
 - `start` (zero-arg) finds the next pending ticket, creates its worktree and branch, writes its handoff, and prints the handoff path; explicit `start <ticket-id>` form is unchanged
 
 This matters because the repo squash-merges PRs onto `main`, so the PR body needs to mention prudent ai-cr follow-up work before the stack moves on.

@@ -86,7 +86,6 @@ export {
   formatAdvanceBoundaryGuidance,
   formatCurrentTicketStatus,
   formatStatus,
-  resolveEffectiveAdvanceBoundaryMode,
 } from './format';
 export {
   deriveBranchName,

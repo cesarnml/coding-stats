@@ -38,7 +38,7 @@ Tests:
 
 <The primary agent derives these from the ticket spec. 2–3 max. Write them as testable
 assertions, not goals. Example: "open-pr must throw workflow.open_pr.requires_runner_review
-when subagentReviewRunner is configured and no valid artifact exists on the ticket." NOT
+when subagentReview is not disabled and ticket has a non-skipped outcome but no artifact." NOT
 "the gate should work correctly.">
 
 1. <invariant>
