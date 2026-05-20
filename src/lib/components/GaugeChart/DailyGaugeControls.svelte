@@ -20,9 +20,10 @@
   {#each dates as date (date)}
     <div class="carousel-item">
       <button
-        class:!btn-outline={date === selectedDate}
+        class="btn btn-sm normal-case"
         class:btn-accent={date === selectedDate}
-        class="btn-primary btn-outline btn-sm btn normal-case"
+        class:btn-primary={date !== selectedDate}
+        class:btn-outline={date !== selectedDate}
         type="button"
         on:click={() => handleClick(date)}
       >

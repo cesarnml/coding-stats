@@ -95,9 +95,11 @@ export const createStackedBarChartOption = (
     tooltip: {
       valueFormatter: (value) => formatTime(Number(value) * secPerHour),
     },
-    grid: { left: 55, right: 10, top: 55, bottom: 50 },
+    grid: { left: 55, right: 10, top: 55, bottom: 88 },
     legend: {
       type: 'scroll',
+      bottom: 8,
+      left: 'center',
       pageIconColor: ChartColor.Icon,
       pageTextStyle: {
         color: ChartColor.Text,

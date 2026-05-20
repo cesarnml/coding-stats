@@ -21,7 +21,15 @@
   let chart: echarts.ECharts
 
   $: hasData = (summaries.data?.length ?? 0) > 0
-  $: selectedDate = summaries.data?.at(-1)?.range.date ?? ''
+
+  let selectedDate = ''
+  $: availableDates = summaries.data?.map((summary) => summary.range.date) ?? []
+  $: defaultDate = availableDates.at(-1) ?? ''
+
+  $: if (defaultDate && (!selectedDate || !availableDates.includes(selectedDate))) {
+    selectedDate = defaultDate
+  }
+
   $: data = createDisciplineGaugeData(summaries, selectedDate)
   $: option = createDisciplineGaugeOption(data)
 
@@ -44,7 +52,9 @@
     chart.setOption(option)
   })
 
-  const onUpdate = (e: CustomEvent<string>) => (selectedDate = e.detail)
+  const onUpdate = (e: CustomEvent<string>) => {
+    selectedDate = e.detail
+  }
 </script>
 
 <Container>

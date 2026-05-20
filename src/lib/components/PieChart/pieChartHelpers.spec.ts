@@ -46,6 +46,8 @@ describe('createPieChartOption', () => {
       },
       legend: {
         type: 'scroll',
+        bottom: 8,
+        left: 'center',
         textStyle: {
           color: ChartColor.Text,
         },
@@ -57,8 +59,8 @@ describe('createPieChartOption', () => {
       series: [
         {
           type: 'pie',
-          radius: '60%',
-          center: ['50%', '55%'],
+          radius: '58%',
+          center: ['50%', '46%'],
           label: {
             color: ChartColor.Text,
           },
