@@ -7,6 +7,7 @@ project_id = "coding-stats"
 [api]
 enabled = true
 port = 54321
+external_url = "http://localhost:54321"
 schemas = ["public", "storage"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
@@ -29,7 +30,10 @@ file_size_limit = "50MiB"
 
 [auth]
 site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/login-redirect"]
+additional_redirect_urls = [
+  "http://localhost:5173/login-redirect",
+  "http://localhost:5173/login-redirect?redirect=http://localhost:5173",
+]
 jwt_expiry = 86400
 enable_signup = true
 
@@ -42,7 +46,8 @@ enable_confirmations = false
 enabled = true
 client_id = "env(GITHUB_CLIENT_ID)"
 secret = "env(GITHUB_CLIENT_SECRET)"
-redirect_uri = ""
+# Pin localhost — local GoTrue may otherwise send 127.0.0.1:54321, which GitHub rejects if only localhost is registered.
+redirect_uri = "http://localhost:54321/auth/v1/callback"
 url = ""
 
 [analytics]

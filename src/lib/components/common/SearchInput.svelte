@@ -1,37 +1,31 @@
 <script lang="ts">
-  import { ApiEndpoint } from '$lib/constants'
-  import type { WakaProjectResult } from '$src/types/wakatime'
+  import { goto } from '$app/navigation'
+  import { page } from '$app/stores'
   import debounce from 'lodash/debounce'
-  import { createEventDispatcher } from 'svelte'
 
   const DELAY = 350
 
-  let search = ''
+  export let query = ''
+
+  let search = query
   let loading = false
 
-  const dispatch = createEventDispatcher()
+  $: search = query
 
-  const debouncedSearch = debounce(
-    async () => {
-      loading = true
-      const trimmed = search.trim()
-      const endpoint = trimmed
-        ? `${ApiEndpoint.Projects}?q=${encodeURIComponent(trimmed)}`
-        : ApiEndpoint.Projects
+  const debouncedSearch = debounce(async () => {
+    loading = true
+    const url = new URL($page.url.href)
+    const trimmed = search.trim()
+    if (trimmed) url.searchParams.set('q', trimmed)
+    else url.searchParams.delete('q')
 
-      const response = await fetch(endpoint)
-      if (!response.ok) {
-        loading = false
-        return
-      }
-
-      const result: WakaProjectResult = await response.json()
-      dispatch('search', result)
-      loading = false
-    },
-    DELAY,
-    { trailing: true },
-  )
+    await goto(`${url.pathname}${url.search}`, {
+      keepFocus: true,
+      noScroll: true,
+      invalidateAll: true,
+    })
+    loading = false
+  }, DELAY)
 
   const onChange = () => {
     debouncedSearch()
@@ -42,10 +36,10 @@
   <input
     class="input-primary input w-full flex-shrink text-base md:max-w-xs"
     bind:value={search}
-    placeholder="Search"
+    placeholder="Search projects..."
     on:input={onChange}
   />
   {#if loading}
-    <button class="loading btn-link btn absolute right-1" />
+    <button class="loading btn-link btn absolute right-1" type="button" tabindex="-1" />
   {/if}
 </div>

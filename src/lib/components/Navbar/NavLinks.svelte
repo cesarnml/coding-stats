@@ -1,11 +1,14 @@
 <script lang="ts">
   import { TOP_LEVEL_NAV_URLS, Url } from '$lib/constants'
   import { profile } from '$lib/stores/profile'
+  import { session } from '$lib/stores/session'
   import NavLink from './NavLink.svelte'
+
+  $: navUrls = TOP_LEVEL_NAV_URLS.filter((url) => url !== Url.Projects || $session)
 </script>
 
 <div class="flex gap-8">
-  {#each TOP_LEVEL_NAV_URLS as url}
+  {#each navUrls as url}
     {#if $profile && url === Url.Login}
       <div class="dropdown-bottom dropdown-end dropdown relative">
         <!-- svelte-ignore a11y-label-has-associated-control -->

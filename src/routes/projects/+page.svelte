@@ -4,15 +4,9 @@
   import { ChartColor } from '$lib/helpers/chartHelpers.js'
   import { upsertProject } from '$lib/supabase/projects'
   import { project } from '$lib/stores/project.js'
-  import type { WakaProjectResult } from '$src/types/wakatime.js'
-
   export let data
 
-  $: ({ wakaProjects, supabase } = data)
-
-  const onSearch = (e: CustomEvent<WakaProjectResult>) => {
-    wakaProjects = e.detail
-  }
+  $: ({ wakaProjects, q, supabase } = data)
 
   const syncProject = (row: Awaited<ReturnType<typeof upsertProject>>) => {
     if (!row) return
@@ -43,7 +37,7 @@
 </script>
 
 <div class="space-y-8">
-  <SearchInput on:search={onSearch} />
+  <SearchInput query={q} />
   <ul class="w-full space-y-4 px-4">
     {#each wakaProjects.data as { name } (name)}
       <li class="flex items-center gap-4">

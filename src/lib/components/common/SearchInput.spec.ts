@@ -2,37 +2,49 @@ import { render, screen } from '@testing-library/svelte'
 import userEvent from '@testing-library/user-event'
 import SearchInput from './SearchInput.svelte'
 import { vi } from 'vitest'
-import { projects } from '$src/mocks/testData'
-import { ApiEndpoint } from '$lib/constants'
+
+const { gotoMock } = vi.hoisted(() => ({
+  gotoMock: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('$app/navigation', () => ({
+  goto: gotoMock,
+}))
+
+vi.mock('$app/stores', () => ({
+  page: {
+    subscribe: (run: (value: { url: URL }) => void) => {
+      run({ url: new URL('http://localhost/projects') })
+      return () => {}
+    },
+  },
+}))
 
 describe('SearchInput', () => {
   const user = userEvent.setup()
 
-  it('renders', async () => {
-    // Use a deferred fetch so the loading indicator is visible before results arrive.
-    let resolveFetch!: (value: unknown) => void
-    const fetchPromise = new Promise((resolve) => { resolveFetch = resolve })
+  beforeEach(() => {
+    gotoMock.mockClear()
+  })
 
-    global.fetch = vi.fn().mockReturnValue(
-      fetchPromise.then(() => ({ json: () => Promise.resolve(projects) }))
-    )
-
+  it('navigates with q when typing a search term', async () => {
     render(SearchInput)
 
-    const searchInput = screen.getByRole('textbox')
-    expect(searchInput).toHaveAttribute('placeholder', 'Search')
-    expect(global.fetch).not.toHaveBeenCalled()
-    expect(screen.queryByRole('button')).toBeNull()
+    await user.type(screen.getByRole('textbox'), 'blog')
 
-    await user.type(searchInput, 'Cesar')
+    await vi.waitFor(() => {
+      expect(gotoMock).toHaveBeenCalled()
+    })
 
-    const loadingIndicator = await screen.findByRole('button')
-    expect(loadingIndicator).toBeInTheDocument()
+    expect(gotoMock).toHaveBeenCalledWith('/projects?q=blog', {
+      keepFocus: true,
+      noScroll: true,
+      invalidateAll: true,
+    })
+  })
 
-    expect(global.fetch).toHaveBeenCalledTimes(1)
-    expect(global.fetch).toHaveBeenCalledWith(`${ApiEndpoint.Projects}?q=${encodeURIComponent('Cesar')}`)
-    expect(searchInput).toHaveValue('Cesar')
-
-    resolveFetch(undefined)
+  it('shows the query from the URL', () => {
+    render(SearchInput, { query: 'blog' })
+    expect(screen.getByRole('textbox')).toHaveValue('blog')
   })
 })

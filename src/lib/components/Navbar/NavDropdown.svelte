@@ -4,11 +4,13 @@
   import { dropdown } from '$lib/stores/dropdown'
   import { session } from '$lib/stores/session'
   import NavLink from './NavLink.svelte'
+
+  $: dropdownUrls = DROPDOWN_NAV_URLS.filter((url) => url !== Url.Projects || $session)
 </script>
 
 {#if $dropdown}
   <div class="z-50 flex h-full flex-col items-center gap-8 pt-16">
-    {#each DROPDOWN_NAV_URLS as url}
+    {#each dropdownUrls as url}
       {#if url === Url.Login && $session}
         <NavLink url={Url.Account} label="Account" isLarge />
         <form method="POST" action="?/signout">
