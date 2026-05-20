@@ -36,6 +36,10 @@ $$;
 
 ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
 
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
