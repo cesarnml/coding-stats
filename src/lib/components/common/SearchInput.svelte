@@ -14,7 +14,17 @@
   const debouncedSearch = debounce(
     async () => {
       loading = true
-      const response = await fetch(`${ApiEndpoint.Projects}?q=${search}`)
+      const trimmed = search.trim()
+      const endpoint = trimmed
+        ? `${ApiEndpoint.Projects}?q=${encodeURIComponent(trimmed)}`
+        : ApiEndpoint.Projects
+
+      const response = await fetch(endpoint)
+      if (!response.ok) {
+        loading = false
+        return
+      }
+
       const result: WakaProjectResult = await response.json()
       dispatch('search', result)
       loading = false

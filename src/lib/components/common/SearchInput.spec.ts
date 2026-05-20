@@ -30,7 +30,7 @@ describe('SearchInput', () => {
     expect(loadingIndicator).toBeInTheDocument()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    expect(global.fetch).toHaveBeenCalledWith(`${ApiEndpoint.Projects}?q=Cesar`)
+    expect(global.fetch).toHaveBeenCalledWith(`${ApiEndpoint.Projects}?q=${encodeURIComponent('Cesar')}`)
     expect(searchInput).toHaveValue('Cesar')
 
     resolveFetch(undefined)
