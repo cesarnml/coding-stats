@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'bun:test';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { tryRunner, validateRunnerArtifact } from '../subagent-runner';
 import { openPullRequest } from '../orchestrator';
+import { commitDeliveryArtifactAndPush } from '../cli-runner';
+import { relativeToRepo } from '../planning';
+import { runProcess } from '../platform';
 import type { SubagentRunnerArtifact } from '../subagent-runner';
 import type { DeliveryOrchestratorContext } from '../context';
 import type { DeliveryState } from '../types';
@@ -110,7 +117,11 @@ describe('P10.02 — tryRunner fallback behavior', () => {
       () => ({ exitCode: 0, timedOut: false }),
       () => true,
     );
-    expect(second).toEqual({ status: 'ran', outcome: 'patched' });
+    expect(second).toEqual({
+      status: 'ran',
+      outcome: 'patched',
+      terminatedReason: 'completed',
+    });
   });
 
   it('both runners unavailable → honest skip', () => {
@@ -141,12 +152,21 @@ describe('P10.02 — tryRunner fallback behavior', () => {
 
 // ─── validateRunnerArtifact ───────────────────────────────────────────────────
 
-describe('P10.02 — validateRunnerArtifact', () => {
+describe('P10.02 — validateRunnerArtifact (structured)', () => {
   const validArtifact: SubagentRunnerArtifact = {
-    runnerKind: 'claude-cli',
-    reviewedHeadSha: 'abc1234',
-    outcome: 'clean',
-    completedAt: '2026-01-01T00:00:00.000Z',
+    ticket: 'P10.02',
+    invocations: [
+      {
+        runnerKind: 'claude-cli',
+        reviewedHeadSha: 'abc1234',
+        outcome: 'clean',
+        completedAt: '2026-01-01T00:00:00.000Z',
+        terminatedReason: 'completed',
+        findings: [],
+        probedSurfaces: [],
+        patches: [],
+      },
+    ],
   };
 
   it('accepts valid clean artifact', () => {
@@ -154,34 +174,64 @@ describe('P10.02 — validateRunnerArtifact', () => {
   });
 
   it('accepts valid patched artifact', () => {
-    const artifact = { ...validArtifact, outcome: 'patched' as const };
-    expect(validateRunnerArtifact(artifact)).toEqual(artifact);
-  });
-
-  it('accepts skipped artifact', () => {
     const artifact: SubagentRunnerArtifact = {
-      runnerKind: 'skipped',
-      reviewedHeadSha: 'abc',
-      outcome: 'skipped',
-      completedAt: '2026-01-01T00:00:00.000Z',
+      ...validArtifact,
+      invocations: [
+        { ...validArtifact.invocations[0]!, outcome: 'patched' as const },
+      ],
     };
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });
 
-  it('returns null for missing runnerKind', () => {
-    const { runnerKind: _, ...rest } = validArtifact;
+  it('accepts skipped invocation', () => {
+    const artifact: SubagentRunnerArtifact = {
+      ticket: 'P10.02',
+      invocations: [
+        {
+          runnerKind: 'skipped',
+          reviewedHeadSha: 'abc',
+          outcome: 'skipped',
+          completedAt: '2026-01-01T00:00:00.000Z',
+          terminatedReason: 'runner_unavailable',
+          findings: [],
+          probedSurfaces: [],
+          patches: [],
+        },
+      ],
+    };
+    expect(validateRunnerArtifact(artifact)).toEqual(artifact);
+  });
+
+  it('returns null when invocations is missing', () => {
+    expect(validateRunnerArtifact({ ticket: 'P10.02' })).toBeNull();
+  });
+
+  it('returns null when ticket is missing', () => {
+    const { ticket: _, ...rest } = validArtifact;
     expect(validateRunnerArtifact(rest)).toBeNull();
   });
 
-  it('returns null for missing reviewedHeadSha', () => {
-    const { reviewedHeadSha: _, ...rest } = validArtifact;
-    expect(validateRunnerArtifact(rest)).toBeNull();
+  it('returns null when an invocation is missing reviewedHeadSha', () => {
+    const broken = {
+      ticket: 'P10.02',
+      invocations: [
+        {
+          ...validArtifact.invocations[0]!,
+          reviewedHeadSha: '',
+        },
+      ],
+    };
+    expect(validateRunnerArtifact(broken)).toBeNull();
   });
 
   it('returns null for unknown outcome value', () => {
-    expect(
-      validateRunnerArtifact({ ...validArtifact, outcome: 'unknown' }),
-    ).toBeNull();
+    const broken = {
+      ticket: 'P10.02',
+      invocations: [
+        { ...validArtifact.invocations[0]!, outcome: 'unknown' as string },
+      ],
+    };
+    expect(validateRunnerArtifact(broken)).toBeNull();
   });
 
   it('returns null for null input', () => {
@@ -190,6 +240,17 @@ describe('P10.02 — validateRunnerArtifact', () => {
 
   it('returns null for non-object input', () => {
     expect(validateRunnerArtifact('string')).toBeNull();
+  });
+
+  it('returns null for legacy 4-field shape (no longer a valid SubagentRunnerArtifact at the type level)', () => {
+    expect(
+      validateRunnerArtifact({
+        runnerKind: 'claude-cli',
+        reviewedHeadSha: 'abc1234',
+        outcome: 'clean',
+        completedAt: '2026-01-01T00:00:00.000Z',
+      }),
+    ).toBeNull();
   });
 });
 
@@ -278,6 +339,68 @@ describe('P10.02 — open-pr policy-based runner artifact gate', () => {
       expect((err as { code?: string }).code).not.toBe(
         'workflow.open_pr.requires_runner_review',
       );
+    }
+  });
+});
+
+describe('P10.02 — subagent runner artifact persistence', () => {
+  function git(repo: string, args: string[]) {
+    execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
+  }
+
+  it('commits and pushes the runner artifact when it changes in a git checkout', async () => {
+    const repoRoot = await mkdtemp(join(tmpdir(), 'subagent-artifact-'));
+    const artifactPath = join(
+      repoRoot,
+      'docs/product/delivery/phase-10/reviews/P10.02-subagent-runner.json',
+    );
+    const pushedBranches: string[] = [];
+
+    try {
+      await mkdir(join(repoRoot, 'docs/product/delivery/phase-10/reviews'), {
+        recursive: true,
+      });
+      await writeFile(join(repoRoot, 'README.md'), '# fixture\n', 'utf8');
+      await writeFile(
+        artifactPath,
+        `${JSON.stringify({
+          completedAt: '2026-05-18T00:00:00.000Z',
+          outcome: 'clean',
+          reviewedHeadSha: 'abc1234',
+          runnerKind: 'codex-exec',
+        })}\n`,
+        'utf8',
+      );
+
+      git(repoRoot, ['init', '-b', 'main']);
+      git(repoRoot, ['config', 'user.email', 'delivery-test@example.test']);
+      git(repoRoot, ['config', 'user.name', 'delivery-test']);
+      git(repoRoot, ['add', 'README.md']);
+      git(repoRoot, ['commit', '-m', 'init']);
+
+      const committed = commitDeliveryArtifactAndPush({
+        absolutePath: artifactPath,
+        branch: 'agents/p10-02-executor-owned-subagent-review-via-claude-cli',
+        commitMessage: 'chore(P10.02): record subagent-review runner artifact',
+        ensureBranchPushed: (_cwd, branch) => {
+          pushedBranches.push(branch);
+        },
+        relativeToRepo,
+        repoRoot,
+        runProcess: (cwd, cmd) => runProcess(cwd, cmd, 'bun'),
+      });
+
+      expect(committed).toBe(true);
+      expect(pushedBranches).toEqual([
+        'agents/p10-02-executor-owned-subagent-review-via-claude-cli',
+      ]);
+      expect(runProcess(repoRoot, ['git', 'status', '--porcelain'])).toBe('');
+      expect(
+        runProcess(repoRoot, ['git', 'log', '-1', '--pretty=%s']).trim(),
+      ).toBe('chore(P10.02): record subagent-review runner artifact');
+      expect(await readFile(artifactPath, 'utf8')).toContain('codex-exec');
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
     }
   });
 });

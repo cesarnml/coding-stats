@@ -23,9 +23,28 @@ export type ParsedCliArgs = {
   subagentReviewPolicy?: ReviewPolicyStageValue;
   prReviewPolicy?: ReviewPolicyStageValue;
   preferredRunner?: 'claude-cli' | 'codex-exec';
-  redCommitSha?: string;
   baseline?: BaselineValue;
+  promptFile?: string;
 };
+
+export const STANDALONE_TRIAGE_COMMAND = 'triage-standalone';
+export const TICKET_TRIAGE_COMMAND = 'triage-ticket';
+
+export function normalizeDeliveryCommand(command: string): string {
+  if (command === 'ai-review') {
+    return STANDALONE_TRIAGE_COMMAND;
+  }
+
+  if (command === 'reconcile-late-review') {
+    return TICKET_TRIAGE_COMMAND;
+  }
+
+  return command;
+}
+
+export function isStandaloneTriageCommand(command: string): boolean {
+  return normalizeDeliveryCommand(command) === STANDALONE_TRIAGE_COMMAND;
+}
 
 /**
  * Resolve runtime policy overrides from parsed CLI args onto the raw config.
@@ -75,23 +94,28 @@ function isValidBoundaryMode(mode: unknown): mode is TicketBoundaryMode {
 
 export function getUsage(runDeliverInvocation: string): string {
   return [
-    `Usage: ${runDeliverInvocation} --plan <plan-path> <command>`,
+    `Usage: ${runDeliverInvocation} [--plan <plan-path>] <command>`,
     '',
     'Commands:',
-    '  ai-review [--pr <number>]',
+    '  triage-standalone [--pr <number>]',
     '  sync',
     '  status',
     '  repair-state',
     '  start [ticket-id]',
-    '  post-red [ticket-id] [--red-commit-sha <sha>]',
+    '  post-red [ticket-id]',
     '  post-verify [ticket-id] [clean|patched] [patch-commit-sha ...]',
-    '  subagent-review [ticket-id] [--preferred-runner <claude-cli|codex-exec>]',
+    '  write-subagent-adversarial-review [ticket-id] [--prompt-file <path>]',
+    '  subagent-review [ticket-id] [clean|patched <sha>] [--force] [--preferred-runner <claude-cli|codex-exec>]',
     '  open-pr [ticket-id]',
     '  poll-review [ticket-id]',
-    '  reconcile-late-review <ticket-id>',
+    '  triage-ticket <ticket-id>',
     '  record-review <ticket-id> <clean|patched|operator_input_needed> [note]',
     '  advance',
     '  restack [ticket-id]',
+    '',
+    'Aliases:',
+    '  ai-review -> triage-standalone',
+    '  reconcile-late-review -> triage-ticket',
     '',
     'Options:',
     '  --boundary-mode <cook|gated>',
@@ -109,8 +133,8 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
   let subagentReviewPolicy: ParsedCliArgs['subagentReviewPolicy'];
   let prReviewPolicy: ParsedCliArgs['prReviewPolicy'];
   let preferredRunner: ParsedCliArgs['preferredRunner'];
-  let redCommitSha: ParsedCliArgs['redCommitSha'];
   let baseline: ParsedCliArgs['baseline'];
+  let promptFile: ParsedCliArgs['promptFile'];
   const flags = new Set<string>();
   const positionals: string[] = [];
 
@@ -213,15 +237,19 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
     }
 
     if (value === '--red-commit-sha') {
+      throw new Error(
+        '--red-commit-sha has been removed. Either author a `[red]` commit before continuing, or declare `Red: skip` in the ticket metadata if the ticket has no testable behavior.',
+      );
+    }
+
+    if (value === '--prompt-file') {
       const raw = argv[index + 1];
 
-      if (!raw || raw.trim() === '' || raw.startsWith('--')) {
-        throw new Error(
-          'Pass --red-commit-sha <sha> with a non-blank commit SHA.',
-        );
+      if (raw === undefined || raw.startsWith('--') || raw.trim() === '') {
+        throw new Error('Pass --prompt-file <path>.');
       }
 
-      redCommitSha = raw.trim();
+      promptFile = raw;
       index += 1;
       continue;
     }
@@ -264,7 +292,7 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
   }
 
   return {
-    command,
+    command: normalizeDeliveryCommand(command),
     positionals: rest,
     flags,
     planPath,
@@ -273,8 +301,8 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
     subagentReviewPolicy,
     prReviewPolicy,
     preferredRunner,
-    redCommitSha,
     baseline,
+    promptFile,
   };
 }
 

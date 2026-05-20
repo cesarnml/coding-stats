@@ -72,11 +72,12 @@ The validator checked `typeof value === 'string'` but not `value !== ''`. A `rev
 would pass structural validation. Fixed in this pre-beta patch: both `reviewedHeadSha` and
 `completedAt` now reject the empty string.
 
-### `post-red` requires HEAD to match `[red]`
+### `post-red` placement and skip metadata are explicit
 
-The `post-red` command checks whether the current `HEAD` commit message contains `[red]`. If a green
-commit lands before `post-red` is recorded (e.g., session split), there is no CLI recovery path —
-state must be patched manually. A `--red-commit-sha` flag would fix this; deferred to a later phase.
+The `post-red` command now runs before implementation on code tickets: write the failing behavior
+test, commit it with a `[red]` suffix, then record it with `post-red`. Tickets with no testable
+behavior declare `Red: skip` in metadata, and doc-only branches skip the gate structurally. The
+temporary `--red-commit-sha` recovery idea was removed rather than shipped.
 
 ### No mid-phase `/soa update` path defined
 

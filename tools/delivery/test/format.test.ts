@@ -346,11 +346,13 @@ describe('resolveNextCommand (P3.01)', () => {
     );
   });
 
-  it('verified + subagentReview enabled → subagent-review', () => {
+  it('verified + subagentReview enabled (no ticket context) → write-subagent-adversarial-review', () => {
+    // P13.02: when ticket context is unavailable, the conservative next step is
+    // to write the adversarial review prompt before invoking the runner.
     expect(
       resolveNextCommand('verified', configSubagentEnabled, planPath),
     ).toBe(
-      'bun run deliver --plan docs/product/delivery/phase-03/implementation-plan.md subagent-review',
+      'bun run deliver --plan docs/product/delivery/phase-03/implementation-plan.md write-subagent-adversarial-review',
     );
   });
 

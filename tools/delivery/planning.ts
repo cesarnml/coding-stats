@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 
+import { parseRedPolicy, type RedPolicy } from './ticket-metadata';
 import type { OrchestratorOptions, TicketDefinition } from './types';
 import { DEFAULT_REVIEW_POLLING_PROFILE } from './review-polling-profile';
 
@@ -46,6 +47,7 @@ export function parsePlan(
       slug: slugify(ticket.title),
       type: parseTicketType(resolve(cwd ?? '', ticketFile)),
       scope: parseTicketScope(resolve(cwd ?? '', ticketFile)),
+      redPolicy: parseTicketRedPolicy(resolve(cwd ?? '', ticketFile)),
       ticketFile,
     };
   });
@@ -184,6 +186,16 @@ function parseTicketScope(ticketFilePath: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function parseTicketRedPolicy(ticketFilePath: string): RedPolicy {
+  let content: string;
+  try {
+    content = readFileSync(ticketFilePath, 'utf8');
+  } catch {
+    return 'required';
+  }
+  return parseRedPolicy(content);
 }
 
 function normalizeRepoPath(value: string): string {

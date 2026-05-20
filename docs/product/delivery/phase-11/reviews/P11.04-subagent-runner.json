@@ -1,0 +1,15 @@
+{
+  "ticket": "P11.04",
+  "invocations": [
+    {
+      "runnerKind": "operator-recorder",
+      "reviewedHeadSha": "72330b4",
+      "outcome": "patched",
+      "completedAt": "2026-05-19T18:14:15.057Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": ["72330b4"]
+    }
+  ]
+}

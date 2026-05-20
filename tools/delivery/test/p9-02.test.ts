@@ -160,31 +160,32 @@ describe('P9.02 tdd gate hardening', () => {
     expect(nextState).toBe(state);
   });
 
-  it('records red_complete against named redCommitSha without running CI or checking HEAD subject', async () => {
+  it('skips post-red entirely when ticket declares Red: skip', async () => {
+    const skipState = {
+      ...baseState,
+      tickets: baseState.tickets.map((ticket) => ({
+        ...ticket,
+        redPolicy: 'skip' as const,
+      })),
+    };
+
     const nextState = await recordPostRed(
-      baseState,
+      skipState,
       'P9.02',
       createDeliveryOrchestratorContext(baseConfig),
       {
         isLocalBranchDocOnly: () => false,
-        readHeadSha: () => 'green-head-sha',
-        readLatestCommitSubject: () => 'feat(P9.02): green implementation',
         runVerify: () => {
-          throw new Error(
-            'should not run CI when --red-commit-sha is provided',
-          );
+          throw new Error('should not run verify when Red: skip declared');
         },
       },
-      'explicit-red-sha',
     );
 
-    expect(nextState.tickets[0]).toMatchObject({
-      status: 'red_complete',
-      redCommitSha: 'explicit-red-sha',
-    });
+    expect(nextState.tickets[0]?.status).toBe('red_complete');
+    expect(nextState.tickets[0]?.redCommitSha).toBeUndefined();
   });
 
-  it('rejects post-red when HEAD commit subject lacks [red] and no --red-commit-sha provided', async () => {
+  it('rejects post-red when HEAD commit subject lacks [red]', async () => {
     await expect(
       recordPostRed(
         baseState,

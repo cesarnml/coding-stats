@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 
 import {
   buildRunnerArtifact,
+  buildRunnerInvocation,
   tryRunner,
   validateRunnerArtifact,
 } from '../subagent-runner';
@@ -86,7 +87,11 @@ describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
       () => ({ exitCode: 0, timedOut: false }),
       () => false,
     );
-    expect(result).toEqual({ status: 'ran', outcome: 'clean' });
+    expect(result).toEqual({
+      status: 'ran',
+      outcome: 'clean',
+      terminatedReason: 'completed',
+    });
   });
 
   it('returns ran+patched for codex-exec style invocation with changes', () => {
@@ -94,7 +99,11 @@ describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
       () => ({ exitCode: 0, timedOut: false }),
       () => true,
     );
-    expect(result).toEqual({ status: 'ran', outcome: 'patched' });
+    expect(result).toEqual({
+      status: 'ran',
+      outcome: 'patched',
+      terminatedReason: 'completed',
+    });
   });
 
   it('returns unavailable for codex-exec style when spawn fails', () => {
@@ -110,36 +119,55 @@ describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
 
 // ─── buildRunnerArtifact identity ────────────────────────────────────────────
 
-describe('P10.03 — buildRunnerArtifact identity', () => {
-  it('builds codex-exec artifact with correct runnerKind', () => {
-    const artifact = buildRunnerArtifact('codex-exec', 'sha1234', 'clean');
-    expect(artifact.runnerKind).toBe('codex-exec');
-    expect(artifact.outcome).toBe('clean');
-    expect(artifact.reviewedHeadSha).toBe('sha1234');
-    expect(typeof artifact.completedAt).toBe('string');
+describe('P10.03 — buildRunnerInvocation + buildRunnerArtifact identity', () => {
+  it('builds codex-exec invocation with correct runnerKind', () => {
+    const invocation = buildRunnerInvocation('codex-exec', 'sha1234', 'clean');
+    const artifact = buildRunnerArtifact('P10.03', [invocation]);
+    expect(artifact.ticket).toBe('P10.03');
+    expect(artifact.invocations[0]!.runnerKind).toBe('codex-exec');
+    expect(artifact.invocations[0]!.outcome).toBe('clean');
+    expect(artifact.invocations[0]!.reviewedHeadSha).toBe('sha1234');
+    expect(typeof artifact.invocations[0]!.completedAt).toBe('string');
+    expect(artifact.invocations[0]!.terminatedReason).toBe('completed');
   });
 
-  it('builds claude-cli artifact with correct runnerKind', () => {
-    const artifact = buildRunnerArtifact('claude-cli', 'sha5678', 'patched');
-    expect(artifact.runnerKind).toBe('claude-cli');
-    expect(artifact.outcome).toBe('patched');
+  it('builds claude-cli invocation with correct runnerKind', () => {
+    const invocation = buildRunnerInvocation(
+      'claude-cli',
+      'sha5678',
+      'patched',
+    );
+    expect(invocation.runnerKind).toBe('claude-cli');
+    expect(invocation.outcome).toBe('patched');
   });
 
-  it('builds skipped artifact for honest skip case', () => {
-    const artifact = buildRunnerArtifact('skipped', 'sha9012', 'skipped');
-    expect(artifact.runnerKind).toBe('skipped');
-    expect(artifact.outcome).toBe('skipped');
+  it('builds skipped invocation for honest skip case', () => {
+    const invocation = buildRunnerInvocation('skipped', 'sha9012', 'skipped', {
+      terminatedReason: 'runner_unavailable',
+    });
+    expect(invocation.runnerKind).toBe('skipped');
+    expect(invocation.outcome).toBe('skipped');
+    expect(invocation.terminatedReason).toBe('runner_unavailable');
   });
 });
 
 // ─── validateRunnerArtifact with codex-exec ───────────────────────────────────
 
-describe('P10.03 — validateRunnerArtifact accepts codex-exec runnerKind', () => {
+describe('P10.03 — validateRunnerArtifact accepts codex-exec runnerKind (structured)', () => {
   const validCodexArtifact: SubagentRunnerArtifact = {
-    runnerKind: 'codex-exec',
-    reviewedHeadSha: 'abc1234',
-    outcome: 'clean',
-    completedAt: '2026-01-01T00:00:00.000Z',
+    ticket: 'P10.03',
+    invocations: [
+      {
+        runnerKind: 'codex-exec',
+        reviewedHeadSha: 'abc1234',
+        outcome: 'clean',
+        completedAt: '2026-01-01T00:00:00.000Z',
+        terminatedReason: 'completed',
+        findings: [],
+        probedSurfaces: [],
+        patches: [],
+      },
+    ],
   };
 
   it('accepts a valid codex-exec clean artifact', () => {
@@ -149,19 +177,33 @@ describe('P10.03 — validateRunnerArtifact accepts codex-exec runnerKind', () =
   });
 
   it('accepts a valid codex-exec patched artifact', () => {
-    const artifact = { ...validCodexArtifact, outcome: 'patched' as const };
+    const artifact: SubagentRunnerArtifact = {
+      ...validCodexArtifact,
+      invocations: [
+        { ...validCodexArtifact.invocations[0]!, outcome: 'patched' as const },
+      ],
+    };
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });
 
-  it('returns null for codex-exec artifact missing reviewedHeadSha', () => {
-    const { reviewedHeadSha: _, ...rest } = validCodexArtifact;
-    expect(validateRunnerArtifact(rest)).toBeNull();
+  it('returns null when invocation is missing reviewedHeadSha', () => {
+    const broken = {
+      ticket: 'P10.03',
+      invocations: [
+        { ...validCodexArtifact.invocations[0]!, reviewedHeadSha: '' },
+      ],
+    };
+    expect(validateRunnerArtifact(broken)).toBeNull();
   });
 
-  it('returns null for codex-exec artifact with unknown outcome', () => {
-    expect(
-      validateRunnerArtifact({ ...validCodexArtifact, outcome: 'unknown' }),
-    ).toBeNull();
+  it('returns null for invocation with unknown outcome', () => {
+    const broken = {
+      ticket: 'P10.03',
+      invocations: [
+        { ...validCodexArtifact.invocations[0]!, outcome: 'unknown' },
+      ],
+    };
+    expect(validateRunnerArtifact(broken)).toBeNull();
   });
 });
 

@@ -266,6 +266,10 @@ export function buildReviewArtifactPaths(artifactStemPath: string): {
   };
 }
 
+export function buildPrReviewArtifactStem(ticketId: string): string {
+  return `${ticketId}-pr-review`;
+}
+
 export async function writeFetchArtifact(
   artifactPath: string,
   artifact: AiReviewFetchArtifact,

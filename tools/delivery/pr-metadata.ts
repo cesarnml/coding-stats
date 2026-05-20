@@ -16,8 +16,10 @@ import { DEFAULT_REVIEW_POLLING_PROFILE } from './review-polling-profile';
 import { readReviewArtifacts } from './review-artifacts';
 
 const MAX_ACTION_COMMITS = 20;
-const STANDALONE_AI_REVIEW_SECTION_START = '<!-- ai-review:start -->';
-const STANDALONE_AI_REVIEW_SECTION_END = '<!-- ai-review:end -->';
+// Keep the historical marker values so refreshing old PR bodies replaces the
+// managed block instead of appending a second triage section.
+const STANDALONE_TRIAGE_SECTION_START = '<!-- ai-review:start -->';
+const STANDALONE_TRIAGE_SECTION_END = '<!-- ai-review:end -->';
 
 export type ReviewActionCommit = {
   sha: string;
@@ -1096,9 +1098,9 @@ export function buildStandaloneAiReviewSection(
   });
 
   return [
-    STANDALONE_AI_REVIEW_SECTION_START,
+    STANDALONE_TRIAGE_SECTION_START,
     section,
-    STANDALONE_AI_REVIEW_SECTION_END,
+    STANDALONE_TRIAGE_SECTION_END,
   ].join('\n');
 }
 
@@ -1107,7 +1109,7 @@ export function mergeStandaloneAiReviewSection(
   section: string,
 ): string {
   const pattern = new RegExp(
-    `${STANDALONE_AI_REVIEW_SECTION_START}[\\s\\S]*?${STANDALONE_AI_REVIEW_SECTION_END}`,
+    `${STANDALONE_TRIAGE_SECTION_START}[\\s\\S]*?${STANDALONE_TRIAGE_SECTION_END}`,
     'g',
   );
   const bodyWithoutAiReviewSections = body.replace(pattern, '').trimEnd();

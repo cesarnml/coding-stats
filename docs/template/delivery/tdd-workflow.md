@@ -39,10 +39,17 @@ Do not mock:
 
 For each ticket:
 
-1. Write one failing test against a public behavior.
-2. Implement the smallest code needed to make it pass.
-3. Refactor for readability only after the test is green.
-4. Stop and review before taking the next behavior slice.
+1. Declare `Red: required` in the ticket metadata for code behavior, or `Red: skip` when there is no testable behavior.
+2. For `Red: required`, write one failing test against a public behavior.
+3. Commit the failing test with a `[red]` suffix.
+4. Run `bun run deliver --plan <plan-path> post-red` before implementation.
+5. Implement the smallest code needed to make it pass.
+6. Refactor for readability only after the test is green.
+7. Stop and review before taking the next behavior slice.
+
+`Red: skip` is the explicit metadata signal for tickets with no testable
+behavior, such as pure docs, scaffolding, ops, or deployment work. Branches that
+touch only `.md` or `.json` files also skip the red gate structurally.
 
 ## Example Ticket Rhythm
 
@@ -58,11 +65,26 @@ Bad sequence:
 - add persistence later
 - add tests after the entire feature works
 
+## Pre-PR subagent review (orchestrated code tickets)
+
+After implementation is green and `post-verify` is recorded, code tickets with
+`subagentReview` enabled follow the orchestrator's two-step pre-PR gate (not part of
+red-green-refactor itself, but mandatory before `open-pr`):
+
+1. Primary agent fills `docs/template/delivery/adversarial-review-template.md` from the diff and ticket spec.
+2. `write-subagent-adversarial-review` persists that prompt.
+3. `subagent-review --preferred-runner …` runs the advisory runner against the written prompt.
+4. Primary agent applies any prudent patches from findings, then `open-pr`.
+
+The runner must not modify files; only the primary agent commits `[subagent-review]` fixes.
+See `delivery-orchestrator.md` for policy variants (`required`, `skip_doc_only`, `disabled`).
+
 ## Definition Of Done
 
 A ticket is done when:
 
 - its new public behavior is covered by tests
+- its `Red:` metadata honestly says whether a failing-test gate applies
 - tests are green
 - code only includes the minimum support needed for that behavior
 - README or docs changes needed for that slice are included

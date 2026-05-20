@@ -138,29 +138,30 @@ describe('P7.03 resume divergence guardrails', () => {
     });
   });
 
-  // ─── parseCliArgs — --red-commit-sha flag ────────────────────────────────────
+  // ─── parseCliArgs — --red-commit-sha removed in phase-12 ─────────────────────
 
-  describe('parseCliArgs — --red-commit-sha flag', () => {
-    it('parses --red-commit-sha and exposes it on parsed result', () => {
-      const result = parseCliArgs(
-        ['--plan', 'x.md', 'post-red', '--red-commit-sha', 'abc1234def'],
-        DUMMY_USAGE,
-      );
-      expect(result.redCommitSha).toBe('abc1234def');
-    });
-
-    it('leaves redCommitSha undefined when flag is absent', () => {
-      const result = parseCliArgs(['--plan', 'x.md', 'post-red'], DUMMY_USAGE);
-      expect(result.redCommitSha).toBeUndefined();
-    });
-
-    it('throws when --red-commit-sha has no value', () => {
+  describe('parseCliArgs — --red-commit-sha removed', () => {
+    it('throws with an explicit error pointing to the two honest paths', () => {
       expect(() =>
         parseCliArgs(
-          ['--plan', 'x.md', 'post-red', '--red-commit-sha'],
+          ['--plan', 'x.md', 'post-red', '--red-commit-sha', 'abc1234def'],
           DUMMY_USAGE,
         ),
-      ).toThrow('--red-commit-sha');
+      ).toThrow(/--red-commit-sha has been removed/);
+    });
+
+    it('error names the two honest paths so the operator knows what to do next', () => {
+      try {
+        parseCliArgs(
+          ['--plan', 'x.md', 'post-red', '--red-commit-sha', 'abc'],
+          DUMMY_USAGE,
+        );
+        throw new Error('expected throw');
+      } catch (error) {
+        const message = (error as Error).message;
+        expect(message).toContain('[red]');
+        expect(message).toContain('Red: skip');
+      }
     });
   });
 

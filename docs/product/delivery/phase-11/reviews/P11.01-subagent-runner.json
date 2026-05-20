@@ -1,0 +1,15 @@
+{
+  "ticket": "P11.01",
+  "invocations": [
+    {
+      "runnerKind": "claude-cli",
+      "reviewedHeadSha": "a4184400d50754c4a3a6f632cf79f46f793797aa",
+      "outcome": "clean",
+      "completedAt": "2026-05-19T13:34:57.964Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": []
+    }
+  ]
+}

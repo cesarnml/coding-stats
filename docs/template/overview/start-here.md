@@ -30,9 +30,15 @@ Stage 2 — How (/soa decompose):
 
 Execute:
 7. bun run deliver --plan <plan-path> start
+8. For code tickets, write and commit the failing behavior test with `[red]`
+9. bun run deliver --plan <plan-path> post-red
+10. Implement, verify, and continue with the next command from `status`
+11. For code tickets with subagent review enabled: `post-verify` → `write-subagent-adversarial-review` → `subagent-review` → `open-pr` (see `delivery-orchestrator.md`)
 ```
 
 Both the product plan and implementation docs must be committed to `main` **before** the orchestrator creates any branches.
+
+The pre-PR subagent gate is a **two-step** flow: the primary agent authors the filled adversarial prompt (`write-subagent-adversarial-review`); the runner step (`subagent-review --preferred-runner …`) consumes that exact prompt and returns findings prose only. Policy surface names stay `subagentReview`, `--subagent-review-policy`, and `subagent-review`.
 
 ## Resuming in-progress work
 
@@ -42,6 +48,9 @@ bun run deliver --plan <plan-path> start         # resume from current ticket
 ```
 
 Always read the handoff doc at `.agents/delivery/<plan-key>/handoffs/<ticket-id>.md` first.
+For code tickets, run `post-red` after the `[red]` commit and before implementation.
+Tickets with no testable behavior declare `Red: skip`; doc-only branches skip
+the red gate structurally.
 
 ## Runtime policy overrides
 
@@ -72,10 +81,18 @@ bun run deliver --plan <plan-path> --baseline run-policy   <command>
 Small bounded changes that don't warrant a full phase (bug fixes, doc updates, cleanup):
 
 ```bash
-bun run deliver ai-review [--pr <number>]
+bun run deliver triage-standalone [--pr <number>]
 ```
 
 Self-audit is required. A same-type review subagent is optional but recommended for non-trivial changes.
+
+For late external AI review triage after a PR already exists, use the matching
+`/soa` wrapper:
+
+```bash
+/soa triage-ticket PR#19      # done ticket-linked phase PRs
+/soa triage-standalone PR#19  # standalone non-ticket PRs
+```
 
 ## Key files
 

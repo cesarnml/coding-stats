@@ -1,0 +1,15 @@
+{
+  "ticket": "P12.01",
+  "invocations": [
+    {
+      "runnerKind": "codex-exec",
+      "reviewedHeadSha": "f73202b237a23ad77a7cba152c2049122f5a68ce",
+      "outcome": "clean",
+      "completedAt": "2026-05-20T00:32:21.673Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": []
+    }
+  ]
+}

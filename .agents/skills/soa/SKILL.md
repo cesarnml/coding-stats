@@ -1,6 +1,6 @@
 ---
 name: soa
-description: Son-of-Anton canonical entrypoint. Use for /soa plan, /soa decompose, /soa execute, /soa resume, /soa install, /soa update, /soa closeout, and /soa ideate. Manages installation, updates, and the full delivery lifecycle.
+description: Son-of-Anton canonical entrypoint. Use for /soa plan, /soa decompose, /soa execute, /soa resume, /soa triage-ticket, /soa triage-standalone, /soa install, /soa update, /soa closeout, and /soa ideate. Manages installation, updates, and the full delivery lifecycle.
 ---
 
 # Son-of-Anton Skill
@@ -23,12 +23,12 @@ Add son-of-anton to the current repo for the first time:
 
 ```bash
 git subtree add --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
-bash .son-of-anton/scripts/sync-skills.sh
+bash .son-of-anton/scripts/soa-sync.sh
 ```
 
 If `.son-of-anton` already exists, tell the user to use `update` instead.
 
-`sync-skills.sh` wires the Claude Code adapter as `/soa` plus `soa-*` helper
+`soa-sync.sh` wires the Claude Code adapter as `/soa` plus `soa-*` helper
 skills. The prefixed helper names are intentional so existing user skills named
 `grill-me`, `pr-review`, `enter-worktree`, etc. are not shadowed.
 
@@ -41,9 +41,25 @@ skills. The prefixed helper names are intentional so existing user skills named
 Pull the latest changes from son-of-anton, then re-sync skill symlinks:
 
 ```bash
-git subtree pull --prefix .son-of-anton https://github.com/cesarnml/son-of-anton.git main --squash
-bash .son-of-anton/scripts/sync-skills.sh
+git fetch https://github.com/cesarnml/son-of-anton.git main
+git subtree merge --prefix .son-of-anton FETCH_HEAD --squash
+bash .son-of-anton/scripts/soa-sync.sh
 ```
+
+Fetch the upstream branch first, then merge `FETCH_HEAD`. Do not pass plain
+`main` to the subtree command in consumer repos; it can resolve through local
+consumer history instead of the fetched Son-of-Anton commit.
+
+After the update, verify that a known subtree file matches the fetched upstream
+ref. At minimum:
+
+```bash
+git show FETCH_HEAD:docs/template/delivery/adversarial-review-template.md | git hash-object --stdin
+git hash-object .son-of-anton/docs/template/delivery/adversarial-review-template.md
+```
+
+Those hashes must match. If they do not, report the update as failed and do not
+claim the repo is current.
 
 Report what changed. If already up to date, say so.
 
@@ -135,6 +151,71 @@ Resume delivery after a stopping point.
 3. Read the handoff notes from the last stopping point.
 4. Continue from exactly where delivery left off — do not restart, do not re-plan.
 5. Stick to the orchestrator path as configured.
+
+---
+
+### `triage-ticket`
+
+**Trigger:** `/soa triage-ticket PR#<number>`
+
+Reconcile late external AI review comments on a **done ticket-linked phase PR**.
+This command is only for PRs that belong to an already-delivered ticket in a
+phase/epic stack. For standalone PRs, use `/soa triage-standalone PR#<number>`.
+
+1. Parse the PR number from `PR#<number>`, `#<number>`, or `<number>`. Ask for a
+   PR number if it is missing or ambiguous.
+2. Read `.son-of-anton/docs/template/delivery/delivery-orchestrator.md` in full
+   when running in a consumer repo; in the Son-of-Anton source repo, read
+   `docs/template/delivery/delivery-orchestrator.md`.
+3. Locate delivery state by searching `.agents/delivery/*/state.json` in the
+   current checkout and known `git worktree list` entries for tickets whose
+   `prNumber` matches the PR number.
+4. Refuse to continue unless the matches resolve to exactly one ticket identity
+   (`planPath` + ticket id) and that ticket's status is `done`. Ignore duplicate
+   mirrored state files only when they agree on that identity and status. If the
+   PR is standalone, unknown to delivery state, matched by conflicting states,
+   or attached to a non-`done` ticket, stop and explain the correct command or
+   missing state.
+5. Run from the matched ticket's recorded `worktreePath` when available; if the
+   orchestrator emits a worktree-guard recovery command, follow it exactly:
+
+```bash
+bun run deliver --plan <state.planPath> triage-ticket <ticket-id>
+```
+
+6. Apply the `soa-pr-review` stance to any findings: patch only prudent
+   actionable issues, push fixes, resolve native inline threads that are
+   patched/already-outdated/rejected when resolvable, and let the orchestrator
+   refresh the PR body best-effort.
+
+---
+
+### `triage-standalone`
+
+**Trigger:** `/soa triage-standalone PR#<number>`
+
+Run the standalone PR external AI review triage path for a non-ticketed PR.
+This command is only for standalone PRs. For done ticket-linked phase PRs, use
+`/soa triage-ticket PR#<number>` so delivery state and review artifacts remain
+authoritative.
+
+1. Parse the PR number from `PR#<number>`, `#<number>`, or `<number>`. Ask for a
+   PR number if it is missing or ambiguous.
+2. Read `.son-of-anton/docs/template/delivery/delivery-orchestrator.md` in full
+   when running in a consumer repo; in the Son-of-Anton source repo, read
+   `docs/template/delivery/delivery-orchestrator.md`.
+3. If `.agents/delivery/*/state.json` contains a ticket with this `prNumber`,
+   stop and direct the operator to `/soa triage-ticket PR#<number>` instead.
+4. Surface that standalone triage uses real wall-clock polling, then run:
+
+```bash
+bun run deliver triage-standalone --pr <number>
+```
+
+5. Apply the `soa-pr-review` stance to any findings: patch only prudent
+   actionable issues, push fixes, resolve native inline threads that are
+   patched/already-outdated/rejected when resolvable, and let the standalone
+   review flow refresh the PR body best-effort.
 
 ---
 
