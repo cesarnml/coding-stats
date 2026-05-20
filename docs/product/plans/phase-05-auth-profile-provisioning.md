@@ -1,6 +1,6 @@
 # Phase 05: Auth Profile Provisioning
 
-**Delivery status:** Product plan draft — awaiting developer approval. No `docs/product/delivery/phase-05/` implementation plan until approved.
+**Delivery status:** Product plan approved. Delivery decomposition: `docs/product/delivery/phase-05/implementation-plan.md`.
 
 ## TL;DR
 
