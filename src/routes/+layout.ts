@@ -7,6 +7,7 @@ import {
 } from '@supabase/ssr'
 import type { LayoutLoad } from './$types'
 import type { Database } from '$lib/database.types'
+import { dedupeProjectsByName } from '$lib/supabase/projects'
 
 export const load: LayoutLoad = async ({ fetch, data, depends, url }) => {
   depends('supabase:auth')
@@ -46,9 +47,10 @@ export const load: LayoutLoad = async ({ fetch, data, depends, url }) => {
     ? await supabase.from('profiles').select('*').eq('id', session.user.id).single()
     : { data: data.profile }
 
-  const { data: projects } = isBrowser()
+  const { data: projectsRaw } = isBrowser()
     ? await supabase.from('projects').select('*')
     : { data: data.projects }
+  const projects = dedupeProjectsByName(projectsRaw ?? null)
 
   return { supabase, session, profile, projects, pathname: url.pathname }
 }

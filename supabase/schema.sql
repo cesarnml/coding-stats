@@ -147,6 +147,9 @@ ALTER TABLE ONLY "public"."project_summaries"
 ALTER TABLE ONLY "public"."projects"
     ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
 
+ALTER TABLE ONLY "public"."projects"
+    ADD CONSTRAINT "projects_name_key" UNIQUE ("name");
+
 ALTER TABLE ONLY "public"."summaries"
     ADD CONSTRAINT "summaries_date_key" UNIQUE ("date");
 

@@ -8,6 +8,7 @@ import { createServerClient } from '@supabase/ssr'
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Database } from '$lib/database.types'
+import { dedupeProjectsByName } from '$lib/supabase/projects'
 import type { Session } from '@supabase/supabase-js'
 import type { DataContainer } from '$lib/constants'
 import type { SupaProject } from './app'
@@ -83,7 +84,7 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
       .from('projects')
       .select('*')
 
-    return projects
+    return dedupeProjectsByName(projects)
   }
 
   const profile = await event.locals.getProfile()

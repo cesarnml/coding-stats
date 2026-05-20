@@ -2,6 +2,7 @@
   import SearchInput from '$lib/components/common/SearchInput.svelte'
   import { Url } from '$lib/constants.js'
   import { ChartColor } from '$lib/helpers/chartHelpers.js'
+  import { upsertProject } from '$lib/supabase/projects'
   import { project } from '$lib/stores/project.js'
   import type { WakaProjectResult } from '$src/types/wakatime.js'
 
@@ -13,72 +14,32 @@
     wakaProjects = e.detail
   }
 
-  const onTrackProject = async (projectName: string) => {
-    const { data } = await supabase.from('projects').select('*').eq('name', projectName).single()
-    if (!data) {
-      const { data: newProject } = await supabase
-        .from('projects')
-        .insert({ name: projectName, is_tracked: true })
-        .select('*')
-        .single()
-
-      if (newProject) {
-        project.add(newProject)
-      }
+  const syncProject = (row: Awaited<ReturnType<typeof upsertProject>>) => {
+    if (!row) return
+    const existing = ($project ?? []).some((p) => p.name === row.name)
+    if (existing) {
+      project.update(row)
     } else {
-      const { data: updatedProject } = await supabase
-        .from('projects')
-        .update({ is_tracked: true })
-        .eq('name', projectName)
-        .select('*')
-        .single()
-
-      if (updatedProject) {
-        project.update(updatedProject)
-      }
+      project.add(row)
     }
   }
-  const onUnTrackProject = async (projectName: string) => {
-    const { data: updatedProject } = await supabase
-      .from('projects')
-      .update({ is_tracked: false })
-      .eq('name', projectName)
-      .select('*')
-      .single()
 
-    if (updatedProject) {
-      project.update(updatedProject)
-    }
+  const onTrackProject = async (projectName: string) => {
+    syncProject(await upsertProject(supabase, { name: projectName, is_tracked: true }))
+  }
+
+  const onUnTrackProject = async (projectName: string) => {
+    syncProject(await upsertProject(supabase, { name: projectName, is_tracked: false }))
   }
 
   const onColorChange = async (projectName: string, color: string) => {
-    const { data } = await supabase.from('projects').select('*').eq('name', projectName).single()
-    if (!data) {
-      const { data: newProject } = await supabase
-        .from('projects')
-        .insert({ name: projectName, color })
-        .select('*')
-        .single()
-
-      if (newProject) {
-        project.add(newProject)
-      }
-    } else {
-      const { data: updatedProject } = await supabase
-        .from('projects')
-        .update({ color })
-        .eq('name', projectName)
-        .select('*')
-        .single()
-
-      if (updatedProject) {
-        project.update(updatedProject)
-      }
-    }
+    syncProject(await upsertProject(supabase, { name: projectName, color }))
   }
 
   const getInputValue = (event: Event) =>
     event.target instanceof HTMLInputElement ? event.target.value : ''
+
+  const isTracked = (name: string) => ($project ?? []).find((p) => p.name === name)?.is_tracked
 </script>
 
 <div class="space-y-8">
@@ -98,7 +59,7 @@
           class="link-hover link mr-auto line-clamp-1 text-ellipsis font-semibold text-neutral-content"
           href={Url.ProjectDetail(name)}>{name}</a
         >
-        {#if ($project ?? []).find((p) => p?.name?.includes(name))?.is_tracked}
+        {#if isTracked(name)}
           <button class="btn-sm btn" type="button" on:click={() => onUnTrackProject(name)}
             >Tracking</button
           >
