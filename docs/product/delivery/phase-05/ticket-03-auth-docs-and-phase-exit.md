@@ -43,3 +43,5 @@ Red: skip
 Why this path: smallest operator surface in README; defers a full `docs/` auth guide
 Alternative considered: separate `docs/auth.md` — rejected for 1-point doc ticket
 Deferred: RLS; backfill; hostname cleanup PR
+
+Phase exit (2026-05-20): README auth section and product plan status updated. Hosted `supabase db push --linked` and fresh prod/local GitHub signup smoke checks are **operator-owned** — not run in this delivery session (worktree has no `supabase link`). After merge: push migration, sign in once on prod and local to confirm `profiles` row exists.
