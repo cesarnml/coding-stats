@@ -1,0 +1,61 @@
+# Copy this file to supabase/config.toml (gitignored) for local Docker Supabase.
+# Register the CodingStatsDev GitHub OAuth app with callback URL:
+#   http://localhost:54321/auth/v1/callback
+
+project_id = "coding-stats"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+file_size_limit = "50MiB"
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/login-redirect"]
+jwt_expiry = 86400
+enable_signup = true
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.external.github]
+enabled = true
+client_id = "env(GITHUB_CLIENT_ID)"
+secret = "env(GITHUB_CLIENT_SECRET)"
+redirect_uri = ""
+url = ""
+
+[analytics]
+enabled = false
+port = 54327
+vector_port = 54328
+gcp_project_id = ""
+gcp_project_number = ""
+gcp_jwt_path = "supabase/gcloud.json"
+
+["db.pooler"]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 15
+max_client_conn = 100
