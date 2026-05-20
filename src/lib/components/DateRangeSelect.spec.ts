@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/svelte'
 import DateRangeSelect from './DateRangeSelect.svelte'
-import { WakaApiRange, WakaApiRangePrompt } from '$lib/constants'
+import { DefaultWakaApiRange, WakaApiRange } from '$lib/constants'
 import userEvent from '@testing-library/user-event'
 
 describe('DateRangeSelect', () => {
@@ -9,7 +9,7 @@ describe('DateRangeSelect', () => {
     render(DateRangeSelect)
     const select = screen.getByRole('combobox')
     // Select element has the correct default value
-    expect(select).toHaveValue(WakaApiRangePrompt)
+    expect(select).toHaveValue(DefaultWakaApiRange)
 
     // User can change the select value
     await user.selectOptions(select, WakaApiRange.Last_30_Days)

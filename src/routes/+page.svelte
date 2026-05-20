@@ -63,11 +63,9 @@
   )
 
   onMount(() => {
-    if (profile && profile.range !== $selectedRange) {
+    if (profile?.range && profile.range !== $selectedRange) {
       selectedRange.set(profile.range as ValueOf<WakaApiRange>)
       invalidate('supabase:signin')
-    } else if ($selectedRange === 'Pick a range') {
-      selectedRange.set(WakaApiRange.Last_30_Days)
     }
   })
 

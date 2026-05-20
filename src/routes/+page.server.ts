@@ -1,11 +1,11 @@
-import { ApiEndpoint, WakaApiRange } from '$lib/constants'
+import { ApiEndpoint, DefaultWakaApiRange } from '$lib/constants'
 import type { PageServerLoad } from './$types'
 import type { SupabaseDuration } from './api/supabase/durations/+server'
 import type { SummariesApiResponse } from './api/supabase/summaries/+server'
 
 export const load: PageServerLoad = async ({ fetch, url, locals: { getProfile } }) => {
   const profile = await getProfile()
-  const wakaRange = url.searchParams.get('range') ?? WakaApiRange.Last_7_Days_From_Yesterday
+  const wakaRange = url.searchParams.get('range') ?? DefaultWakaApiRange
   const range = profile?.range ?? wakaRange
 
   const [summariesResponse, durationsResponse, durationsByLanguageResponse] = await Promise.all([

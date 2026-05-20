@@ -24,6 +24,9 @@ export const WakaApiRange = {
   Custom: 'Custom',
 } as const
 
+/** Default range for dashboard views when no profile or URL override is set. */
+export const DefaultWakaApiRange = WakaApiRange.Last_30_Days
+
 export type WakaApiRange = typeof WakaApiRange
 export type KeyOf<T> = keyof T
 export type ValueOf<T> = T[KeyOf<T>]

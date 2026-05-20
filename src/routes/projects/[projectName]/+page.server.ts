@@ -1,4 +1,4 @@
-import { ApiEndpoint, WakaApiRange, WakaToShortcutApiRange } from '$lib/constants'
+import { ApiEndpoint, DefaultWakaApiRange, WakaApiRange, WakaToShortcutApiRange } from '$lib/constants'
 import type { AliasesResult, ProjectsResult } from '$src/types/vercel'
 import type { SummariesResult } from '$src/types/wakatime'
 import dayjs from 'dayjs'
@@ -7,7 +7,7 @@ import { DateFormat } from '$lib/helpers/timeHelpers'
 import type { StorySearchResults } from '$lib/generated/openapi/shortcut'
 
 export const load: PageServerLoad = async ({ fetch, params, url, locals: { getProfile } }) => {
-  const range = url.searchParams.get('range') ?? WakaApiRange.Last_7_Days_From_Yesterday
+  const range = url.searchParams.get('range') ?? DefaultWakaApiRange
   const profile = await getProfile()
   const wakaRange = profile?.range ?? range
   const shortcutRange = WakaToShortcutApiRange[wakaRange as keyof typeof WakaToShortcutApiRange]

@@ -5,6 +5,7 @@
   import Footer from '$lib/components/Footer.svelte'
   import Navbar from '$lib/components/Navbar/Navbar.svelte'
   import PageTransition from '$lib/components/PageTransition.svelte'
+  import { WakaApiRangePrompt } from '$lib/constants'
   import { selectedRange } from '$lib/stores/selectedRange'
   import { profile } from '$lib/stores/profile'
   import { inject } from '@vercel/analytics'
@@ -46,10 +47,17 @@
     return () => subscription.unsubscribe()
   })
 
-  $: if ($selectedRange && !profile) {
+  $: if (
+    typeof window !== 'undefined' &&
+    $selectedRange &&
+    $selectedRange !== WakaApiRangePrompt &&
+    !$profile
+  ) {
     const url = new URL(window.location.href)
-    url.searchParams.set('range', $selectedRange)
-    goto(url, { replaceState: true, keepFocus: true })
+    if (url.searchParams.get('range') !== $selectedRange) {
+      url.searchParams.set('range', $selectedRange)
+      goto(url, { replaceState: true, keepFocus: true })
+    }
   }
 </script>
 
