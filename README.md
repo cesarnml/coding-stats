@@ -2,7 +2,7 @@
 
 [![wakatime](https://wakatime.com/badge/github/cesarnml/waka-shortcut-time-stats.svg)](https://wakatime.com/badge/github/cesarnml/waka-shortcut-time-stats)
 
-Personal coding dashboard built with SvelteKit. Pulls WakaTime activity data, stores it in Supabase, and visualizes it as a portfolio/client-facing tool — "Apple Health for coders." Live at [coding-stats.vercel.app](https://coding-stats.vercel.app).
+Personal coding dashboard built with SvelteKit. Pulls WakaTime activity data, stores it in Supabase, and visualizes it as a portfolio/client-facing tool — "Apple Health for coders." Live at [codingstats.vercel.app](https://codingstats.vercel.app).
 
 ## Coverage
 
