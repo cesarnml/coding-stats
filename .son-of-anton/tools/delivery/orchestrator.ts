@@ -103,14 +103,20 @@ export type {
 } from './platform-adapters';
 export { parseDotEnv } from './env';
 export {
+  appendInvocationToArtifact,
   buildRunnerArtifact,
+  buildRunnerInvocation,
+  readSubagentRunnerArtifact,
   tryRunner,
   validateRunnerArtifact,
 } from './subagent-runner';
 export type {
   RunnerAttemptResult,
   SubagentRunnerArtifact,
+  SubagentRunnerInvocation,
+  SubagentRunnerKind,
   SubagentRunnerOutcome,
+  SubagentRunnerTerminatedReason,
 } from './subagent-runner';
 export {
   applyAdvanceBoundaryMode,

@@ -45,6 +45,7 @@ export function resolveNextCommand(
   config: ResolvedOrchestratorConfig,
   planPath: string,
   ticketId?: string,
+  ticket?: Pick<TicketState, 'subagentAdversarialPromptPath' | 'verifyOutcome'>,
 ): string | null {
   const invoke = generateRunDeliverInvocation(config.packageManager);
   const cmd = (subcommand: string) =>
@@ -56,9 +57,7 @@ export function resolveNextCommand(
     case 'red_complete':
       return cmd('post-verify');
     case 'verified':
-      return config.reviewPolicy.subagentReview !== 'disabled'
-        ? cmd('subagent-review')
-        : cmd('open-pr');
+      return resolveVerifiedNextCommand(config, ticket, cmd);
     case 'subagent_review_complete':
       return cmd('open-pr');
     case 'in_review':
@@ -75,6 +74,31 @@ export function resolveNextCommand(
     case 'pending':
       return null;
   }
+}
+
+function resolveVerifiedNextCommand(
+  config: ResolvedOrchestratorConfig,
+  ticket:
+    | Pick<TicketState, 'subagentAdversarialPromptPath' | 'verifyOutcome'>
+    | undefined,
+  cmd: (subcommand: string) => string,
+): string {
+  if (config.reviewPolicy.subagentReview === 'disabled') {
+    return cmd('open-pr');
+  }
+
+  // Doc-only tickets under skip_doc_only auto-record post-verify as skipped.
+  // For those tickets `subagent-review` itself auto-skips without a runner —
+  // so the adversarial prompt step is intentionally bypassed.
+  if (ticket?.verifyOutcome === 'skipped') {
+    return cmd('subagent-review');
+  }
+
+  if (!ticket?.subagentAdversarialPromptPath) {
+    return cmd('write-subagent-adversarial-review');
+  }
+
+  return cmd('subagent-review');
 }
 
 function loadTicketReviewSnapshot(ticket: TicketState): {
@@ -142,6 +166,7 @@ export function formatStatus(
             config,
             state.planPath,
             activeTicket.id,
+            activeTicket,
           );
           return next ? `Next command: ${next}` : undefined;
         })()
@@ -172,6 +197,9 @@ export function formatStatus(
           : undefined,
         ticket.verifiedAt
           ? `post_verify=completed at ${ticket.verifiedAt}${ticket.verifyOutcome ? ` (${ticket.verifyOutcome})` : ''}`
+          : undefined,
+        ticket.subagentAdversarialPromptWrittenAt
+          ? `subagent_adversarial_prompt=written at ${ticket.subagentAdversarialPromptWrittenAt}${ticket.subagentAdversarialPromptPath ? ` (${ticket.subagentAdversarialPromptPath})` : ''}`
           : undefined,
         ticket.subagentReviewCompletedAt
           ? `subagent_review=completed at ${ticket.subagentReviewCompletedAt} (${ticket.subagentReviewOutcome ?? 'unknown'})`
@@ -347,7 +375,7 @@ export function formatStandaloneAiReviewResult(
   result: StandaloneAiReviewResult,
 ): string {
   return [
-    'Standalone AI Review',
+    'Standalone PR Triage',
     `pr=${result.prUrl}`,
     `outcome=${result.outcome}`,
     result.recordedAt ? `recorded_at=${result.recordedAt}` : undefined,

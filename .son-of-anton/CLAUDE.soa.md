@@ -3,7 +3,7 @@
 Use these skills when working in a consumer repo that has installed Son-of-Anton
 via `git subtree add --prefix .son-of-anton`.
 
-- **`soa`** — canonical entrypoint for all SoA commands. Invoke via `Skill` tool with `skill: "soa"` and args `plan`, `decompose`, `execute`, or `resume`. Skill: `.son-of-anton/.agents/skills/soa/SKILL.md`.
+- **`soa`** — canonical entrypoint for all SoA commands. Invoke via `Skill` tool with `skill: "soa"` and args such as `plan`, `decompose`, `execute`, `resume`, `triage-ticket`, or `triage-standalone`. Skill: `.son-of-anton/.agents/skills/soa/SKILL.md`.
 - **`soa-son-of-anton-ethos`** — invoke automatically whenever the user executes, begins, starts, delivers, implements, continues, resumes, runs, drives, carries, or works on any approved multi-ticket phase/epic or standalone PR. This skill owns execution mechanics, stop conditions, polling, and review outcome recording. Skill: `.son-of-anton/.agents/skills/son-of-anton-ethos/SKILL.md`.
 - **`soa-pr-review`** — invoke when the user says `triage`. Triages AI-generated PR review comments. Skill: `.son-of-anton/.agents/skills/pr-review/SKILL.md`.
 - **`soa-grill-me`** — invoke before accepting any plan or ticket decomposition. Stress-tests assumptions. Skill: `.son-of-anton/.agents/skills/grill-me/SKILL.md`.

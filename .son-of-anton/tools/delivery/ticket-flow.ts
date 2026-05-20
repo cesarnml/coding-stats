@@ -11,6 +11,7 @@ import { dirname, resolve } from 'node:path';
 
 import type { PullRequestSummary } from './platform';
 import type { ReviewActionCommit } from './pr-metadata';
+import { buildPrReviewArtifactStem } from './review-artifacts';
 import { saveState as saveStateImpl } from './state';
 import type { ReviewPolicyStageValue } from './config';
 import type {
@@ -457,13 +458,15 @@ export function recordPostRed(
 
   if (!input.latestCommitSubject.includes('[red]')) {
     throw new Error(
-      `Ticket ${target.id} requires a HEAD commit subject containing \`[red]\` before post-red can be recorded.`,
+      `Ticket ${target.id} post-red requires a HEAD commit subject containing \`[red]\`. ` +
+        `Either author a \`[red]\` commit before continuing, or declare \`Red: skip\` in the ticket metadata if the ticket has no testable behavior.`,
     );
   }
 
   if (input.verifyExitCode === 0) {
     throw new Error(
-      `Ticket ${target.id} post-red requires a failing verification run before delivery can advance.`,
+      `Ticket ${target.id} post-red requires a failing verification run before delivery can advance. ` +
+        `Either author a \`[red]\` commit (with a test that genuinely fails) before continuing, or declare \`Red: skip\` in the ticket metadata if the ticket has no testable behavior.`,
     );
   }
 
@@ -729,6 +732,7 @@ export async function advanceToNextTicket(
   state: DeliveryState,
   cwd: string,
   dependencies: {
+    ensureBranchPushed?: (cwd: string, branch: string) => void;
     updatePullRequestBody: (state: DeliveryState, ticket: TicketState) => void;
   },
 ): Promise<DeliveryState> {
@@ -760,6 +764,7 @@ export async function advanceToNextTicket(
     );
   }
 
+  dependencies.ensureBranchPushed?.(current.worktreePath, current.branch);
   dependencies.updatePullRequestBody(state, current);
 
   return {
@@ -844,9 +849,10 @@ export async function materializeTicketContext(
     (ticket): ticket is TicketState => ticket !== undefined,
   );
   for (const ticket of scopedTickets) {
+    const artifactStem = buildPrReviewArtifactStem(ticket.id);
     for (const fileName of [
-      `${ticket.id}-ai-review.fetch.json`,
-      `${ticket.id}-ai-review.triage.json`,
+      `${artifactStem}.fetch.json`,
+      `${artifactStem}.triage.json`,
     ]) {
       reviewNames.add(fileName);
     }

@@ -1,18 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { realpath } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import {
   getUsage,
+  isStandaloneTriageCommand,
   parseCliArgs,
   resolveOptionsForCommand,
   resolveRuntimePolicyOverrides,
+  TICKET_TRIAGE_COMMAND,
 } from './cli';
 import { ensureEnvReady as ensureEnvReadyImpl } from './env';
 import {
@@ -120,12 +116,84 @@ import {
   startTicket as startTicketImpl,
 } from './ticket-flow';
 import {
-  buildRunnerArtifact,
+  appendInvocationToArtifact,
+  buildRunnerSpawnCommand,
+  buildRunnerInvocation,
+  decideAdvisoryRunnerOutcome,
+  decideSubagentReviewMode,
+  findDeliveryDocPaths,
+  parseSubagentReviewArgs,
+  readSubagentRunnerArtifact,
+  shouldFallbackToOtherRunner,
+  tryReadSubagentRunnerArtifact,
   tryRunner,
-  validateRunnerArtifact,
+  writeSubagentReviewOutcome,
+  type SubagentRunnerTerminatedReason,
 } from './subagent-runner';
+import {
+  assertSubagentAdversarialPromptPresent,
+  requireSubagentAdversarialPromptForRunner,
+  writeSubagentAdversarialPrompt,
+} from './subagent-prompt';
+import { readFileSync } from 'node:fs';
 
 export const WORKTREE_EXEMPT = new Set(['status', 'sync', 'start']);
+
+export function commitDeliveryArtifactAndPush(input: {
+  absolutePath: string;
+  /** Additional repo files to include in the same commit (e.g. review sidecars). */
+  alsoCommitAbsolutePaths?: string[];
+  branch: string;
+  commitMessage: string;
+  ensureBranchPushed: (cwd: string, branch: string) => void;
+  relativeToRepo: (cwd: string, absolutePath: string) => string;
+  repoRoot: string;
+  runProcess: (cwd: string, cmd: string[]) => string;
+}): boolean {
+  try {
+    input.runProcess(input.repoRoot, ['git', 'rev-parse', '--git-dir']);
+  } catch {
+    return false;
+  }
+
+  const pathsToStage = [
+    input.absolutePath,
+    ...(input.alsoCommitAbsolutePaths ?? []),
+  ].filter((path) => existsSync(path));
+
+  if (pathsToStage.length === 0) {
+    return false;
+  }
+
+  const relativePaths = pathsToStage
+    .map((path) => input.relativeToRepo(input.repoRoot, path))
+    .filter((path) => path.length > 0);
+
+  if (relativePaths.length === 0) {
+    return false;
+  }
+
+  input.runProcess(input.repoRoot, ['git', 'add', '--', ...relativePaths]);
+  const stagedNames = input.runProcess(input.repoRoot, [
+    'git',
+    'diff',
+    '--cached',
+    '--name-only',
+  ]);
+
+  if (!stagedNames.trim()) {
+    return false;
+  }
+
+  input.runProcess(input.repoRoot, [
+    'git',
+    'commit',
+    '-m',
+    input.commitMessage,
+  ]);
+  input.ensureBranchPushed(input.repoRoot, input.branch);
+  return true;
+}
 
 export function assertWorktreeGuard(
   cwd: string,
@@ -166,6 +234,7 @@ export function assertWorktreeGuard(
       config,
       state.planPath,
       activeTicket.id,
+      activeTicket,
     );
     const nextCommandHint = nextCommand
       ? `\nNext command from worktree: ${nextCommand}`
@@ -196,7 +265,6 @@ export async function runDeliveryOrchestrator(
         subagentReviewPolicy?: ReviewPolicyStageValue;
         prReviewPolicy?: ReviewPolicyStageValue;
         preferredRunner?: 'claude-cli' | 'codex-exec';
-        redCommitSha?: string;
         baseline?: 'orchestrator' | 'run-policy';
       }
     | undefined;
@@ -218,7 +286,7 @@ export async function runDeliveryOrchestrator(
     let context = createDeliveryOrchestratorContext(resolvedConfig);
     const platform = context.platform;
     const notifier = resolveNotifier();
-    if (parsed.command === 'ai-review') {
+    if (isStandaloneTriageCommand(parsed.command)) {
       const result = await runStandaloneAiReview(
         cwd,
         notifier,
@@ -270,7 +338,7 @@ export async function runDeliveryOrchestrator(
       'sync',
       'repair-state',
       'record-review',
-      'reconcile-late-review',
+      TICKET_TRIAGE_COMMAND,
       // start: re-stamps runPolicy from current config when explicit flags are
       // present, so blocking it on divergence is counter-productive — let
       // start-time stamping resolve the conflict.
@@ -430,15 +498,99 @@ export async function runDeliveryOrchestrator(
           state,
           parsed.positionals[0],
           context,
-          {},
-          parsed.redCommitSha,
+        );
+        await saveState(cwd, nextState);
+        console.log(formatStatus(nextState, context.config));
+        return 0;
+      }
+      case 'write-subagent-adversarial-review': {
+        const writeTicketId = parsed.positionals[0];
+        const writeTarget =
+          (writeTicketId
+            ? state.tickets.find((t) => t.id === writeTicketId)
+            : state.tickets.find((t) => t.status === 'verified')) ?? undefined;
+
+        if (!writeTarget) {
+          throw new Error(
+            writeTicketId
+              ? `Unknown ticket ${writeTicketId}.`
+              : 'No ticket at verified status found.',
+          );
+        }
+
+        if (writeTarget.status !== 'verified') {
+          throw new Error(
+            `Ticket ${writeTarget.id} must be at status verified before write-subagent-adversarial-review. Current status: ${writeTarget.status}.`,
+          );
+        }
+
+        const writePolicy = context.config.reviewPolicy.subagentReview;
+        if (writePolicy === 'disabled') {
+          throw new Error(
+            `subagentReview is disabled — write-subagent-adversarial-review is not applicable. Run open-pr next.`,
+          );
+        }
+
+        const writeIsDocOnly = isPlatformLocalBranchDocOnly(
+          writeTarget.worktreePath,
+          writeTarget.baseBranch,
+          context.config.runtime,
+        );
+        if (writePolicy === 'skip_doc_only' && writeIsDocOnly) {
+          throw new Error(
+            `Ticket ${writeTarget.id} is doc-only under skip_doc_only — subagent review auto-skips and no adversarial prompt is required. Run subagent-review next.`,
+          );
+        }
+
+        const promptContent = resolveAdversarialPromptContent({
+          repoRoot: cwd,
+          ticket: writeTarget,
+          promptFilePath: parsed.promptFile,
+        });
+
+        const written = writeSubagentAdversarialPrompt({
+          repoRoot: cwd,
+          reviewsDirPath: state.reviewsDirPath,
+          ticketId: writeTarget.id,
+          content: promptContent,
+        });
+
+        const nextState: DeliveryState = {
+          ...state,
+          tickets: state.tickets.map((t) =>
+            t.id === writeTarget.id
+              ? {
+                  ...t,
+                  subagentAdversarialPromptPath: written.relativePath,
+                  subagentAdversarialPromptWrittenAt: written.writtenAt,
+                }
+              : t,
+          ),
+        };
+
+        commitDeliveryArtifactAndPush({
+          absolutePath: written.absolutePath,
+          branch: writeTarget.branch,
+          commitMessage: `chore(${writeTarget.id}): record subagent adversarial review prompt`,
+          ensureBranchPushed: context.platform.ensureBranchPushed,
+          relativeToRepo,
+          repoRoot: cwd,
+          runProcess: context.platform.runProcess,
+        });
+
+        console.log(
+          `Recorded subagent adversarial review prompt for ${writeTarget.id} at ${written.relativePath}.`,
         );
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
         return 0;
       }
       case 'subagent-review': {
-        const subagentTicketId = parsed.positionals[0];
+        const subagentArgs = parseSubagentReviewArgs(
+          parsed.positionals,
+          parsed.flags,
+        );
+        const subagentTicketId = subagentArgs.ticketId;
         const subagentTarget =
           (subagentTicketId
             ? state.tickets.find((t) => t.id === subagentTicketId)
@@ -468,7 +620,6 @@ export async function runDeliveryOrchestrator(
             policy,
             undefined,
             undefined,
-            undefined,
             subagentTarget.id,
           );
           console.log('Doc-only ticket — subagent review auto-skipped.');
@@ -476,6 +627,112 @@ export async function runDeliveryOrchestrator(
           console.log(formatStatus(nextState, context.config));
           return 0;
         }
+
+        const artifactRelPath = `${state.reviewsDirPath}/${subagentTarget.id}-subagent-runner.json`;
+        const artifactAbsPath = resolve(cwd, artifactRelPath);
+
+        // Resolve current HEAD for both recorder and idempotency dispatch.
+        const readHeadShaForDispatch = () => {
+          try {
+            return spawnSync('git', ['rev-parse', 'HEAD'], {
+              cwd: subagentTarget.worktreePath,
+              encoding: 'utf-8',
+            }).stdout.trim();
+          } catch {
+            return '';
+          }
+        };
+        const existingArtifact = tryReadSubagentRunnerArtifact(
+          artifactAbsPath,
+          subagentTarget.id,
+        );
+        const dispatchHeadSha = readHeadShaForDispatch();
+        const dispatch = decideSubagentReviewMode(
+          {
+            outcome: subagentArgs.outcome,
+            reviewedHeadSha: subagentArgs.reviewedHeadSha,
+            force: subagentArgs.force,
+          },
+          existingArtifact,
+          dispatchHeadSha,
+        );
+
+        if (dispatch.kind === 'recorder') {
+          const recorderPatchCommits =
+            dispatch.outcome === 'patched'
+              ? resolveInternalReviewPatchCommits(
+                  subagentTarget.worktreePath,
+                  context,
+                  subagentArgs.patchCommitArgs.length > 0
+                    ? subagentArgs.patchCommitArgs
+                    : [dispatch.reviewedHeadSha],
+                  '[subagent-review]',
+                  'Subagent review',
+                )
+              : undefined;
+
+          // Validate state transition before touching the artifact so a failed
+          // record does not leave a dangling invocation on disk.
+          const nextState = recordSubagentReview(
+            state,
+            dispatch.outcome,
+            isDocOnly,
+            policy,
+            recorderPatchCommits,
+            undefined,
+            subagentTarget.id,
+            artifactRelPath,
+          );
+
+          const recorderInvocation = buildRunnerInvocation(
+            'operator-recorder',
+            dispatch.reviewedHeadSha,
+            dispatch.outcome,
+            {
+              terminatedReason: 'completed',
+              patches: recorderPatchCommits?.map((c) => c.sha) ?? [],
+            },
+          );
+          appendInvocationToArtifact(
+            artifactAbsPath,
+            subagentTarget.id,
+            recorderInvocation,
+          );
+          commitDeliveryArtifactAndPush({
+            absolutePath: artifactAbsPath,
+            branch: subagentTarget.branch,
+            commitMessage: `chore(${subagentTarget.id}): record subagent-review runner artifact`,
+            ensureBranchPushed: context.platform.ensureBranchPushed,
+            relativeToRepo,
+            repoRoot: cwd,
+            runProcess: context.platform.runProcess,
+          });
+
+          console.log(
+            `Recorded operator-recorder invocation (outcome=${dispatch.outcome}, sha=${dispatch.reviewedHeadSha}). No runner subprocess invoked.`,
+          );
+          await saveState(cwd, nextState);
+          console.log(formatStatus(nextState, context.config));
+          return 0;
+        }
+
+        if (dispatch.kind === 'no-op') {
+          console.log(
+            `No-op: artifact already contains a valid invocation for HEAD ${dispatch.reviewedHeadSha}. Pass --force to re-run the runner.`,
+          );
+          console.log(formatStatus(state, context.config));
+          return 0;
+        }
+
+        // Gate runner invocation on a recorded primary-agent-authored
+        // adversarial review prompt. Doc-only auto-skip already returned above;
+        // `disabled` policy short-circuits inside the assertion helper.
+        assertSubagentAdversarialPromptPresent({
+          repoRoot: cwd,
+          ticket: subagentTarget,
+          isDocOnly,
+          policy,
+        });
 
         // Build runner order: preferred first, other second.
         const preferredRunner = parsed.preferredRunner;
@@ -485,64 +742,147 @@ export async function runDeliveryOrchestrator(
             : ['claude-cli', 'codex-exec'];
 
         const worktreePath = subagentTarget.worktreePath;
-        const headSha = context.platform.readCurrentBranch
-          ? (() => {
-              try {
-                return spawnSync('git', ['rev-parse', 'HEAD'], {
-                  cwd: worktreePath,
-                  encoding: 'utf-8',
-                }).stdout.trim();
-              } catch {
-                return 'unknown';
-              }
-            })()
-          : 'unknown';
-
-        const reviewPrompt =
-          `Assume this implementation has holes — find them. ` +
-          `Review all code changes introduced in the current branch versus its base branch (${subagentTarget.baseBranch}). ` +
-          `Make any fixes you judge necessary. Commit all fixes with messages ending with " [subagent-review]". ` +
-          `Skip ticket doc files under docs/product/delivery/. ` +
-          `Do not rationalize away anything you notice — flag it and let the human decide.`;
+        const readHeadSha = () => {
+          try {
+            return spawnSync('git', ['rev-parse', 'HEAD'], {
+              cwd: worktreePath,
+              encoding: 'utf-8',
+            }).stdout.trim();
+          } catch {
+            return 'unknown';
+          }
+        };
+        const listDiffPaths = (...revisions: string[]) => {
+          const result = spawnSync(
+            'git',
+            ['diff', '--name-only', ...revisions],
+            {
+              cwd: worktreePath,
+              encoding: 'utf-8',
+            },
+          );
+          return (result.stdout ?? '')
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean);
+        };
+        const listDirtyPaths = () => {
+          const status = spawnSync('git', ['status', '--porcelain'], {
+            cwd: worktreePath,
+            encoding: 'utf-8',
+          });
+          return (status.stdout ?? '')
+            .split('\n')
+            .map((line) => line.slice(3).trim())
+            .map((path) => path.split(' -> ').pop() ?? path)
+            .filter(Boolean);
+        };
+        const headSha = readHeadSha();
+        // P13.03: the runner consumes the primary-agent-authored adversarial
+        // review prompt persisted under reviews/. There is no generic
+        // changed-files fallback; missing artifact → hard error from the
+        // resolver above.
+        const reviewPrompt = requireSubagentAdversarialPromptForRunner({
+          repoRoot: cwd,
+          ticket: subagentTarget,
+        });
 
         const RUNNER_TIMEOUT_MS = 10 * 60 * 1000;
 
         let outcome: 'clean' | 'patched' | 'skipped' = 'skipped';
         let usedRunner: 'claude-cli' | 'codex-exec' | 'skipped' = 'skipped';
+        let terminatedReason: SubagentRunnerTerminatedReason =
+          'runner_unavailable';
+        let runnerOutputText: string | undefined;
+        let fallbackLevel: 'preferred' | 'fallback' | 'failed_all' =
+          'failed_all';
 
-        for (const runner of runnerOrder) {
+        for (const [runnerIndex, runner] of runnerOrder.entries()) {
+          const runnerHeadBefore = readHeadSha();
           const result = tryRunner(
             () => {
-              const args =
-                runner === 'claude-cli'
-                  ? ['--print', reviewPrompt, '--output-format', 'text']
-                  : [reviewPrompt];
-              const bin = runner === 'claude-cli' ? 'claude' : 'codex';
+              const { bin, args } = buildRunnerSpawnCommand(
+                runner,
+                reviewPrompt,
+              );
               const spawned = spawnSync(bin, args, {
                 cwd: worktreePath,
                 timeout: RUNNER_TIMEOUT_MS,
                 encoding: 'utf-8',
               });
+              // spawnSync does NOT throw on ENOENT; it sets `spawned.error`
+              // with code 'ENOENT' and leaves status === null. Re-raise so
+              // tryRunner classifies it as `unavailable` and the loop falls
+              // back to the other runner. Timeouts ride a separate path below.
+              const spawnError = spawned.error as
+                | (Error & { code?: string })
+                | undefined;
+              if (spawnError && spawnError.code === 'ENOENT') {
+                throw spawnError;
+              }
               return {
                 exitCode: spawned.status,
                 timedOut:
                   spawned.signal === 'SIGTERM' ||
-                  spawned.error?.message?.includes('timed out') ||
+                  spawnError?.message?.includes('timed out') ||
                   false,
+                stdout: spawned.stdout ?? '',
+                stderr: spawned.stderr ?? '',
               };
             },
             () => {
-              const status = spawnSync('git', ['status', '--porcelain'], {
-                cwd: worktreePath,
-                encoding: 'utf-8',
-              });
-              return (status.stdout ?? '').trim().length > 0;
+              return (
+                readHeadSha() !== runnerHeadBefore ||
+                listDirtyPaths().length > 0
+              );
             },
           );
 
           if (result.status === 'ran') {
-            outcome = result.outcome;
+            const runnerHeadAfter = readHeadSha();
+            const runnerWroteFiles =
+              runnerHeadBefore !== runnerHeadAfter ||
+              listDirtyPaths().length > 0;
+
+            // Advisory-only contract (P13.03): any runner-driven file change is
+            // a contract violation, not a valid `patched` outcome. The decision
+            // helper collapses such cases to `skipped` with
+            // `terminatedReason: 'advisory_violation'` so the artifact records
+            // the violation honestly instead of silently treating runner writes
+            // as accepted patches. Delivery-doc writes are a strict subset of
+            // this general violation; we still surface them in the operator
+            // message to make the offending paths obvious.
+            const decided = decideAdvisoryRunnerOutcome(result, {
+              runnerWroteFiles,
+            });
+            outcome = decided.outcome;
+            terminatedReason = decided.terminatedReason;
+            runnerOutputText = result.rawOutput;
             usedRunner = runner;
+            fallbackLevel = runnerIndex === 0 ? 'preferred' : 'fallback';
+
+            if (runnerWroteFiles) {
+              const wroteHeadPaths =
+                runnerHeadBefore !== runnerHeadAfter
+                  ? listDiffPaths(`${runnerHeadBefore}..${runnerHeadAfter}`)
+                  : [];
+              const writePaths = [...wroteHeadPaths, ...listDirtyPaths()];
+              const deliveryDocChanges = findDeliveryDocPaths(writePaths);
+              const detail =
+                deliveryDocChanges.length > 0
+                  ? ` Delivery-doc paths affected: ${deliveryDocChanges.join(', ')}`
+                  : ` Affected paths: ${writePaths.join(', ')}`;
+              console.log(
+                `Runner ${runner} attempted file writes — recording as advisory_violation (advisory-only contract).${detail}`,
+              );
+            }
+            break;
+          }
+
+          if (!shouldFallbackToOtherRunner(result)) {
+            // Defensive: tryRunner only emits ran|unavailable|timeout today,
+            // so this branch is unreachable. Keep it as a guard rail so future
+            // result kinds do not silently fall through into the fallback loop.
             break;
           }
 
@@ -551,15 +891,37 @@ export async function runDeliveryOrchestrator(
           );
         }
 
-        // Write runner artifact.
-        const artifact = buildRunnerArtifact(usedRunner, headSha, outcome);
-        const artifactRelPath = `${state.reviewsDirPath}/${subagentTarget.id}-subagent-runner.json`;
-        const artifactAbsPath = resolve(cwd, artifactRelPath);
-        mkdirSync(dirname(artifactAbsPath), { recursive: true });
-        writeFileSync(
+        // Write runner artifact (append-only invocations[] per ticket).
+        // Sidecar files hold prompt and outcome prose; JSON stores path refs only.
+        const promptPath = subagentTarget.subagentAdversarialPromptPath;
+        if (!promptPath) {
+          throw new Error(
+            `Ticket ${subagentTarget.id} is missing subagentAdversarialPromptPath after prompt gate.`,
+          );
+        }
+
+        let outcomeSidecar:
+          | { absolutePath: string; relativePath: string }
+          | undefined;
+        if (runnerOutputText !== undefined) {
+          outcomeSidecar = writeSubagentReviewOutcome({
+            repoRoot: cwd,
+            reviewsDirPath: state.reviewsDirPath,
+            ticketId: subagentTarget.id,
+            content: runnerOutputText,
+          });
+        }
+
+        const invocation = buildRunnerInvocation(usedRunner, headSha, outcome, {
+          terminatedReason,
+          rawOutput: outcomeSidecar?.relativePath,
+          filledPrompt: promptPath,
+          fallbackLevel,
+        });
+        appendInvocationToArtifact(
           artifactAbsPath,
-          JSON.stringify(artifact, null, 2) + '\n',
-          'utf-8',
+          subagentTarget.id,
+          invocation,
         );
 
         const nextState = recordSubagentReview(
@@ -569,10 +931,21 @@ export async function runDeliveryOrchestrator(
           policy,
           undefined,
           undefined,
-          undefined,
           subagentTarget.id,
           artifactRelPath,
         );
+        commitDeliveryArtifactAndPush({
+          absolutePath: artifactAbsPath,
+          alsoCommitAbsolutePaths: outcomeSidecar
+            ? [outcomeSidecar.absolutePath]
+            : undefined,
+          branch: subagentTarget.branch,
+          commitMessage: `chore(${subagentTarget.id}): record subagent-review runner artifact`,
+          ensureBranchPushed: context.platform.ensureBranchPushed,
+          relativeToRepo,
+          repoRoot: cwd,
+          runProcess: context.platform.runProcess,
+        });
 
         if (outcome === 'skipped') {
           console.log(
@@ -664,12 +1037,12 @@ export async function runDeliveryOrchestrator(
         );
         return 0;
       }
-      case 'reconcile-late-review': {
+      case TICKET_TRIAGE_COMMAND: {
         const ticketId = parsed.positionals[0];
 
         if (!ticketId) {
           throw new Error(
-            `Usage: ${context.invocation} --plan <plan-path> reconcile-late-review <ticket-id>`,
+            `Usage: ${context.invocation} --plan <plan-path> triage-ticket <ticket-id>`,
           );
         }
 
@@ -1151,7 +1524,6 @@ export async function recordPostRed(
       stdout: string;
     };
   } = {},
-  redCommitSha?: string,
 ): Promise<DeliveryState> {
   const target =
     (ticketId
@@ -1171,26 +1543,25 @@ export async function recordPostRed(
   const isDocOnly = (
     dependencies.isLocalBranchDocOnly ?? isPlatformLocalBranchDocOnly
   )(target.worktreePath, target.baseBranch, context.config.runtime);
+  const isSkipPolicy = target.redPolicy === 'skip';
 
-  if (isDocOnly) {
-    console.log('Doc-only branch — post-red skipped.');
-    return state;
-  }
-
-  // When --red-commit-sha is provided the operator is asserting that the named
-  // commit was the red commit. Skip the HEAD subject check and CI check — both
-  // are designed for the sequential red-then-green workflow where HEAD is still
-  // the red commit. With a named SHA the red evidence is already in history.
-  if (redCommitSha !== undefined) {
-    console.log(
-      `post-red: recording against named red commit ${redCommitSha} (skipping HEAD and CI checks).`,
-    );
-    return recordPostRedImpl(state, {
-      headSha: redCommitSha,
-      latestCommitSubject: '[red]',
-      ticketId,
-      verifyExitCode: 1,
-    });
+  if (isDocOnly || isSkipPolicy) {
+    const reasons: string[] = [];
+    if (isSkipPolicy) {
+      reasons.push('Red: skip');
+    }
+    if (isDocOnly) {
+      reasons.push('doc-only branch');
+    }
+    console.log(`post-red skipped (${reasons.join(', ')}).`);
+    return {
+      ...state,
+      tickets: state.tickets.map((ticket) =>
+        ticket.id === target.id
+          ? { ...ticket, status: 'red_complete' as const }
+          : ticket,
+      ),
+    };
   }
 
   const latestCommitSubject =
@@ -1224,12 +1595,13 @@ export async function recordPostRed(
 
 export function recordSubagentReview(
   state: DeliveryState,
-  outcome?: 'clean' | 'patched',
+  outcome?: 'clean' | 'patched' | 'skipped',
   isDocOnly?: boolean,
   policy?: ReviewPolicyStageValue,
   patchCommits?: InternalReviewPatchCommit[],
   agentName?: string,
   ticketId?: string,
+  artifactPath?: string,
 ): DeliveryState {
   if (!policy) {
     throw new Error('recordSubagentReview requires an explicit policy.');
@@ -1244,6 +1616,7 @@ export function recordSubagentReview(
     agentName,
     undefined,
     ticketId,
+    artifactPath,
   );
 }
 
@@ -1255,6 +1628,94 @@ export function shouldAutoRecordReviewSkippedForPollReview(
     policy === 'disabled' ||
     (policy === 'skip_doc_only' && ticket?.docOnly === true)
   );
+}
+
+function resolveAdversarialPromptContent(input: {
+  repoRoot: string;
+  ticket: TicketState;
+  promptFilePath?: string;
+}): string {
+  if (input.promptFilePath) {
+    try {
+      return readFileSync(
+        resolve(input.repoRoot, input.promptFilePath),
+        'utf-8',
+      );
+    } catch (error) {
+      throw new Error(
+        `Failed to read --prompt-file at ${input.promptFilePath}: ${(error as Error).message}`,
+        { cause: error },
+      );
+    }
+  }
+
+  const ticket = input.ticket;
+  let ticketSpec = '';
+  try {
+    ticketSpec = readFileSync(
+      resolve(input.repoRoot, ticket.ticketFile),
+      'utf-8',
+    );
+  } catch {
+    // Best-effort: an unreadable ticket file is surfaced through the content
+    // validator, which rejects empty / stub prompts.
+  }
+
+  const changedFiles = (() => {
+    try {
+      const out = spawnSync(
+        'git',
+        ['diff', '--name-only', `${ticket.baseBranch}...HEAD`],
+        { cwd: ticket.worktreePath, encoding: 'utf-8' },
+      );
+      return (out.stdout ?? '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  })();
+
+  const fileList = changedFiles.length
+    ? changedFiles.map((f) => `- ${f}`).join('\n')
+    : '- (no changed files detected)';
+
+  return [
+    `# Adversarial review for ${ticket.id} — ${ticket.title}`,
+    '',
+    `Base branch: ${ticket.baseBranch}`,
+    `Branch: ${ticket.branch}`,
+    '',
+    '## Ticket scope',
+    '',
+    ticketSpec.trim() || '(ticket spec unavailable)',
+    '',
+    '## Files changed in this diff',
+    '',
+    fileList,
+    '',
+    '## Invariants to hold',
+    '',
+    'Derived from the ticket Outcome section. The subagent must treat each as a',
+    'machine-verifiable assertion and report `[held | broken | untested]`.',
+    '',
+    '## Attack surfaces to probe',
+    '',
+    'The subagent must probe each of the seven diff-derived classes listed in',
+    '`docs/template/delivery/adversarial-review-template.md` and add ticket-spec-derived',
+    'surfaces from the changed files above. Report coverage per surface using',
+    '`[probed]` / `[N/A — reason]` / `[blocked — missing-input]`.',
+    '',
+    '## Directives',
+    '',
+    '- Patch only demonstrable correctness gaps tied to ticket behavior.',
+    '- Do not patch files under `docs/product/delivery/**`.',
+    '- Surface doc-vs-code drift in `## Rationale` and contract docs under Findings.',
+    '- Cross-model preferred when available; same-type review is acceptable.',
+    '',
+    'Output strictly per the `Required output format` section of the adversarial review template.',
+  ].join('\n');
 }
 
 function normalizeUniquePatchCommitShas(rawShas: string[]): string[] {
@@ -1327,17 +1788,19 @@ export async function openPullRequest(
         : undefined;
       const artifactExists =
         artifactPath !== undefined && existsSync(artifactPath);
-      const artifact = artifactExists
-        ? (() => {
-            try {
-              return validateRunnerArtifact(
-                JSON.parse(readFileSync(artifactPath, 'utf-8')),
-              );
-            } catch {
-              return null;
-            }
-          })()
-        : null;
+      const artifact =
+        artifactExists && artifactPath !== undefined
+          ? (() => {
+              try {
+                return readSubagentRunnerArtifact(
+                  artifactPath,
+                  targetTicket.id,
+                );
+              } catch {
+                return null;
+              }
+            })()
+          : null;
       if (!artifact) {
         throw createWorkflowContractError(
           'workflow.open_pr.requires_runner_review',
@@ -1407,6 +1870,8 @@ export async function pollReview(
     resolveReviewFetcher,
     resolveReviewThread: platform.resolveReviewThread,
     resolveReviewTriager,
+    ensureBranchPushed:
+      resolvedDependencies.ensureBranchPushed ?? platform.ensureBranchPushed,
     runProcess: platform.runProcess,
     updatePullRequestBody:
       resolvedDependencies.updatePullRequestBody ??
@@ -1425,7 +1890,7 @@ export async function reconcileLateReview(
   const resolvedDependencies =
     typeof maybeDependencies === 'object' ? maybeDependencies : dependencies;
   if (!ticketId) {
-    throw new Error('Missing ticket id for reconcile-late-review.');
+    throw new Error('Missing ticket id for triage-ticket.');
   }
   const platform = context.platform;
   return runReconcileLateTicketReview(state, cwd, ticketId, {
@@ -1437,6 +1902,8 @@ export async function reconcileLateReview(
     resolveReviewFetcher,
     resolveReviewThread: platform.resolveReviewThread,
     resolveReviewTriager,
+    ensureBranchPushed:
+      resolvedDependencies.ensureBranchPushed ?? platform.ensureBranchPushed,
     runProcess: platform.runProcess,
     updatePullRequestBody:
       resolvedDependencies.updatePullRequestBody ??
@@ -1503,6 +1970,8 @@ export async function recordReview(
     resolveReviewFetcher,
     resolveReviewThread: platform.resolveReviewThread,
     resolveReviewTriager,
+    ensureBranchPushed:
+      resolvedDependencies.ensureBranchPushed ?? platform.ensureBranchPushed,
     runProcess: platform.runProcess,
     updatePullRequestBody:
       resolvedDependencies.updatePullRequestBody ??
@@ -1517,6 +1986,7 @@ async function advanceToNextTicketImpl(
 ): Promise<DeliveryState> {
   const platform = context.platform;
   return advanceToNextTicket(state, cwd, {
+    ensureBranchPushed: platform.ensureBranchPushed,
     updatePullRequestBody: platform.updatePullRequestBody,
   });
 }

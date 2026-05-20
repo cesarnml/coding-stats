@@ -22,6 +22,7 @@ import {
 } from '../runtime-config';
 import { createDeliveryOrchestratorContext } from '../context';
 import {
+  advanceToNextTicket,
   materializeTicketContext,
   openPullRequest as openPullRequestFlow,
 } from '../ticket-flow';
@@ -139,28 +140,28 @@ describe('ticket-flow', () => {
       await writeFixture(
         join(
           sourceDir,
-          '.agents/delivery/phase-03/reviews/P3.01-ai-review.fetch.json',
+          '.agents/delivery/phase-03/reviews/P3.01-pr-review.fetch.json',
         ),
         '{"old":true}\n',
       );
       await writeFixture(
         join(
           sourceDir,
-          '.agents/delivery/phase-03/reviews/P3.02-ai-review.fetch.json',
+          '.agents/delivery/phase-03/reviews/P3.02-pr-review.fetch.json',
         ),
         '{"prev":true}\n',
       );
       await writeFixture(
         join(
           sourceDir,
-          '.agents/delivery/phase-03/reviews/P3.02-ai-review.triage.json',
+          '.agents/delivery/phase-03/reviews/P3.02-pr-review.triage.json',
         ),
         '{"triage":true}\n',
       );
       await writeFixture(
         join(
           sourceDir,
-          '.agents/delivery/phase-03/reviews/P3.03-ai-review.fetch.json',
+          '.agents/delivery/phase-03/reviews/P3.03-pr-review.fetch.json',
         ),
         '{"current":true}\n',
       );
@@ -246,7 +247,7 @@ describe('ticket-flow', () => {
         existsSync(
           join(
             targetDir,
-            '.agents/delivery/phase-03/reviews/P3.01-ai-review.fetch.json',
+            '.agents/delivery/phase-03/reviews/P3.01-pr-review.fetch.json',
           ),
         ),
       ).toBe(false);
@@ -254,7 +255,7 @@ describe('ticket-flow', () => {
         await readFile(
           join(
             targetDir,
-            '.agents/delivery/phase-03/reviews/P3.02-ai-review.fetch.json',
+            '.agents/delivery/phase-03/reviews/P3.02-pr-review.fetch.json',
           ),
           'utf8',
         ),
@@ -263,7 +264,7 @@ describe('ticket-flow', () => {
         await readFile(
           join(
             targetDir,
-            '.agents/delivery/phase-03/reviews/P3.02-ai-review.triage.json',
+            '.agents/delivery/phase-03/reviews/P3.02-pr-review.triage.json',
           ),
           'utf8',
         ),
@@ -272,7 +273,7 @@ describe('ticket-flow', () => {
         await readFile(
           join(
             targetDir,
-            '.agents/delivery/phase-03/reviews/P3.03-ai-review.fetch.json',
+            '.agents/delivery/phase-03/reviews/P3.03-pr-review.fetch.json',
           ),
           'utf8',
         ),
@@ -461,6 +462,47 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
     );
 
     expect(rebuilt.tickets[0]?.redCommitSha).toBe('red123');
+  });
+
+  it('preserves subagentReviewAgent and subagentRunnerArtifactPath across sync', () => {
+    const options = createOptions({
+      planPath: 'docs/product/delivery/phase-03/implementation-plan.md',
+    });
+    const existing: DeliveryState = {
+      ...options,
+      planKey: options.planKey,
+      tickets: [
+        {
+          id: 'P3.01',
+          title: 'Persist Transmission Identity For Queued Torrents',
+          slug: 'persist-transmission-identity-for-queued-torrents',
+          ticketFile:
+            'docs/product/delivery/phase-03/ticket-01-persist-transmission-identity-for-queued-torrents.md',
+          status: 'subagent_review_complete',
+          branch:
+            'agents/p3-01-persist-transmission-identity-for-queued-torrents',
+          baseBranch: 'main',
+          worktreePath: '/tmp/p3_01',
+          subagentReviewAgent: 'codex-exec',
+          subagentRunnerArtifactPath:
+            'docs/product/delivery/phase-03/reviews/P3.01-subagent-runner.json',
+        },
+      ],
+    };
+
+    const rebuilt = syncStateFromExisting(
+      existing,
+      existing.tickets,
+      '/tmp',
+      options,
+      baseConfig,
+      existing,
+    );
+
+    expect(rebuilt.tickets[0]?.subagentReviewAgent).toBe('codex-exec');
+    expect(rebuilt.tickets[0]?.subagentRunnerArtifactPath).toBe(
+      'docs/product/delivery/phase-03/reviews/P3.01-subagent-runner.json',
+    );
   });
 
   it('parses reviewPolicy config with all valid stage values', async () => {
@@ -949,6 +991,49 @@ describe('EE8.02 — codex preflight command, status, and gate', () => {
     ]);
     expect(nextState.tickets[0]?.status).toBe('in_review');
     expect(nextState.tickets[0]?.prNumber).toBe(23);
+  });
+
+  it('advance pushes the reviewed branch before marking the ticket done', async () => {
+    const calls: string[] = [];
+    const state: DeliveryState = {
+      planKey: 'phase-03',
+      planPath: 'docs/product/delivery/phase-03/implementation-plan.md',
+      statePath: '.agents/delivery/phase-03/state.json',
+      reviewsDirPath: '.agents/delivery/phase-03/reviews',
+      handoffsDirPath: '.agents/delivery/phase-03/handoffs',
+      reviewPollIntervalMinutes: 6,
+      reviewPollMaxWaitMinutes: 12,
+      tickets: [
+        {
+          id: 'P3.01',
+          title: 'Persist Transmission Identity For Queued Torrents',
+          slug: 'persist-transmission-identity-for-queued-torrents',
+          ticketFile:
+            'docs/product/delivery/phase-03/ticket-01-persist-transmission-identity-for-queued-torrents.md',
+          status: 'reviewed',
+          branch:
+            'agents/p3-01-persist-transmission-identity-for-queued-torrents',
+          baseBranch: 'main',
+          worktreePath: '/tmp/p3_01',
+          reviewOutcome: 'patched',
+        },
+      ],
+    };
+
+    const nextState = await advanceToNextTicket(state, '/tmp/test_project', {
+      ensureBranchPushed: (cwd, branch) => {
+        calls.push(`push:${cwd}:${branch}`);
+      },
+      updatePullRequestBody: () => {
+        calls.push('update-pr');
+      },
+    });
+
+    expect(calls).toEqual([
+      'push:/tmp/p3_01:agents/p3-01-persist-transmission-identity-for-queued-torrents',
+      'update-pr',
+    ]);
+    expect(nextState.tickets[0]?.status).toBe('done');
   });
 
   it('formats subagent_review outcome in formatStatus', () => {

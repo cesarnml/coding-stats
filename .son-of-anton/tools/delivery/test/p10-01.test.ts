@@ -12,9 +12,13 @@ import { formatRunPolicy } from '../format';
 import { deriveRunPolicyFromConfig } from '../state';
 import {
   buildRunnerArtifact,
+  buildRunnerInvocation,
+  findDeliveryDocPaths,
+  isDeliveryDocPath,
   tryRunner,
   validateRunnerArtifact,
 } from '../subagent-runner';
+import type { SubagentRunnerInvocation } from '../subagent-runner';
 import type { ResolvedOrchestratorConfig } from '../runtime-config';
 import type { RunPolicy } from '../types';
 
@@ -187,7 +191,11 @@ describe('P10.01 — tryRunner', () => {
       () => ({ exitCode: 0, timedOut: false }),
       () => false,
     );
-    expect(result).toEqual({ status: 'ran', outcome: 'clean' });
+    expect(result).toEqual({
+      status: 'ran',
+      outcome: 'clean',
+      terminatedReason: 'completed',
+    });
   });
 
   it('returns ran+patched when spawn succeeds and changes detected', () => {
@@ -195,7 +203,11 @@ describe('P10.01 — tryRunner', () => {
       () => ({ exitCode: 0, timedOut: false }),
       () => true,
     );
-    expect(result).toEqual({ status: 'ran', outcome: 'patched' });
+    expect(result).toEqual({
+      status: 'ran',
+      outcome: 'patched',
+      terminatedReason: 'completed',
+    });
   });
 
   it('returns unavailable when spawn throws', () => {
@@ -229,27 +241,74 @@ describe('P10.01 — tryRunner', () => {
   });
 });
 
+// ─── subagent review prompt boundary ─────────────────────────────────────────
+
+describe('P10.01 — subagent review hard write boundary', () => {
+  // The generic changed-files runner prompt builder was removed in P13.03.
+  // Runner invocations now consume the primary-agent-authored prompt persisted
+  // by `write-subagent-adversarial-review`, so the boundary language lives in
+  // that prompt artifact and the adversarial-review template, not in a built-in
+  // builder. The path-classification helpers below are still authoritative.
+
+  it('detects delivery doc paths across exact and nested paths', () => {
+    expect(isDeliveryDocPath('docs/product/delivery')).toBe(true);
+    expect(
+      isDeliveryDocPath('docs/product/delivery/phase-01/ticket-01.md'),
+    ).toBe(true);
+    expect(
+      isDeliveryDocPath('./docs/product/delivery/phase-01/reviews/a.json'),
+    ).toBe(true);
+    expect(isDeliveryDocPath('docs/product/retrospectives/phase-01.md')).toBe(
+      false,
+    );
+    expect(isDeliveryDocPath('tools/delivery/cli-runner.ts')).toBe(false);
+  });
+
+  it('filters delivery doc paths from runner-changed files', () => {
+    expect(
+      findDeliveryDocPaths([
+        'tools/delivery/cli-runner.ts',
+        'docs/product/delivery/phase-01/ticket-01.md',
+        'docs/template/delivery/delivery-orchestrator.md',
+      ]),
+    ).toEqual(['docs/product/delivery/phase-01/ticket-01.md']);
+  });
+});
+
 // ─── validateRunnerArtifact ───────────────────────────────────────────────────
 
 describe('P10.01 — validateRunnerArtifact', () => {
-  it('validates a valid claude-cli artifact', () => {
-    const artifact = buildRunnerArtifact('claude-cli', 'abc123', 'clean');
+  function makeArtifact(invocation: SubagentRunnerInvocation) {
+    return buildRunnerArtifact('P10.01', [invocation]);
+  }
+
+  it('validates a valid claude-cli structured artifact', () => {
+    const artifact = makeArtifact(
+      buildRunnerInvocation('claude-cli', 'abc123', 'clean'),
+    );
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });
 
-  it('validates a valid codex-exec artifact', () => {
-    const artifact = buildRunnerArtifact('codex-exec', 'def456', 'patched');
+  it('validates a valid codex-exec structured artifact', () => {
+    const artifact = makeArtifact(
+      buildRunnerInvocation('codex-exec', 'def456', 'patched'),
+    );
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });
 
-  it('validates a skipped artifact', () => {
-    const artifact = buildRunnerArtifact('skipped', 'ghi789', 'skipped');
+  it('validates a skipped invocation', () => {
+    const artifact = makeArtifact(
+      buildRunnerInvocation('skipped', 'ghi789', 'skipped', {
+        terminatedReason: 'runner_unavailable',
+      }),
+    );
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });
 
-  it('returns null for missing runnerKind', () => {
+  it('returns null for legacy 4-field shape', () => {
     expect(
       validateRunnerArtifact({
+        runnerKind: 'claude-cli',
         reviewedHeadSha: 'abc',
         outcome: 'clean',
         completedAt: 'x',
@@ -257,13 +316,22 @@ describe('P10.01 — validateRunnerArtifact', () => {
     ).toBeNull();
   });
 
-  it('returns null for invalid outcome', () => {
+  it('returns null for an invocation with invalid outcome', () => {
     expect(
       validateRunnerArtifact({
-        runnerKind: 'claude-cli',
-        reviewedHeadSha: 'abc',
-        outcome: 'bad',
-        completedAt: 'x',
+        ticket: 'P10.01',
+        invocations: [
+          {
+            runnerKind: 'claude-cli',
+            reviewedHeadSha: 'abc',
+            outcome: 'bad',
+            completedAt: 'x',
+            terminatedReason: 'completed',
+            findings: [],
+            probedSurfaces: [],
+            patches: [],
+          },
+        ],
       }),
     ).toBeNull();
   });

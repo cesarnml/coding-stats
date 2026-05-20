@@ -16,14 +16,14 @@ function git(repo: string, args: string[]) {
 }
 
 describe('record-review artifact commit', () => {
-  it('commits updated AI review JSON after record-review when in a git checkout', async () => {
+  it('commits and pushes updated PR review JSON after record-review when in a git checkout', async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), 'record-review-commit-'));
     const reviewsDir = join(
       repoRoot,
       'docs/product/delivery/phase-99-commit-test/reviews',
     );
-    const fetchPath = join(reviewsDir, 'P99.01-ai-review.fetch.json');
-    const triagePath = join(reviewsDir, 'P99.01-ai-review.triage.json');
+    const fetchPath = join(reviewsDir, 'P99.01-pr-review.fetch.json');
+    const triagePath = join(reviewsDir, 'P99.01-pr-review.triage.json');
 
     try {
       await mkdir(reviewsDir, { recursive: true });
@@ -87,14 +87,15 @@ describe('record-review artifact commit', () => {
             baseBranch: 'main',
             worktreePath: repoRoot,
             reviewFetchArtifactPath:
-              'docs/product/delivery/phase-99-commit-test/reviews/P99.01-ai-review.fetch.json',
+              'docs/product/delivery/phase-99-commit-test/reviews/P99.01-pr-review.fetch.json',
             reviewTriageArtifactPath:
-              'docs/product/delivery/phase-99-commit-test/reviews/P99.01-ai-review.triage.json',
+              'docs/product/delivery/phase-99-commit-test/reviews/P99.01-pr-review.triage.json',
             reviewHeadSha: 'abc123',
             reviewNote: 'Findings pending.',
           },
         ],
       };
+      const pushedBranches: Array<{ branch: string; cwd: string }> = [];
 
       await recordTicketReview(
         state,
@@ -116,6 +117,9 @@ describe('record-review artifact commit', () => {
               vendor: 'coderabbit',
             },
           ],
+          ensureBranchPushed: (cwd, branch) => {
+            pushedBranches.push({ branch, cwd });
+          },
           updatePullRequestBody: async () => {},
         },
       );
@@ -130,6 +134,13 @@ describe('record-review artifact commit', () => {
         '--pretty=%s',
       ]);
       expect(lastSubject.trim()).toContain('record-review P99.01');
+      expect(lastSubject.trim()).toContain('PR review artifacts');
+      expect(pushedBranches).toEqual([
+        {
+          branch: 'agents/p99-01-record-review-commit-fixture',
+          cwd: repoRoot,
+        },
+      ]);
 
       const triage = JSON.parse(await readFile(triagePath, 'utf8')) as {
         outcome: string;

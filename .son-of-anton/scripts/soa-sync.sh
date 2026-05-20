@@ -227,7 +227,10 @@ if [ "$IS_SOURCE_REPO" = false ]; then
   "reviewPolicy": {
     "subagentReview": "skip_doc_only",
     "prReview": "disabled"
-  }
+  },
+  "prReviewAgents": [
+    { "login": "coderabbitai", "name": "coderabbit", "resolveThreads": true }
+  ]
 }
 EOF_CONFIG
     echo "  created: orchestrator.config.json (review defaultBranch, runtime, packageManager)"

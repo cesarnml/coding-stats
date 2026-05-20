@@ -412,6 +412,7 @@ function syncStateWithPlan(
         ticketFile: definition.ticketFile,
         type: definition.type,
         scope: definition.scope,
+        redPolicy: previous?.redPolicy ?? definition.redPolicy,
         status: selectStatusValue(previous?.status, inferredTicket?.status),
         branch: resolvedBranch,
         baseBranch:
@@ -446,6 +447,11 @@ function syncStateWithPlan(
         subagentReviewPatchCommits:
           previous?.subagentReviewPatchCommits ??
           inferredTicket?.subagentReviewPatchCommits,
+        subagentReviewAgent:
+          previous?.subagentReviewAgent ?? inferredTicket?.subagentReviewAgent,
+        subagentRunnerArtifactPath:
+          previous?.subagentRunnerArtifactPath ??
+          inferredTicket?.subagentRunnerArtifactPath,
         prNumber: previous?.prNumber ?? inferredTicket?.prNumber,
         prUrl: previous?.prUrl ?? inferredTicket?.prUrl,
         prOpenedAt: previous?.prOpenedAt ?? inferredTicket?.prOpenedAt,
