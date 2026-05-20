@@ -21,7 +21,23 @@ FROM ranked r
 INNER JOIN keepers k ON k.name IS NOT DISTINCT FROM r.name
 WHERE r.rn > 1;
 
--- Keeper already has this date: drop the loser summary (avoids unique_project_id_date violation).
+-- Among loser summaries targeting the same keeper+date, keep only the newest.
+WITH loser_summaries AS (
+  SELECT
+    ps.id,
+    ROW_NUMBER() OVER (
+      PARTITION BY l.keeper_id, ps.date
+      ORDER BY ps.updated_at DESC NULLS LAST, ps.created_at DESC NULLS LAST, ps.id DESC
+    ) AS rn
+  FROM public.project_summaries ps
+  INNER JOIN project_loser_map l ON ps.project_id = l.loser_id
+)
+DELETE FROM public.project_summaries ps
+USING loser_summaries ls
+WHERE ps.id = ls.id
+  AND ls.rn > 1;
+
+-- Keeper already has this date: drop the loser summary.
 DELETE FROM public.project_summaries ps
 USING project_loser_map l,
   public.project_summaries keeper_row
