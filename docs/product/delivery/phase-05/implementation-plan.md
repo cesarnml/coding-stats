@@ -25,19 +25,19 @@ When this phase is complete:
 - **`config.toml` stays gitignored** — ship `supabase/config.toml.example` with placeholders; scrub secrets from any committed template (do not copy `config.toml_backup` verbatim)
 - **No backfill migration** — owner manual `INSERT` documented in P5.03 only
 
-## Ticket order
+## Ticket Order
 
-1. `P5.01` — `on_auth_user_created` migration + schema parity + hosted apply verification
-2. `P5.02` — Local Supabase auth config template (`config.toml.example`)
-3. `P5.03` — README auth operator guide + phase exit
+1. `P5.01 on_auth_user_created migration + schema parity + hosted apply verification`
+2. `P5.02 Local Supabase auth config template`
+3. `P5.03 README auth operator guide + phase exit`
 
-## Ticket files
+## Ticket Files
 
 - `ticket-01-auth-user-profile-trigger.md`
 - `ticket-02-local-auth-config-template.md`
 - `ticket-03-auth-docs-and-phase-exit.md`
 
-## Exit condition
+## Exit Condition
 
 1. **Production:** Fresh GitHub test user (or deleted/recreated) → sign in on `codingstats.vercel.app` → `profiles` row exists → dashboard loads without profile 406.
 2. **Local:** `supabase start` with `config.toml` from example + CodingStatsDev secrets → sign in at `localhost:5173/login` → `profiles` row exists → dashboard loads.
