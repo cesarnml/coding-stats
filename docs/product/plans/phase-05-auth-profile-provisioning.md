@@ -1,6 +1,6 @@
 # Phase 05: Auth Profile Provisioning
 
-**Delivery status:** Product plan approved. Delivery decomposition: `docs/product/delivery/phase-05/implementation-plan.md`.
+**Delivery status:** Delivered — see stacked PRs for P5.01–P5.03 and `docs/product/delivery/phase-05/implementation-plan.md`.
 
 ## TL;DR
 
