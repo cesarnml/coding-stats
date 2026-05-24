@@ -14,3 +14,8 @@ yarn.lock
 
 # Son-of-Anton subtree
 .son-of-anton/
+
+# Son-of-Anton subtree build output
+.agents/delivery
+docs/product/delivery/*/reviews/*-subagent-review.report.md
+docs/product/delivery/*/reviews/*-subagent-review.prompt.md

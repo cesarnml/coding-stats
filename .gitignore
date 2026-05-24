@@ -33,3 +33,4 @@ graphify-out
 *.backup
 supabase/seed.sql
 .qodo
+*-subagent-review.trace.log

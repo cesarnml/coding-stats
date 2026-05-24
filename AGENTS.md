@@ -28,7 +28,6 @@ Before closing a delivery ticket:
 Write `notes/public/<plan-path>-retrospective.md` using `.agents/skills/write-retrospective/SKILL.md` for section structure and placement conventions.
 
 <!-- soa:start -->
-
 ## Son-of-Anton Skill Triggers
 
 Use these skills when working in a consumer repo that has installed Son-of-Anton
@@ -46,7 +45,7 @@ via `git subtree add --prefix .son-of-anton`.
 
 When invoking a review subagent during orchestrated delivery:
 
-- **Preferred-runner:** pass `--preferred-runner <claude-cli|codex-exec>` to `subagent-review`. The CLI tries the preferred runner first, then the other, then records an honest `skipped` if neither is available. No config changes needed when switching agent platforms.
+- **Preferred-runner:** pass `--subagent <claude-cli|codex-cli>` to `subagent-review`. The CLI tries the preferred runner first, then the other, then records an honest `skipped` if neither is available. No config changes needed when switching agent platforms.
 - **Adversarial prompt required:** assume the implementation has holes. Do not rationalize away anything you notice — flag it and let the human decide. A "did the spec land?" checklist is not a review.
 - **No rationalizing findings:** report everything you find. The human decides what to act on.
 
@@ -55,5 +54,4 @@ When invoking a review subagent during orchestrated delivery:
 **Prerequisite:** Son-of-Anton requires a global `bun` install. All CLI delivery commands run via `bun run deliver …`.
 
 Before every commit: run `bun run format`, then `bun run verify` (or `bun run verify:quiet`). Use `bun run ci:quiet` as the final publication gate before opening a PR.
-
 <!-- soa:end -->
