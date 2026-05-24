@@ -3,6 +3,7 @@ import {
   resolveOrchestratorConfig as resolveOrchestratorConfigImpl,
   inferPackageManager,
   VALID_REVIEW_POLICY_STAGE_VALUES,
+  type CodogotchiConfig,
   type OrchestratorConfig,
   type PrReviewAgent,
   type ResolvedOrchestratorConfig,
@@ -12,6 +13,7 @@ import {
 } from './config';
 
 export type {
+  CodogotchiConfig,
   OrchestratorConfig,
   PrReviewAgent,
   ResolvedOrchestratorConfig,

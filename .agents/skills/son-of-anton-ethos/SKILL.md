@@ -57,12 +57,13 @@ Commit the delivery plan and all ticket docs to the default branch before creati
       - Under `subagentReview: "skip_doc_only"`: doc-only tickets auto-record `skipped`
       - Under `subagentReview: "required"`: doc-only tickets still need an explicit `clean` or `patched`
    7. Author subagent prompt — `write-subagent-adversarial-review` when `subagentReview` is not `"disabled"` (see [Subagent Review](#subagent-review)). The primary agent fills `docs/template/delivery/adversarial-review-template.md`; the subagent does not author its own brief.
-   8. Subagent adversarial review — `subagent-review` with `--preferred-runner` when programmatic review is required. Runner artifacts are committed and pushed by the orchestrator; do not add a second manual commit for those files unless you changed something else in the same step.
-   9. Open / refresh PR — `open-pr`
-   10. Run AI-review polling — `poll-review` (see [External Review](#external-review))
-   11. Patch prudent findings
-   12. Record review — `record-review` (**skip** when `poll-review` already auto-recorded `clean` or `skipped`; only needed when `poll-review` leaves ticket in `needs_patch` state). The orchestrator commits updated `*-pr-review.{fetch,triage}.json` after a successful `record-review` when the ticket worktree is a git checkout — do **not** add a second manual commit for those files unless you changed something else in the same step.
-   13. Advance — `advance`
+   8. Subagent adversarial review — `subagent-review` with `--subagent` when programmatic review is required. Runner artifacts are committed and pushed by the orchestrator; do not add a second manual commit for those files unless you changed something else in the same step.
+   9. Reconcile ledger vs git — `reconcile-subagent-review` before `open-pr` (hard-blocks silent lies; see delivery-orchestrator.md)
+   10. Open / refresh PR — `open-pr`
+   11. Run AI-review polling — `poll-review` (see [External Review](#external-review))
+   12. Patch prudent findings
+   13. Record review — `record-review` (**skip** when `poll-review` already auto-recorded `clean` or `skipped`; only needed when `poll-review` leaves ticket in `needs_patch` state). The orchestrator commits updated `*-pr-review.{fetch,triage}.json` after a successful `record-review` when the ticket worktree is a git checkout — do **not** add a second manual commit for those files unless you changed something else in the same step.
+   14. Advance — `advance`
 5. During the external review window, stay idle.
 6. Do not write ahead across ticket boundaries.
 7. After `advance`, follow the active boundary mode and keep going without asking for permission unless a real blocker exists.
@@ -94,20 +95,20 @@ Reset context (/clear), then resume with:
 **Role split:**
 
 - **Primary agent** executes and patches (build mode and post-verify), and also applies patches for findings the review subagent returns. Patches applied in response to subagent findings are committed by the primary agent with a `[subagent-review]` subject suffix.
-- **Review subagent** is an advisory runner — a second AI pass before the PR is published. It reports findings (broken invariants, probed surfaces, demonstrable correctness gaps, spec-permits-real-bug cases, and doc-vs-code drift surfaced under Findings for human review). It does not own patch application; the primary agent decides what to patch and commits it. Exactly one `subagent-review` invocation per ticket via programmatic subprocess; repeat invocations against the same HEAD are no-op recorders.
+- **Review subagent** is an advisory runner — a second AI pass before the PR is published. It reports blocking `Actionable findings` for broken invariants, demonstrable correctness gaps, or spec-permits-real-bug cases, and reports non-blocking off-scope-but-real notes under `Advisory Observations`. It does not own patch application; the primary agent decides what to patch and commits it. Exactly one `subagent-review` invocation per ticket via programmatic subprocess; repeat invocations against the same HEAD are no-op recorders.
 - **External AI vendors** (e.g. CodeRabbit, Qodo) review post-publication via `poll-review`.
 
 **When `subagentReview` is `"required"` or `"skip_doc_only"` (code tickets):**
 
 1. **Read `docs/template/delivery/adversarial-review-template.md`.** Fill in the template from the current diff and ticket spec — invariants, attack surfaces (including the seven diff-derived classes), diff context. This takes real work; do not skip it or pass a vague prompt.
 2. **Record the prompt:** `bun run deliver --plan <plan> write-subagent-adversarial-review` (or `--prompt-file` when the filled template already exists on disk). The primary agent authors the brief; the subagent never fills the template itself.
-3. Invoke the advisory review subagent **exactly once per ticket** via programmatic subprocess: `subagent-review` with `--preferred-runner <claude-cli|codex-exec>`. The CLI sends the persisted prompt bytes, tries the preferred runner first, falls back to the other, and records an honest `skipped` artifact if neither is available. Use a different model family from the primary agent when available (cross-model review breaks shared blind spots).
+3. Invoke the advisory review subagent **exactly once per ticket** via programmatic subprocess: `subagent-review` with `--subagent <claude-cli|codex-cli>`. The CLI sends the persisted prompt bytes, tries the preferred runner first, falls back to the other, and records an honest `skipped` artifact if neither is available. Use a different model family from the primary agent when available (cross-model review breaks shared blind spots).
 4. **Stay idle. No read-ahead.** Wait for the runner subprocess to exit before doing anything else — same discipline as the external review window.
-5. The runner returns findings prose only — it must not modify the worktree. If it does, the CLI records `advisory_violation`, not a completed clean review. The **primary agent** reads findings, applies any prudent patches, and commits them with a `[subagent-review]` subject suffix when needed. Then record: `bun run deliver --plan <plan> subagent-review [clean|patched] <sha...>`.
+5. The runner returns findings prose only — it must not modify the worktree. If it does, the CLI records `advisory_violation`, not a completed clean review. The **primary agent** reads findings, applies any prudent patches (commit with `[subagent-review]` suffix), records deferral (`subagent-review record-deferred --reason "..."`), or leaves a genuinely clean result. Then record: `bun run deliver --plan <plan> subagent-review [clean|patched|deferred] <sha...>`. Run `reconcile-subagent-review` before `open-pr`; the gate also runs inside `open-pr` and accepts `--ack-reconciliation` when the operator explicitly acknowledges the ledger state.
 
-Without `--preferred-runner`, the CLI is a state recorder only and does not invoke a runner. With `--preferred-runner`, the CLI invokes the runner against `reviews/<ticket>-subagent-adversarial-prompt.md`, persists runner prose to `reviews/<ticket>-subagent-review-outcome.md`, and writes `reviews/<ticket>-subagent-runner.json` with path references in `filledPrompt` and `rawOutput` (not embedded text). The artifact carries the runner's `terminatedReason`; the CLI refuses to record `outcome: clean` for any non-`completed` terminatedReason.
+Without `--subagent`, the CLI is a state recorder only and does not invoke a runner. With `--subagent`, the CLI invokes the runner against `reviews/<ticket>-subagent-review.prompt.md`, persists runner prose to `reviews/<ticket>-subagent-review.report.md`, and writes `reviews/<ticket>-subagent-review.ledger.json` with path references in `filledPrompt` and `rawOutput` (not embedded text). The artifact carries the runner's `terminatedReason`; the CLI refuses to record `outcome: clean` for any non-`completed` terminatedReason.
 
-**Subagent scope contract:** The review subagent is advisory-only — it reports findings and must not write files. The primary agent applies any resulting patches. Ticket doc files under `docs/product/delivery/` are primary-agent delivery artifacts; the subagent reads them for drift probing and surfaces mismatches in **Findings for human review** only. The template encodes these constraints; do not remove them.
+**Subagent scope contract:** The review subagent is advisory-only — it reports findings and must not write files. The primary agent applies any resulting patches. Ticket doc files under `docs/product/delivery/` are primary-agent delivery artifacts; the subagent reads them for drift probing and surfaces non-blocking mismatches in **Advisory Observations** only. The template encodes these constraints; do not remove them.
 
 **When `subagentReview` is `"skip_doc_only"`** (repo default): code tickets still require the subagent step before `open-pr`; doc-only tickets auto-record `skipped`.
 

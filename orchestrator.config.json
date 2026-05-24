@@ -11,5 +11,7 @@
   "prReviewAgents": [
     { "login": "coderabbitai", "name": "coderabbit", "resolveThreads": true },
     { "login": "Copilot", "name": "copilot", "resolveThreads": true }
-  ]
+  ],
+  "subagentRunner": "codex-cli",
+  "primaryAgent": "claude"
 }

@@ -33,12 +33,12 @@ Execute:
 8. For code tickets, write and commit the failing behavior test with `[red]`
 9. bun run deliver --plan <plan-path> post-red
 10. Implement, verify, and continue with the next command from `status`
-11. For code tickets with subagent review enabled: `post-verify` → `write-subagent-adversarial-review` → `subagent-review` → `open-pr` (see `delivery-orchestrator.md`)
+11. For code tickets with subagent review enabled: `post-verify` → `write-subagent-adversarial-review` → `subagent-review` → `reconcile-subagent-review` → `open-pr` (see `delivery-orchestrator.md`)
 ```
 
 Both the product plan and implementation docs must be committed to `main` **before** the orchestrator creates any branches.
 
-The pre-PR subagent gate is a **two-step** flow: the primary agent authors the filled adversarial prompt (`write-subagent-adversarial-review`); the runner step (`subagent-review --preferred-runner …`) consumes that exact prompt and returns findings prose only. Policy surface names stay `subagentReview`, `--subagent-review-policy`, and `subagent-review`.
+The pre-PR subagent gate is a **three-step** flow: the primary agent authors the filled adversarial prompt (`write-subagent-adversarial-review`); the runner step (`subagent-review --subagent …`) consumes that exact prompt and returns findings prose only; `reconcile-subagent-review` compares the ledger to git state and blocks `open-pr` on silent lies. Artifacts are `*-subagent-review.{prompt.md, report.md, ledger.json}`. Outcomes are `clean | patched | deferred | skipped`. Policy surface names stay `subagentReview`, `--subagent-review-policy`, and `subagent-review`.
 
 ## Resuming in-progress work
 
@@ -61,11 +61,11 @@ bun run deliver --plan <plan-path> \
   --boundary-mode <cook|gated> \
   --subagent-review-policy <required|skip_doc_only|disabled> \
   --pr-review-policy <required|skip_doc_only|disabled> \
-  --preferred-runner <claude-cli|codex-exec> \
+  --subagent <claude-cli|codex-cli> \
   start
 ```
 
-`--preferred-runner` declares the execution agent's own identity. The CLI tries the preferred runner first, then the other, then records an honest `skipped`. No config change needed when switching platforms.
+`--subagent` declares the execution agent's own identity. The CLI tries the preferred runner first, then the other, then records an honest `skipped`. No config change needed when switching platforms.
 
 The resolved policy is persisted in `state.json` as `runPolicy` and governs execution for every invocation that loads it. If `orchestrator.config.json` changes between runs, the orchestrator detects divergence and refuses to continue silently — pass `--baseline orchestrator` to adopt the current config or `--baseline run-policy` to re-apply the persisted runPolicy (it governs execution for the current invocation, not just state):
 
@@ -93,6 +93,17 @@ For late external AI review triage after a PR already exists, use the matching
 /soa triage-ticket PR#19      # done ticket-linked phase PRs
 /soa triage-standalone PR#19  # standalone non-ticket PRs
 ```
+
+After a phase closeout lands on `main`, run the supported post-phase advisory
+triage lane before starting the next phase:
+
+```bash
+/soa triage-advisory-observations phase-16
+```
+
+This scans completed subagent-review reports for non-blocking **Advisory
+Observations** and records explicit operator dispositions in the phase artifact.
+It does not patch source files, and it is not a per-ticket pre-PR gate.
 
 ## Key files
 

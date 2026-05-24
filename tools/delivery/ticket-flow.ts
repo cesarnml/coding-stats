@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import {
   copyFile,
@@ -7,7 +8,7 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 import type { PullRequestSummary } from './platform';
 import type { ReviewActionCommit } from './pr-metadata';
@@ -791,6 +792,29 @@ async function copyFileIntoWorktree(
   await copyFile(sourcePath, targetPath);
 }
 
+function listTrackedFileNamesInDir(
+  worktreePath: string,
+  relativeDirPath: string,
+): Set<string> {
+  const result = spawnSync('git', ['ls-files', '--', relativeDirPath], {
+    cwd: worktreePath,
+    encoding: 'utf8',
+  });
+  if (result.status !== 0 || result.stdout.trim().length === 0) {
+    return new Set();
+  }
+
+  const tracked = new Set<string>();
+  for (const line of result.stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+      continue;
+    }
+    tracked.add(basename(trimmed));
+  }
+  return tracked;
+}
+
 async function copyTicketScopedArtifacts(input: {
   artifactDirPath: string;
   artifactNames: Set<string>;
@@ -803,9 +827,16 @@ async function copyTicketScopedArtifacts(input: {
   }
 
   const targetDir = resolve(input.targetWorktreePath, input.artifactDirPath);
+  const trackedInTarget = listTrackedFileNamesInDir(
+    input.targetWorktreePath,
+    input.artifactDirPath,
+  );
   if (existsSync(targetDir)) {
     for (const fileName of await readdir(targetDir)) {
-      if (!input.artifactNames.has(fileName)) {
+      if (
+        !input.artifactNames.has(fileName) &&
+        !trackedInTarget.has(fileName)
+      ) {
         await unlink(resolve(targetDir, fileName));
       }
     }

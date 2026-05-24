@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -30,6 +31,10 @@ import {
 async function writeFixture(path: string, content: string) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content, 'utf8');
+}
+
+function git(repo: string, args: string[]) {
+  execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
 }
 
 const baseConfig: ResolvedOrchestratorConfig = {
@@ -283,6 +288,133 @@ describe('ticket-flow', () => {
       await rm(targetDir, { recursive: true, force: true });
     }
   });
+
+  it('preserves tracked historical review artifacts instead of deleting them from git', async () => {
+    const sourceDir = await mkdtemp(join(tmpdir(), 'orchestrator-source-'));
+    const targetDir = await mkdtemp(join(tmpdir(), 'orchestrator-target-'));
+    const reviewsDir = 'docs/product/delivery/phase-03/reviews';
+
+    try {
+      await writeFixture(join(sourceDir, 'README.md'), '# fixture\n');
+      await writeFixture(
+        join(sourceDir, reviewsDir, 'P3.01-subagent-review.report.md'),
+        '# old report\n',
+      );
+      await writeFixture(
+        join(sourceDir, reviewsDir, 'P3.02-pr-review.fetch.json'),
+        '{"prev":true}\n',
+      );
+      await writeFixture(
+        join(sourceDir, reviewsDir, 'P3.03-pr-review.fetch.json'),
+        '{"current":true}\n',
+      );
+
+      git(sourceDir, ['init', '-b', 'main']);
+      git(sourceDir, ['config', 'user.email', 'delivery-test@example.test']);
+      git(sourceDir, ['config', 'user.name', 'delivery-test']);
+      git(sourceDir, ['add', '.']);
+      git(sourceDir, ['commit', '-m', 'init']);
+
+      git(targetDir, ['init', '-b', 'main']);
+      git(targetDir, ['config', 'user.email', 'delivery-test@example.test']);
+      git(targetDir, ['config', 'user.name', 'delivery-test']);
+      await writeFixture(join(targetDir, 'README.md'), '# fixture\n');
+      await writeFixture(
+        join(targetDir, reviewsDir, 'P3.01-subagent-review.report.md'),
+        '# old report\n',
+      );
+      await writeFixture(
+        join(targetDir, reviewsDir, 'P3.02-pr-review.fetch.json'),
+        '{"prev-stale":true}\n',
+      );
+      await writeFixture(
+        join(targetDir, reviewsDir, 'P3.03-pr-review.fetch.json'),
+        '{"current-stale":true}\n',
+      );
+      git(targetDir, ['add', '.']);
+      git(targetDir, ['commit', '-m', 'init']);
+
+      const state: DeliveryState = {
+        planKey: 'phase-03',
+        planPath: 'docs/product/delivery/phase-03/implementation-plan.md',
+        statePath: '.agents/delivery/phase-03/state.json',
+        reviewsDirPath: reviewsDir,
+        handoffsDirPath: '.agents/delivery/phase-03/handoffs',
+        reviewPollIntervalMinutes: 6,
+        reviewPollMaxWaitMinutes: 12,
+        tickets: [
+          {
+            id: 'P3.01',
+            title: 'Old ticket',
+            slug: 'old-ticket',
+            ticketFile: 'docs/ticket-01.md',
+            status: 'done',
+            branch: 'agents/p3-01-old-ticket',
+            baseBranch: 'main',
+            worktreePath: '/tmp/p3_01',
+          },
+          {
+            id: 'P3.02',
+            title: 'Previous ticket',
+            slug: 'previous-ticket',
+            ticketFile: 'docs/ticket-02.md',
+            status: 'done',
+            branch: 'agents/p3-02-previous-ticket',
+            baseBranch: 'agents/p3-01-old-ticket',
+            worktreePath: '/tmp/p3_02',
+          },
+          {
+            id: 'P3.03',
+            title: 'Current ticket',
+            slug: 'current-ticket',
+            ticketFile: 'docs/ticket-03.md',
+            status: 'in_progress',
+            branch: 'agents/p3-03-current-ticket',
+            baseBranch: 'agents/p3-02-previous-ticket',
+            worktreePath: targetDir,
+          },
+        ],
+      };
+
+      await materializeTicketContext(state, sourceDir, 'P3.03');
+
+      expect(
+        await readFile(
+          join(targetDir, reviewsDir, 'P3.01-subagent-review.report.md'),
+          'utf8',
+        ),
+      ).toBe('# old report\n');
+      expect(
+        await readFile(
+          join(targetDir, reviewsDir, 'P3.02-pr-review.fetch.json'),
+          'utf8',
+        ),
+      ).toBe('{"prev":true}\n');
+      expect(
+        await readFile(
+          join(targetDir, reviewsDir, 'P3.03-pr-review.fetch.json'),
+          'utf8',
+        ),
+      ).toBe('{"current":true}\n');
+
+      const status = execFileSync('git', ['status', '--porcelain'], {
+        cwd: targetDir,
+        encoding: 'utf8',
+      });
+      const deletedReviewArtifacts = status
+        .split('\n')
+        .filter(Boolean)
+        .filter(
+          (line) =>
+            (line.startsWith(' D') || line.startsWith('D ')) &&
+            line.includes('/reviews/'),
+        );
+      expect(deletedReviewArtifacts).toEqual([]);
+    } finally {
+      await rm(sourceDir, { recursive: true, force: true });
+      await rm(targetDir, { recursive: true, force: true });
+    }
+  });
 });
 describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
   const baseInProgressState: DeliveryState = {
@@ -483,9 +615,9 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
             'agents/p3-01-persist-transmission-identity-for-queued-torrents',
           baseBranch: 'main',
           worktreePath: '/tmp/p3_01',
-          subagentReviewAgent: 'codex-exec',
+          subagentReviewAgent: 'codex-cli',
           subagentRunnerArtifactPath:
-            'docs/product/delivery/phase-03/reviews/P3.01-subagent-runner.json',
+            'docs/product/delivery/phase-03/reviews/P3.01-subagent-review.ledger.json',
         },
       ],
     };
@@ -499,9 +631,9 @@ describe('EE8.01 — post-verify observability and reviewPolicy config', () => {
       existing,
     );
 
-    expect(rebuilt.tickets[0]?.subagentReviewAgent).toBe('codex-exec');
+    expect(rebuilt.tickets[0]?.subagentReviewAgent).toBe('codex-cli');
     expect(rebuilt.tickets[0]?.subagentRunnerArtifactPath).toBe(
-      'docs/product/delivery/phase-03/reviews/P3.01-subagent-runner.json',
+      'docs/product/delivery/phase-03/reviews/P3.01-subagent-review.ledger.json',
     );
   });
 

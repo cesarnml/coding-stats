@@ -1,2 +1,4 @@
 .agents/delivery
 node_modules
+docs/product/delivery/*/reviews/*-subagent-review.report.md
+docs/product/delivery/*/reviews/*-subagent-review.prompt.md

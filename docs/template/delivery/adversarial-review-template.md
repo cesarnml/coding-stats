@@ -17,8 +17,12 @@ This template is filled in by the **primary execution agent** before invoking th
 ## Subagent prompt (fill in before invoking)
 
 ```
-You are conducting an adversarial review of a code change. Your job is not a general
-code review — it is a targeted attack on the behavior this ticket is supposed to
+You are conducting an adversarial review of a code change.
+You may add extra attack surfaces when your independent repo read finds a plausible
+ticket-relevant failure path.
+Findings outside the three finding-discipline clauses belong in **Advisory Observations** —
+anything off-scope but real is welcome there.
+Your job is not a general code review — it is a targeted attack on the behavior this ticket is supposed to
 protect. Start from the invariants and attack surfaces below, then independently inspect
 the diff and directly related implementation code for missing ticket-relevant risks. You
 are looking for paths where the ticket's intended behavior breaks, not for general
@@ -108,7 +112,7 @@ class. The subagent must report coverage for every class using the form
 7. **Doc-vs-code drift in the ticket Rationale** — does the ticket's
    `## Rationale`, scope contract, or referenced docs describe behavior that
    does not match what the diff actually does? Read the Rationale and contract
-   docs and surface drift in **Findings for human review** — do not patch
+   docs and surface drift in **Advisory Observations** — do not patch
    ticket docs. Output form: `[probed]` / `[N/A — reason]` / `[blocked —
    missing-input]`.
 
@@ -135,16 +139,15 @@ below. The primary execution agent owns all patches.
 contract docs as part of probing the "Doc-vs-code drift in the ticket Rationale"
 diff-derived surface above. If you find drift — the Rationale claims a behavior the diff
 does not implement, or the diff implements behavior the Rationale does not describe —
-surface it under **Findings for human review** with the specific file, the conflicting
+surface it under **Advisory Observations** with the specific file, the conflicting
 claim, and what the diff actually does. The primary agent decides whether to patch docs
 or code.
 
 **Coverage mandate:** For each attack surface listed above, you must either probe it and
 report what you found, or explain in one sentence why it does not apply. "I didn't check"
 is not acceptable. A clean result on a surface you probed is a valid and valuable outcome.
-You may add extra attack surfaces when your independent repo read finds a plausible
-ticket-relevant failure path. Keep added surfaces tied to the ticket behavior; do not turn
-this into broad style, cleanup, or architecture review.
+Keep any added surfaces tied to the ticket behavior; do not turn this into broad style,
+cleanup, or architecture review.
 
 **Finding discipline:** Report a finding when one of the following holds:
 
@@ -158,7 +161,7 @@ this into broad style, cleanup, or architecture review.
 
 Do not report style, preference, or hypothetical future requirements as blocking findings.
 If you notice something worth flagging but it is outside these three clauses, put it in
-**Findings for human review** only.
+**Advisory Observations** only.
 
 **No fabrication pressure:** If all invariants hold and all attack surfaces are sound, your
 correct output is a clean report. Do not invent findings to justify the review step.
@@ -182,7 +185,7 @@ For each finding the primary agent should consider patching: file/path, what is 
 which invariant or finding-discipline clause applies, and a concrete fix recommendation.
 If none: "None."
 
-**Findings for human review**
+**Advisory Observations**
 Things you noticed that are outside the three finding-discipline clauses, including any
 doc-vs-code drift surfaced under the diff-derived "Doc-vs-code drift in the ticket
 Rationale" class. If none: "None."

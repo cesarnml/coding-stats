@@ -22,9 +22,14 @@ export type ParsedCliArgs = {
   boundaryMode?: TicketBoundaryMode;
   subagentReviewPolicy?: ReviewPolicyStageValue;
   prReviewPolicy?: ReviewPolicyStageValue;
-  preferredRunner?: 'claude-cli' | 'codex-exec';
+  subagent?: 'claude-cli' | 'codex-cli';
+  primary?: string;
   baseline?: BaselineValue;
   promptFile?: string;
+  ackReconciliation?: 'patched' | 'deferred' | 'clean';
+  commitSha?: string;
+  reason?: string;
+  dispositionsPath?: string;
 };
 
 export const STANDALONE_TRIAGE_COMMAND = 'triage-standalone';
@@ -101,12 +106,15 @@ export function getUsage(runDeliverInvocation: string): string {
     '  sync',
     '  status',
     '  repair-state',
+    '  triage-advisory-observations --dispositions <path>',
     '  start [ticket-id]',
     '  post-red [ticket-id]',
     '  post-verify [ticket-id] [clean|patched] [patch-commit-sha ...]',
     '  write-subagent-adversarial-review [ticket-id] [--prompt-file <path>]',
-    '  subagent-review [ticket-id] [clean|patched <sha>] [--force] [--preferred-runner <claude-cli|codex-exec>]',
-    '  open-pr [ticket-id]',
+    '  subagent-review [ticket-id] [clean|patched <sha>] [--force] [--subagent <claude-cli|codex-cli>] [--primary <name>]',
+    '  subagent-review record-deferred --reason "<rationale>" [ticket-id]',
+    '  reconcile-subagent-review [ticket-id]',
+    '  open-pr [ticket-id] [--ack-reconciliation <patched|deferred|clean>] [--commit <sha>] [--reason "<text>"]',
     '  poll-review [ticket-id]',
     '  triage-ticket <ticket-id>',
     '  record-review <ticket-id> <clean|patched|operator_input_needed> [note]',
@@ -121,7 +129,12 @@ export function getUsage(runDeliverInvocation: string): string {
     '  --boundary-mode <cook|gated>',
     '  --subagent-review-policy <required|skip_doc_only|disabled>',
     '  --pr-review-policy <required|skip_doc_only|disabled>',
-    '  --preferred-runner <claude-cli|codex-exec>',
+    '  --subagent <claude-cli|codex-cli>',
+    '  --primary <free-form name>',
+    '  --ack-reconciliation <patched|deferred|clean>',
+    '  --commit <sha>',
+    '  --reason "<text>"',
+    '  --dispositions <path>',
     '  --baseline <orchestrator|run-policy>',
   ].join('\n');
 }
@@ -132,9 +145,14 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
   let boundaryMode: ParsedCliArgs['boundaryMode'];
   let subagentReviewPolicy: ParsedCliArgs['subagentReviewPolicy'];
   let prReviewPolicy: ParsedCliArgs['prReviewPolicy'];
-  let preferredRunner: ParsedCliArgs['preferredRunner'];
+  let subagent: ParsedCliArgs['subagent'];
+  let primary: ParsedCliArgs['primary'];
   let baseline: ParsedCliArgs['baseline'];
   let promptFile: ParsedCliArgs['promptFile'];
+  let ackReconciliation: ParsedCliArgs['ackReconciliation'];
+  let commitSha: ParsedCliArgs['commitSha'];
+  let reason: ParsedCliArgs['reason'];
+  let dispositionsPath: ParsedCliArgs['dispositionsPath'];
   const flags = new Set<string>();
   const positionals: string[] = [];
 
@@ -217,23 +235,41 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
       continue;
     }
 
-    if (value === '--preferred-runner') {
+    if (value === '--subagent') {
       const raw = argv[index + 1];
-      const VALID_RUNNERS = ['claude-cli', 'codex-exec'] as const;
+      const VALID_RUNNERS = ['claude-cli', 'codex-cli'] as const;
 
       if (
         raw === undefined ||
         raw.startsWith('--') ||
         !(VALID_RUNNERS as readonly string[]).includes(raw)
       ) {
+        throw new Error(`Pass --subagent <${VALID_RUNNERS.join('|')}>.`);
+      }
+
+      subagent = raw as 'claude-cli' | 'codex-cli';
+      index += 1;
+      continue;
+    }
+
+    if (value === '--primary') {
+      const raw = argv[index + 1];
+
+      if (raw === undefined || raw.startsWith('--') || raw.trim() === '') {
         throw new Error(
-          `Pass --preferred-runner <${VALID_RUNNERS.join('|')}>.`,
+          'Pass --primary <name> (free-form, e.g. claude, codex, cursor, composer).',
         );
       }
 
-      preferredRunner = raw as 'claude-cli' | 'codex-exec';
+      primary = raw.trim();
       index += 1;
       continue;
+    }
+
+    if (value === '--preferred-runner') {
+      throw new Error(
+        '--preferred-runner has been removed. Pass --subagent <claude-cli|codex-cli> or set `subagentRunner` in orchestrator.config.json.',
+      );
     }
 
     if (value === '--red-commit-sha') {
@@ -271,6 +307,53 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
       continue;
     }
 
+    if (value === '--ack-reconciliation') {
+      const raw = argv[index + 1];
+      const VALID = ['patched', 'deferred', 'clean'] as const;
+      if (
+        raw === undefined ||
+        raw.startsWith('--') ||
+        !(VALID as readonly string[]).includes(raw)
+      ) {
+        throw new Error(`Pass --ack-reconciliation <${VALID.join('|')}>.`);
+      }
+      ackReconciliation = raw as 'patched' | 'deferred' | 'clean';
+      index += 1;
+      continue;
+    }
+
+    if (value === '--commit') {
+      const raw = argv[index + 1];
+      if (raw === undefined || raw.startsWith('--') || raw.trim() === '') {
+        throw new Error('Pass --commit <sha>.');
+      }
+      commitSha = raw.trim();
+      index += 1;
+      continue;
+    }
+
+    if (value === '--reason') {
+      const raw = argv[index + 1];
+      if (raw === undefined || raw.startsWith('--')) {
+        throw new Error(
+          'Pass --reason "<rationale>" (the rationale is captured on the ledger for audit).',
+        );
+      }
+      reason = raw;
+      index += 1;
+      continue;
+    }
+
+    if (value === '--dispositions') {
+      const raw = argv[index + 1];
+      if (raw === undefined || raw.startsWith('--') || raw.trim() === '') {
+        throw new Error('Pass --dispositions <path>.');
+      }
+      dispositionsPath = raw;
+      index += 1;
+      continue;
+    }
+
     if (value === '--phase') {
       throw new Error(
         '--phase has been removed. Pass --plan <plan-path> instead.',
@@ -300,9 +383,14 @@ export function parseCliArgs(argv: string[], usage: string): ParsedCliArgs {
     boundaryMode,
     subagentReviewPolicy,
     prReviewPolicy,
-    preferredRunner,
+    subagent,
+    primary,
     baseline,
     promptFile,
+    ackReconciliation,
+    commitSha,
+    reason,
+    dispositionsPath,
   };
 }
 

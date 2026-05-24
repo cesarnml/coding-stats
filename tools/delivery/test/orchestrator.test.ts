@@ -382,6 +382,69 @@ describe('delivery orchestrator', () => {
     });
   });
 
+  it('preserves subagent adversarial prompt fields through state roundtrip', () => {
+    // Regression: syncStateWithPlan explicitly constructs each ticket object
+    // and previously omitted subagentAdversarialPromptPath /
+    // subagentAdversarialPromptWrittenAt, so the path written by
+    // `write-subagent-adversarial-review` was silently dropped on the next
+    // command's load → `subagent-review` then threw
+    // "requires a subagent adversarial review prompt" even though the file
+    // was on disk and the path was persisted in state.json.
+    const options = createOptions({
+      planPath: 'docs/product/delivery/phase-02/implementation-plan.md',
+    });
+    const writtenAt = '2026-05-20T17:31:26.246Z';
+    const promptPath =
+      'docs/product/delivery/phase-02/reviews/P2.01-subagent-review.prompt.md';
+
+    const existing: DeliveryState = {
+      planKey: 'phase-02',
+      planPath: options.planPath,
+      statePath: options.statePath,
+      reviewsDirPath: options.reviewsDirPath,
+      handoffsDirPath: options.handoffsDirPath,
+      reviewPollIntervalMinutes: 6,
+      reviewPollMaxWaitMinutes: 12,
+      tickets: [
+        {
+          id: 'P2.01',
+          title: 'Enclosure-First Feed Parsing',
+          slug: 'enclosure-first-feed-parsing',
+          ticketFile:
+            'docs/product/delivery/phase-02/ticket-01-enclosure-first-feed-parsing.md',
+          status: 'verified',
+          branch: 'agents/p2-01-enclosure-first-feed-parsing',
+          baseBranch: 'main',
+          worktreePath: '/tmp/p2_01',
+          verifyOutcome: 'clean',
+          subagentAdversarialPromptPath: promptPath,
+          subagentAdversarialPromptWrittenAt: writtenAt,
+        },
+      ],
+    };
+
+    const synced = syncStateFromExisting(
+      existing,
+      [
+        {
+          id: 'P2.01',
+          title: 'Enclosure-First Feed Parsing',
+          slug: 'enclosure-first-feed-parsing',
+          ticketFile:
+            'docs/product/delivery/phase-02/ticket-01-enclosure-first-feed-parsing.md',
+        },
+      ],
+      '/workspace/test_project',
+      options,
+      baseConfig,
+    );
+
+    expect(synced.tickets[0]?.subagentAdversarialPromptPath).toBe(promptPath);
+    expect(synced.tickets[0]?.subagentAdversarialPromptWrittenAt).toBe(
+      writtenAt,
+    );
+  });
+
   it('builds a handoff artifact that resets context and carries forward prior review state', () => {
     const handoff = buildTicketHandoff(
       {
