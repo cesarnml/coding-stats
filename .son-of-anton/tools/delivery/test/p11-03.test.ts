@@ -177,7 +177,7 @@ describe('P11.03 — operator-recorder invocation writes through buildRunnerInvo
   it('writes a single recorder-mode invocation with the supplied SHA and outcome', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'p11-03-recorder-'));
     try {
-      const path = join(tempDir, 'P11.03-subagent-runner.json');
+      const path = join(tempDir, 'P11.03-subagent-review.ledger.json');
       const invocation = buildRunnerInvocation(
         'operator-recorder',
         'abc123',
@@ -203,7 +203,7 @@ describe('P11.03 — operator-recorder invocation writes through buildRunnerInvo
   it('round-trips the operator-recorder runnerKind through readSubagentRunnerArtifact', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'p11-03-recorder-rt-'));
     try {
-      const path = join(tempDir, 'P11.03-subagent-runner.json');
+      const path = join(tempDir, 'P11.03-subagent-review.ledger.json');
       await writeFile(
         path,
         JSON.stringify({

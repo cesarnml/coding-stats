@@ -113,7 +113,7 @@ describe('P13.02 — resolveNextCommand routes verified code tickets through wri
   it('verified + subagentReview enabled + prompt artifact recorded → subagent-review', () => {
     const ticket = baseTicket({
       subagentAdversarialPromptPath:
-        'docs/product/delivery/phase-13/reviews/P13.02-subagent-adversarial-prompt.md',
+        'docs/product/delivery/phase-13/reviews/P13.02-subagent-review.prompt.md',
     });
     expect(
       resolveNextCommand('verified', baseConfig, planPath, ticket.id, ticket),
@@ -149,7 +149,7 @@ describe('P13.02 — adversarial prompt helper', () => {
         'P13.02',
       ),
     ).toBe(
-      'docs/product/delivery/phase-13/reviews/P13.02-subagent-adversarial-prompt.md',
+      'docs/product/delivery/phase-13/reviews/P13.02-subagent-review.prompt.md',
     );
   });
 
@@ -188,7 +188,7 @@ describe('P13.02 — adversarial prompt helper', () => {
       });
 
       expect(result.relativePath).toBe(
-        'docs/product/delivery/phase-13/reviews/P13.02-subagent-adversarial-prompt.md',
+        'docs/product/delivery/phase-13/reviews/P13.02-subagent-review.prompt.md',
       );
       expect(result.absolutePath).toBe(join(repoRoot, result.relativePath));
       expect(typeof result.writtenAt).toBe('string');
@@ -237,7 +237,7 @@ describe('P13.02 — subagent-review gate refuses to run runner without a record
     try {
       const ticket = baseTicket({
         subagentAdversarialPromptPath:
-          'docs/product/delivery/phase-13/reviews/P13.02-subagent-adversarial-prompt.md',
+          'docs/product/delivery/phase-13/reviews/P13.02-subagent-review.prompt.md',
       });
       expect(() =>
         assertSubagentAdversarialPromptPresent({
@@ -259,7 +259,7 @@ describe('P13.02 — subagent-review gate refuses to run runner without a record
     const promptPath = join(
       repoRoot,
       reviewsDirPath,
-      'P13.02-subagent-adversarial-prompt.md',
+      'P13.02-subagent-review.prompt.md',
     );
     await writeFile(
       promptPath,
@@ -268,7 +268,7 @@ describe('P13.02 — subagent-review gate refuses to run runner without a record
     );
     try {
       const ticket = baseTicket({
-        subagentAdversarialPromptPath: `${reviewsDirPath}/P13.02-subagent-adversarial-prompt.md`,
+        subagentAdversarialPromptPath: `${reviewsDirPath}/P13.02-subagent-review.prompt.md`,
       });
       expect(() =>
         assertSubagentAdversarialPromptPresent({

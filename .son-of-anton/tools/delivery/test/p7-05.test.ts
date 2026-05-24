@@ -39,8 +39,8 @@ describe('P7.05 phase 07 shipped command surface — help text coverage', () => 
     expect(USAGE).toContain('--pr-review-policy');
   });
 
-  it('getUsage includes --preferred-runner flag', () => {
-    expect(USAGE).toContain('--preferred-runner');
+  it('getUsage includes --subagent flag', () => {
+    expect(USAGE).toContain('--subagent');
   });
 
   it('getUsage includes --baseline flag', () => {

@@ -10,6 +10,11 @@ import {
 } from './orchestrator';
 import type { ResolvedOrchestratorConfig } from './runtime-config';
 import type { DeliveryState, TicketState } from './types';
+import {
+  computeAdvisoryObservationWarnings,
+  formatAdvisoryObservationWarnings,
+  type AdvisoryObservationWarning,
+} from './advisory-observation-warnings';
 
 type CloseoutStackArgs = {
   planPath: string;
@@ -307,10 +312,11 @@ function closePullRequest(
   }
 }
 
-function formatCloseoutSummary(
+export function formatCloseoutSummary(
   summary: CloseoutSummary,
   state: DeliveryState,
   config: ResolvedOrchestratorConfig,
+  advisoryObservationWarnings: AdvisoryObservationWarning[] = [],
 ): string {
   const lines = [formatStatus(state, config), '', 'Stacked Closeout Summary'];
 
@@ -326,6 +332,13 @@ function formatCloseoutSummary(
     lines.push(
       `- already merged ${skipped.ticketId}: PR #${skipped.prNumber} (${skipped.url})`,
     );
+  }
+
+  const warningText = formatAdvisoryObservationWarnings(
+    advisoryObservationWarnings,
+  );
+  if (warningText) {
+    lines.push('', warningText);
   }
 
   return lines.join('\n');
@@ -446,7 +459,32 @@ export async function runCloseoutStack(
     }
 
     await saveState(cwd, state);
-    console.log(formatCloseoutSummary(summary, state, config));
+    const advisoryObservationWarnings = await (async () => {
+      try {
+        return await computeAdvisoryObservationWarnings({
+          repoRoot: cwd,
+          state,
+        });
+      } catch (warningError) {
+        return [
+          {
+            kind: 'warning_error' as const,
+            message:
+              warningError instanceof Error
+                ? warningError.message
+                : String(warningError),
+          },
+        ];
+      }
+    })();
+    console.log(
+      formatCloseoutSummary(
+        summary,
+        state,
+        config,
+        advisoryObservationWarnings,
+      ),
+    );
     return 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

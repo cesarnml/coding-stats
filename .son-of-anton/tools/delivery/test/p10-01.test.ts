@@ -112,74 +112,74 @@ describe('P10.01 — deriveRunPolicyFromConfig', () => {
   });
 });
 
-// ─── CLI --preferred-runner flag ─────────────────────────────────────────────
+// ─── CLI --subagent flag ─────────────────────────────────────────────
 
-describe('P10.01 — CLI --preferred-runner flag', () => {
+describe('P10.01 — CLI --subagent flag', () => {
   const usage = 'Usage: bun run deliver --plan <plan> <cmd>';
 
-  it('parses --preferred-runner claude-cli', () => {
+  it('parses --subagent claude-cli', () => {
     const parsed = parseCliArgs(
       [
         '--plan',
         'docs/product/delivery/p/impl.md',
-        '--preferred-runner',
+        '--subagent',
         'claude-cli',
         'subagent-review',
       ],
       usage,
     );
-    expect(parsed.preferredRunner).toBe('claude-cli');
+    expect(parsed.subagent).toBe('claude-cli');
   });
 
-  it('parses --preferred-runner codex-exec', () => {
+  it('parses --subagent codex-cli', () => {
     const parsed = parseCliArgs(
       [
         '--plan',
         'docs/product/delivery/p/impl.md',
-        '--preferred-runner',
-        'codex-exec',
+        '--subagent',
+        'codex-cli',
         'subagent-review',
       ],
       usage,
     );
-    expect(parsed.preferredRunner).toBe('codex-exec');
+    expect(parsed.subagent).toBe('codex-cli');
   });
 
-  it('throws on invalid --preferred-runner value', () => {
+  it('throws on invalid --subagent value', () => {
     expect(() =>
       parseCliArgs(
         [
           '--plan',
           'docs/product/delivery/p/impl.md',
-          '--preferred-runner',
+          '--subagent',
           'gemini-cli',
           'subagent-review',
         ],
         usage,
       ),
-    ).toThrow(/preferred-runner/);
+    ).toThrow(/--subagent/);
   });
 
-  it('throws when --preferred-runner value is missing', () => {
+  it('throws when --subagent value is missing', () => {
     expect(() =>
       parseCliArgs(
         [
           '--plan',
           'docs/product/delivery/p/impl.md',
-          '--preferred-runner',
+          '--subagent',
           'subagent-review',
         ],
         usage,
       ),
-    ).toThrow(/preferred-runner/);
+    ).toThrow(/--subagent/);
   });
 
-  it('leaves preferredRunner undefined when flag is absent', () => {
+  it('leaves subagent undefined when flag is absent', () => {
     const parsed = parseCliArgs(
       ['--plan', 'docs/product/delivery/p/impl.md', 'subagent-review'],
       usage,
     );
-    expect(parsed.preferredRunner).toBeUndefined();
+    expect(parsed.subagent).toBeUndefined();
   });
 });
 
@@ -289,9 +289,9 @@ describe('P10.01 — validateRunnerArtifact', () => {
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });
 
-  it('validates a valid codex-exec structured artifact', () => {
+  it('validates a valid codex-cli structured artifact', () => {
     const artifact = makeArtifact(
-      buildRunnerInvocation('codex-exec', 'def456', 'patched'),
+      buildRunnerInvocation('codex-cli', 'def456', 'patched'),
     );
     expect(validateRunnerArtifact(artifact)).toEqual(artifact);
   });

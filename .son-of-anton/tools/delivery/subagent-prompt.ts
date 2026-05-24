@@ -4,8 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import type { ReviewPolicyStageValue } from './config';
 import type { TicketState } from './types';
 
-export const SUBAGENT_ADVERSARIAL_PROMPT_SUFFIX =
-  '-subagent-adversarial-prompt.md';
+export const SUBAGENT_ADVERSARIAL_PROMPT_SUFFIX = '-subagent-review.prompt.md';
 
 export type SubagentAdversarialPromptResult = {
   absolutePath: string;

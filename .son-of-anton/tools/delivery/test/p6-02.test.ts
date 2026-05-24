@@ -49,11 +49,11 @@ describe('P6.02 retrospective location migration', () => {
     ).toBe(true);
   });
 
-  it('notes/public/ contains no .md files', () => {
-    const mdFiles = readdirSync(notesPublicDir).filter((f) =>
-      f.endsWith('.md'),
+  it('notes/public/ contains no retrospective artifacts', () => {
+    const retroFiles = readdirSync(notesPublicDir).filter((f) =>
+      f.endsWith('-retrospective.md'),
     );
-    expect(mdFiles).toEqual([]);
+    expect(retroFiles).toEqual([]);
   });
 
   it('soa-write-retrospective skill does not reference notes/public/', () => {

@@ -46,50 +46,38 @@ describe('P7.02 runtime policy override parsing and resolution', () => {
       expect(result.prReviewPolicy).toBe('skip_doc_only');
     });
 
-    it('parses --preferred-runner claude-cli', () => {
+    it('parses --subagent claude-cli', () => {
       const result = parseCliArgs(
-        [
-          '--plan',
-          'x.md',
-          'subagent-review',
-          '--preferred-runner',
-          'claude-cli',
-        ],
+        ['--plan', 'x.md', 'subagent-review', '--subagent', 'claude-cli'],
         DUMMY_USAGE,
       );
-      expect(result.preferredRunner).toBe('claude-cli');
+      expect(result.subagent).toBe('claude-cli');
     });
 
-    it('parses --preferred-runner codex-exec', () => {
+    it('parses --subagent codex-cli', () => {
       const result = parseCliArgs(
-        [
-          '--plan',
-          'x.md',
-          'subagent-review',
-          '--preferred-runner',
-          'codex-exec',
-        ],
+        ['--plan', 'x.md', 'subagent-review', '--subagent', 'codex-cli'],
         DUMMY_USAGE,
       );
-      expect(result.preferredRunner).toBe('codex-exec');
+      expect(result.subagent).toBe('codex-cli');
     });
 
-    it('throws on invalid --preferred-runner value', () => {
+    it('throws on invalid --subagent value', () => {
       expect(() =>
         parseCliArgs(
-          ['--plan', 'x.md', 'subagent-review', '--preferred-runner', 'gemini'],
+          ['--plan', 'x.md', 'subagent-review', '--subagent', 'gemini'],
           DUMMY_USAGE,
         ),
-      ).toThrow('--preferred-runner');
+      ).toThrow('--subagent');
     });
 
-    it('throws when --preferred-runner value is missing', () => {
+    it('throws when --subagent value is missing', () => {
       expect(() =>
         parseCliArgs(
-          ['--plan', 'x.md', 'subagent-review', '--preferred-runner'],
+          ['--plan', 'x.md', 'subagent-review', '--subagent'],
           DUMMY_USAGE,
         ),
-      ).toThrow('--preferred-runner');
+      ).toThrow('--subagent');
     });
 
     it('throws on invalid --subagent-review-policy value', () => {
@@ -114,7 +102,7 @@ describe('P7.02 runtime policy override parsing and resolution', () => {
       const result = parseCliArgs(['--plan', 'x.md', 'status'], DUMMY_USAGE);
       expect(result.subagentReviewPolicy).toBeUndefined();
       expect(result.prReviewPolicy).toBeUndefined();
-      expect(result.preferredRunner).toBeUndefined();
+      expect(result.subagent).toBeUndefined();
     });
   });
 

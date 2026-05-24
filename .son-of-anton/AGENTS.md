@@ -13,13 +13,13 @@
 
 When invoking a review subagent during orchestrated delivery:
 
-- **Preferred-runner:** pass `--preferred-runner <claude-cli|codex-exec>` to `subagent-review`. The CLI tries the preferred runner first, then the other, then records an honest `skipped` if neither is available. No config changes needed when switching agent platforms.
+- **Preferred-runner:** pass `--subagent <claude-cli|codex-cli>` to `subagent-review`. The CLI tries the preferred runner first, then the other, then records an honest `skipped` if neither is available. No config changes needed when switching agent platforms.
 - **Adversarial prompt required:** the subagent prompt must assume the implementation has holes and find them. Do not rationalize away anything you notice — flag it and let the human decide. A checklist of "did the ticket spec land?" is not a review.
 - **No rationalizing away findings:** the subagent must not suppress or downplay what it finds. Flag everything; the human decides what to act on.
 
 ## Pre-Commit
 
-Before committing: run the repo's format and verify commands for touched files. Run a spellcheck when docs, Markdown, config examples, PR text, or user-facing copy changed.
+Before committing: run the repo's format and verify commands for touched files.
 Current commands: `bun run format`, `bun run verify`, `bun run verify:quiet`, `bun run ci`, `bun run ci:quiet`.
 
 ## Ticket Completion Checklist

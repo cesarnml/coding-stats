@@ -1,6 +1,6 @@
 ---
 name: soa
-description: Son-of-Anton canonical entrypoint. Use for /soa plan, /soa decompose, /soa execute, /soa resume, /soa triage-ticket, /soa triage-standalone, /soa install, /soa update, /soa closeout, and /soa ideate. Manages installation, updates, and the full delivery lifecycle.
+description: Son-of-Anton canonical entrypoint. Use for /soa plan, /soa decompose, /soa execute, /soa resume, /soa triage-ticket, /soa triage-standalone, /soa triage-advisory-observations, /soa install, /soa update, /soa closeout, and /soa ideate. Manages installation, updates, and the full delivery lifecycle.
 ---
 
 # Son-of-Anton Skill
@@ -216,6 +216,35 @@ bun run deliver triage-standalone --pr <number>
    actionable issues, push fixes, resolve native inline threads that are
    patched/already-outdated/rejected when resolvable, and let the standalone
    review flow refresh the PR body best-effort.
+
+---
+
+### `triage-advisory-observations`
+
+**Trigger:** `/soa triage-advisory-observations <phase-XX|epic-XX>`
+
+Run the post-phase advisory-observation triage lane after the stacked phase has
+landed on `main` and before the next phase starts. This is for non-blocking
+`Advisory Observations` from subagent-review reports. It is not a per-ticket
+pre-PR gate and it must not apply patches automatically.
+
+1. Parse the phase or epic target and locate its `implementation-plan.md`.
+2. Read `docs/template/delivery/delivery-orchestrator.md` in the source repo
+   (or `.son-of-anton/docs/template/delivery/delivery-orchestrator.md` in a
+   consumer repo) before running commands.
+3. Resolve or create an explicit dispositions input file for every parsed
+   advisory observation. Do not guess dispositions from report prose.
+4. Run the underlying command from the checkout where the phase delivery state
+   is authoritative:
+
+```bash
+bun run deliver --plan <plan-path> triage-advisory-observations --dispositions <path>
+```
+
+5. Report the written triage artifact path and any warnings about untriaged
+   observations or suspicious report evidence. Keep `Actionable findings`
+   separate: they remain the blocking reconciliation lane and are not part of
+   advisory-observation disposition.
 
 ---
 

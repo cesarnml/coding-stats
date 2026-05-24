@@ -25,12 +25,12 @@ const baseStateVerified: DeliveryState = {
     {
       id: 'P10.03',
       title: 'Codex Exec Runner Support',
-      slug: 'codex-exec-runner-support',
+      slug: 'codex-cli-runner-support',
       ticketFile:
-        'docs/product/delivery/phase-10/ticket-03-codex-exec-runner-support-for-programmatic-subagent-review.md',
+        'docs/product/delivery/phase-10/ticket-03-codex-cli-runner-support-for-programmatic-subagent-review.md',
       status: 'subagent_review_complete',
       branch:
-        'agents/p10-03-codex-exec-runner-support-for-programmatic-subagent-review',
+        'agents/p10-03-codex-cli-runner-support-for-programmatic-subagent-review',
       baseBranch: 'agents/p10-02-executor-owned-subagent-review-via-claude-cli',
       worktreePath: '/tmp/p10_03',
       subagentReviewOutcome: 'clean',
@@ -79,10 +79,10 @@ function makeContext(
   } as unknown as DeliveryOrchestratorContext;
 }
 
-// ─── tryRunner with codex-exec identity ───────────────────────────────────────
+// ─── tryRunner with codex-cli identity ───────────────────────────────────────
 
 describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
-  it('returns ran+clean for codex-exec style invocation with no changes', () => {
+  it('returns ran+clean for codex-cli style invocation with no changes', () => {
     const result = tryRunner(
       () => ({ exitCode: 0, timedOut: false }),
       () => false,
@@ -94,7 +94,7 @@ describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
     });
   });
 
-  it('returns ran+patched for codex-exec style invocation with changes', () => {
+  it('returns ran+patched for codex-cli style invocation with changes', () => {
     const result = tryRunner(
       () => ({ exitCode: 0, timedOut: false }),
       () => true,
@@ -106,7 +106,7 @@ describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
     });
   });
 
-  it('returns unavailable for codex-exec style when spawn fails', () => {
+  it('returns unavailable for codex-cli style when spawn fails', () => {
     const result = tryRunner(
       () => {
         throw new Error('spawn codex ENOENT');
@@ -120,11 +120,11 @@ describe('P10.03 — tryRunner: outcome detection is runner-agnostic', () => {
 // ─── buildRunnerArtifact identity ────────────────────────────────────────────
 
 describe('P10.03 — buildRunnerInvocation + buildRunnerArtifact identity', () => {
-  it('builds codex-exec invocation with correct runnerKind', () => {
-    const invocation = buildRunnerInvocation('codex-exec', 'sha1234', 'clean');
+  it('builds codex-cli invocation with correct runnerKind', () => {
+    const invocation = buildRunnerInvocation('codex-cli', 'sha1234', 'clean');
     const artifact = buildRunnerArtifact('P10.03', [invocation]);
     expect(artifact.ticket).toBe('P10.03');
-    expect(artifact.invocations[0]!.runnerKind).toBe('codex-exec');
+    expect(artifact.invocations[0]!.runnerKind).toBe('codex-cli');
     expect(artifact.invocations[0]!.outcome).toBe('clean');
     expect(artifact.invocations[0]!.reviewedHeadSha).toBe('sha1234');
     expect(typeof artifact.invocations[0]!.completedAt).toBe('string');
@@ -151,14 +151,14 @@ describe('P10.03 — buildRunnerInvocation + buildRunnerArtifact identity', () =
   });
 });
 
-// ─── validateRunnerArtifact with codex-exec ───────────────────────────────────
+// ─── validateRunnerArtifact with codex-cli ───────────────────────────────────
 
-describe('P10.03 — validateRunnerArtifact accepts codex-exec runnerKind (structured)', () => {
+describe('P10.03 — validateRunnerArtifact accepts codex-cli runnerKind (structured)', () => {
   const validCodexArtifact: SubagentRunnerArtifact = {
     ticket: 'P10.03',
     invocations: [
       {
-        runnerKind: 'codex-exec',
+        runnerKind: 'codex-cli',
         reviewedHeadSha: 'abc1234',
         outcome: 'clean',
         completedAt: '2026-01-01T00:00:00.000Z',
@@ -170,13 +170,13 @@ describe('P10.03 — validateRunnerArtifact accepts codex-exec runnerKind (struc
     ],
   };
 
-  it('accepts a valid codex-exec clean artifact', () => {
+  it('accepts a valid codex-cli clean artifact', () => {
     expect(validateRunnerArtifact(validCodexArtifact)).toEqual(
       validCodexArtifact,
     );
   });
 
-  it('accepts a valid codex-exec patched artifact', () => {
+  it('accepts a valid codex-cli patched artifact', () => {
     const artifact: SubagentRunnerArtifact = {
       ...validCodexArtifact,
       invocations: [
@@ -209,7 +209,7 @@ describe('P10.03 — validateRunnerArtifact accepts codex-exec runnerKind (struc
 
 // ─── open-pr policy-based gate (codex path) ───────────────────────────────────
 
-describe('P10.03 — open-pr policy gate applies to codex-exec artifacts too', () => {
+describe('P10.03 — open-pr policy gate applies to codex-cli artifacts too', () => {
   it('fails closed when outcome=clean and no artifact path', async () => {
     const stateWithoutArtifact: DeliveryState = {
       ...baseStateVerified,

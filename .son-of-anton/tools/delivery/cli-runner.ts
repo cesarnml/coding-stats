@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, realpathSync } from 'node:fs';
+import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { realpath } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   getUsage,
   isStandaloneTriageCommand,
@@ -105,6 +106,10 @@ import {
   type TicketReviewDependencies,
 } from './review';
 import {
+  readAdvisoryObservationDispositionInput,
+  runAdvisoryObservationTriage,
+} from './advisory-observation-command';
+import {
   advanceToNextTicket,
   createWorkflowContractError,
   materializeTicketContext,
@@ -116,15 +121,27 @@ import {
   startTicket as startTicketImpl,
 } from './ticket-flow';
 import {
+  ReconciliationBlockedError,
+  reconcileReview,
+  recordAcknowledgment,
+  recordDeferred,
+} from './reconciliation';
+import {
   appendInvocationToArtifact,
   buildRunnerSpawnCommand,
   buildRunnerInvocation,
+  coerceClaudeCliClassification,
+  coerceCodexCliClassification,
   decideAdvisoryRunnerOutcome,
   decideSubagentReviewMode,
   findDeliveryDocPaths,
   parseSubagentReviewArgs,
   readSubagentRunnerArtifact,
+  resolvePrimaryAgent,
+  resolveSubagentSelection,
+  runSubagentWithFallback,
   shouldFallbackToOtherRunner,
+  SUBAGENT_LEDGER_SCHEMA_VERSION,
   tryReadSubagentRunnerArtifact,
   tryRunner,
   writeSubagentReviewOutcome,
@@ -135,7 +152,13 @@ import {
   requireSubagentAdversarialPromptForRunner,
   writeSubagentAdversarialPrompt,
 } from './subagent-prompt';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import {
+  appendSoaEvent,
+  buildSoaEventLine,
+  emitSubagentInvoked,
+  maybeEmitReviewCleanRecorded,
+} from './soa-event-feed';
 
 export const WORKTREE_EXEMPT = new Set(['status', 'sync', 'start']);
 
@@ -264,8 +287,10 @@ export async function runDeliveryOrchestrator(
         boundaryMode?: TicketBoundaryMode;
         subagentReviewPolicy?: ReviewPolicyStageValue;
         prReviewPolicy?: ReviewPolicyStageValue;
-        preferredRunner?: 'claude-cli' | 'codex-exec';
+        subagent?: 'claude-cli' | 'codex-cli';
+        primary?: string;
         baseline?: 'orchestrator' | 'run-policy';
+        dispositionsPath?: string;
       }
     | undefined;
 
@@ -417,6 +442,29 @@ export async function runDeliveryOrchestrator(
         console.log(formatStatus(state, context.config));
         return 0;
       }
+      case 'triage-advisory-observations': {
+        if (!parsed.dispositionsPath) {
+          throw new Error(
+            'triage-advisory-observations requires --dispositions <path>.',
+          );
+        }
+        const dispositions = await readAdvisoryObservationDispositionInput(
+          resolve(cwd, parsed.dispositionsPath),
+        );
+        const result = await runAdvisoryObservationTriage({
+          repoRoot: cwd,
+          state,
+          dispositions,
+        });
+        console.log(
+          [
+            `Advisory observation triage artifact: ${result.artifactPath}`,
+            `Observation groups: ${result.groups.length}`,
+            `Observations recorded: ${result.observationsWritten}`,
+          ].join('\n'),
+        );
+        return 0;
+      }
       case 'start': {
         // When explicit policy flags are provided, re-stamp runPolicy from the
         // current resolved config so the persisted state reflects the operator's
@@ -445,6 +493,12 @@ export async function runDeliveryOrchestrator(
         );
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
+        await emitSoaEventsForTransitions(
+          stateForStart,
+          nextState,
+          context.config,
+          cwd,
+        );
         await emitNotificationWarnings(
           notifier,
           cwd,
@@ -586,6 +640,69 @@ export async function runDeliveryOrchestrator(
         return 0;
       }
       case 'subagent-review': {
+        // P14.03: `subagent-review record-deferred --reason "<text>"` appends
+        // a `deferred` ledger row alongside the existing runner/recorder rows.
+        if (parsed.positionals[0] === 'record-deferred') {
+          const deferTarget =
+            (parsed.positionals[1]
+              ? state.tickets.find((t) => t.id === parsed.positionals[1])
+              : state.tickets.find(
+                  (t) => t.status === 'subagent_review_complete',
+                )) ?? undefined;
+          if (!deferTarget) {
+            throw new Error(
+              'record-deferred requires a ticket at subagent_review_complete (or pass an explicit ticket id).',
+            );
+          }
+          const artifactRel =
+            deferTarget.subagentRunnerArtifactPath ??
+            `${state.reviewsDirPath}/${deferTarget.id}-subagent-review.ledger.json`;
+          const artifactAbs = resolve(cwd, artifactRel);
+          // Use the latest invocation's reviewedHeadSha. A corrupt artifact
+          // must surface as an error — silently writing `reviewedHeadSha:
+          // "unknown"` would heal the corruption with a sentinel value that
+          // never matches a real SHA, leaving the reconciliation gate
+          // permanently unsatisfied.
+          let reviewedHead = 'unknown';
+          if (existsSync(artifactAbs)) {
+            try {
+              const a = JSON.parse(readFileSync(artifactAbs, 'utf-8')) as {
+                invocations?: Array<{ reviewedHeadSha?: string }>;
+              };
+              const last = a.invocations?.[a.invocations.length - 1];
+              if (last?.reviewedHeadSha) reviewedHead = last.reviewedHeadSha;
+            } catch (parseError) {
+              throw new Error(
+                `record-deferred: failed to parse subagent runner artifact at ${artifactAbs}: ${String(parseError)}. Fix or remove the corrupt artifact before recording a deferred row.`,
+                { cause: parseError },
+              );
+            }
+          }
+          const primaryAgentForDefer = resolvePrimaryAgent({
+            flag: parsed.primary,
+            configField: context.config.primaryAgent,
+          });
+          recordDeferred({
+            artifactPath: artifactAbs,
+            ticket: deferTarget.id,
+            reviewedHeadSha: reviewedHead,
+            reason: parsed.reason ?? '',
+            primaryAgent: primaryAgentForDefer,
+          });
+          commitDeliveryArtifactAndPush({
+            absolutePath: artifactAbs,
+            branch: deferTarget.branch,
+            commitMessage: `chore(${deferTarget.id}): record subagent-review deferred row`,
+            ensureBranchPushed: context.platform.ensureBranchPushed,
+            relativeToRepo,
+            repoRoot: cwd,
+            runProcess: context.platform.runProcess,
+          });
+          console.log(
+            `Recorded deferred row for ${deferTarget.id} (reason captured).`,
+          );
+          return 0;
+        }
         const subagentArgs = parseSubagentReviewArgs(
           parsed.positionals,
           parsed.flags,
@@ -628,7 +745,7 @@ export async function runDeliveryOrchestrator(
           return 0;
         }
 
-        const artifactRelPath = `${state.reviewsDirPath}/${subagentTarget.id}-subagent-runner.json`;
+        const artifactRelPath = `${state.reviewsDirPath}/${subagentTarget.id}-subagent-review.ledger.json`;
         const artifactAbsPath = resolve(cwd, artifactRelPath);
 
         // Resolve current HEAD for both recorder and idempotency dispatch.
@@ -684,6 +801,10 @@ export async function runDeliveryOrchestrator(
             artifactRelPath,
           );
 
+          const recorderPrimaryAgent = resolvePrimaryAgent({
+            flag: parsed.primary,
+            configField: context.config.primaryAgent,
+          });
           const recorderInvocation = buildRunnerInvocation(
             'operator-recorder',
             dispatch.reviewedHeadSha,
@@ -691,6 +812,10 @@ export async function runDeliveryOrchestrator(
             {
               terminatedReason: 'completed',
               patches: recorderPatchCommits?.map((c) => c.sha) ?? [],
+              schemaVersion: SUBAGENT_LEDGER_SCHEMA_VERSION,
+              primaryAgent: recorderPrimaryAgent,
+              runnerSelfReport: null,
+              fallbackFrom: null,
             },
           );
           appendInvocationToArtifact(
@@ -734,12 +859,15 @@ export async function runDeliveryOrchestrator(
           policy,
         });
 
-        // Build runner order: preferred first, other second.
-        const preferredRunner = parsed.preferredRunner;
-        const runnerOrder: Array<'claude-cli' | 'codex-exec'> =
-          preferredRunner === 'codex-exec'
-            ? ['codex-exec', 'claude-cli']
-            : ['claude-cli', 'codex-exec'];
+        // P14.02: operator-explicit subagent selection. Flag > config > error.
+        const subagentSelection = resolveSubagentSelection({
+          flag: parsed.subagent,
+          configField: context.config.subagentRunner,
+        });
+        const primaryAgent = resolvePrimaryAgent({
+          flag: parsed.primary,
+          configField: context.config.primaryAgent,
+        });
 
         const worktreePath = subagentTarget.worktreePath;
         const readHeadSha = () => {
@@ -790,106 +918,151 @@ export async function runDeliveryOrchestrator(
         const RUNNER_TIMEOUT_MS = 10 * 60 * 1000;
 
         let outcome: 'clean' | 'patched' | 'skipped' = 'skipped';
-        let usedRunner: 'claude-cli' | 'codex-exec' | 'skipped' = 'skipped';
         let terminatedReason: SubagentRunnerTerminatedReason =
           'runner_unavailable';
         let runnerOutputText: string | undefined;
-        let fallbackLevel: 'preferred' | 'fallback' | 'failed_all' =
-          'failed_all';
+        let runnerStdout: string | undefined;
+        let runnerStderr: string | undefined;
+        let runnerSelfReport: string | null = null;
 
-        for (const [runnerIndex, runner] of runnerOrder.entries()) {
-          const runnerHeadBefore = readHeadSha();
-          const result = tryRunner(
-            () => {
-              const { bin, args } = buildRunnerSpawnCommand(
-                runner,
-                reviewPrompt,
-              );
-              const spawned = spawnSync(bin, args, {
-                cwd: worktreePath,
-                timeout: RUNNER_TIMEOUT_MS,
-                encoding: 'utf-8',
+        const fallbackOutcome = runSubagentWithFallback(
+          subagentSelection.kind,
+          (runner) => {
+            const runnerHeadBefore = readHeadSha();
+            const preRunDirtyPaths = new Set(listDirtyPaths());
+            const result = tryRunner(
+              () => {
+                const outputLastMessageDir =
+                  runner === 'codex-cli'
+                    ? mkdtempSync(join(tmpdir(), 'soa-codex-runner-'))
+                    : undefined;
+                const outputLastMessagePath = outputLastMessageDir
+                  ? join(outputLastMessageDir, 'last-message.md')
+                  : undefined;
+                const { bin, args } = buildRunnerSpawnCommand(
+                  runner,
+                  reviewPrompt,
+                  { outputLastMessagePath },
+                );
+                try {
+                  void emitSubagentInvoked(
+                    context.config,
+                    worktreePath,
+                    state.planKey,
+                    subagentTarget.id,
+                    runner,
+                  );
+                  const spawned = spawnSync(bin, args, {
+                    cwd: worktreePath,
+                    timeout: RUNNER_TIMEOUT_MS,
+                    encoding: 'utf-8',
+                  });
+                  const spawnError = spawned.error as
+                    | (Error & { code?: string })
+                    | undefined;
+                  if (spawnError && spawnError.code === 'ENOENT') {
+                    throw spawnError;
+                  }
+                  const stdoutFromFile =
+                    outputLastMessagePath && existsSync(outputLastMessagePath)
+                      ? readFileSync(outputLastMessagePath, 'utf-8')
+                      : '';
+                  const stdout = stdoutFromFile || spawned.stdout || '';
+                  const stderr = [
+                    spawned.stderr ?? '',
+                    spawnError && spawnError.code !== 'ENOENT'
+                      ? spawnError.message
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join('\n');
+                  // P14.02: per-runner classification trusts the model's
+                  // self-reported runnerStatus trailer and only escalates to
+                  // skipped/rate_limit on authentic structured signals (not
+                  // stderr/stdout prose). Symmetric for codex-cli and claude-cli.
+                  const classified =
+                    runner === 'codex-cli'
+                      ? coerceCodexCliClassification({
+                          exitCode: spawned.status,
+                          stdout,
+                          stderr,
+                        })
+                      : coerceClaudeCliClassification({
+                          exitCode: spawned.status,
+                          stdout,
+                          stderr,
+                        });
+                  runnerSelfReport = classified.runnerSelfReport;
+                  return {
+                    exitCode: spawned.status,
+                    timedOut:
+                      spawned.signal === 'SIGTERM' ||
+                      spawnError?.message?.includes('timed out') ||
+                      false,
+                    stdout,
+                    stderr,
+                    terminatedReason: classified.terminatedReason,
+                  };
+                } finally {
+                  if (outputLastMessageDir) {
+                    rmSync(outputLastMessageDir, {
+                      recursive: true,
+                      force: true,
+                    });
+                  }
+                }
+              },
+              () => {
+                return (
+                  readHeadSha() !== runnerHeadBefore ||
+                  listDirtyPaths().some((p) => !preRunDirtyPaths.has(p))
+                );
+              },
+            );
+
+            if (result.status === 'ran') {
+              const runnerHeadAfter = readHeadSha();
+              const runnerWroteFiles =
+                runnerHeadBefore !== runnerHeadAfter ||
+                listDirtyPaths().some((p) => !preRunDirtyPaths.has(p));
+
+              const decided = decideAdvisoryRunnerOutcome(result, {
+                runnerWroteFiles,
               });
-              // spawnSync does NOT throw on ENOENT; it sets `spawned.error`
-              // with code 'ENOENT' and leaves status === null. Re-raise so
-              // tryRunner classifies it as `unavailable` and the loop falls
-              // back to the other runner. Timeouts ride a separate path below.
-              const spawnError = spawned.error as
-                | (Error & { code?: string })
-                | undefined;
-              if (spawnError && spawnError.code === 'ENOENT') {
-                throw spawnError;
+              outcome = decided.outcome;
+              terminatedReason = decided.terminatedReason;
+              runnerOutputText = result.rawOutput;
+              runnerStdout = result.stdout;
+              runnerStderr = result.stderr;
+
+              if (runnerWroteFiles) {
+                const wroteHeadPaths =
+                  runnerHeadBefore !== runnerHeadAfter
+                    ? listDiffPaths(`${runnerHeadBefore}..${runnerHeadAfter}`)
+                    : [];
+                const writePaths = [...wroteHeadPaths, ...listDirtyPaths()];
+                const deliveryDocChanges = findDeliveryDocPaths(writePaths);
+                const detail =
+                  deliveryDocChanges.length > 0
+                    ? ` Delivery-doc paths affected: ${deliveryDocChanges.join(', ')}`
+                    : ` Affected paths: ${writePaths.join(', ')}`;
+                console.log(
+                  `Runner ${runner} attempted file writes — recording as advisory_violation (advisory-only contract).${detail}`,
+                );
               }
-              return {
-                exitCode: spawned.status,
-                timedOut:
-                  spawned.signal === 'SIGTERM' ||
-                  spawnError?.message?.includes('timed out') ||
-                  false,
-                stdout: spawned.stdout ?? '',
-                stderr: spawned.stderr ?? '',
-              };
-            },
-            () => {
-              return (
-                readHeadSha() !== runnerHeadBefore ||
-                listDirtyPaths().length > 0
-              );
-            },
-          );
-
-          if (result.status === 'ran') {
-            const runnerHeadAfter = readHeadSha();
-            const runnerWroteFiles =
-              runnerHeadBefore !== runnerHeadAfter ||
-              listDirtyPaths().length > 0;
-
-            // Advisory-only contract (P13.03): any runner-driven file change is
-            // a contract violation, not a valid `patched` outcome. The decision
-            // helper collapses such cases to `skipped` with
-            // `terminatedReason: 'advisory_violation'` so the artifact records
-            // the violation honestly instead of silently treating runner writes
-            // as accepted patches. Delivery-doc writes are a strict subset of
-            // this general violation; we still surface them in the operator
-            // message to make the offending paths obvious.
-            const decided = decideAdvisoryRunnerOutcome(result, {
-              runnerWroteFiles,
-            });
-            outcome = decided.outcome;
-            terminatedReason = decided.terminatedReason;
-            runnerOutputText = result.rawOutput;
-            usedRunner = runner;
-            fallbackLevel = runnerIndex === 0 ? 'preferred' : 'fallback';
-
-            if (runnerWroteFiles) {
-              const wroteHeadPaths =
-                runnerHeadBefore !== runnerHeadAfter
-                  ? listDiffPaths(`${runnerHeadBefore}..${runnerHeadAfter}`)
-                  : [];
-              const writePaths = [...wroteHeadPaths, ...listDirtyPaths()];
-              const deliveryDocChanges = findDeliveryDocPaths(writePaths);
-              const detail =
-                deliveryDocChanges.length > 0
-                  ? ` Delivery-doc paths affected: ${deliveryDocChanges.join(', ')}`
-                  : ` Affected paths: ${writePaths.join(', ')}`;
+            } else if (shouldFallbackToOtherRunner(result)) {
               console.log(
-                `Runner ${runner} attempted file writes — recording as advisory_violation (advisory-only contract).${detail}`,
+                `Runner ${runner} unavailable${result.status === 'timeout' ? ' (timed out)' : ''}, trying fallback...`,
               );
             }
-            break;
-          }
+            return result;
+          },
+        );
 
-          if (!shouldFallbackToOtherRunner(result)) {
-            // Defensive: tryRunner only emits ran|unavailable|timeout today,
-            // so this branch is unreachable. Keep it as a guard rail so future
-            // result kinds do not silently fall through into the fallback loop.
-            break;
-          }
-
-          console.log(
-            `Runner ${runner} unavailable${result.status === 'timeout' ? ' (timed out)' : ''}, trying fallback...`,
-          );
-        }
+        const usedRunner: 'claude-cli' | 'codex-cli' | 'skipped' =
+          fallbackOutcome.ranKind;
+        const fallbackLevel = fallbackOutcome.fallbackLevel;
+        const fallbackFrom = fallbackOutcome.fallbackFrom;
 
         // Write runner artifact (append-only invocations[] per ticket).
         // Sidecar files hold prompt and outcome prose; JSON stores path refs only.
@@ -908,7 +1081,8 @@ export async function runDeliveryOrchestrator(
             repoRoot: cwd,
             reviewsDirPath: state.reviewsDirPath,
             ticketId: subagentTarget.id,
-            content: runnerOutputText,
+            stdout: runnerStdout ?? runnerOutputText,
+            stderr: runnerStderr ?? '',
           });
         }
 
@@ -917,6 +1091,10 @@ export async function runDeliveryOrchestrator(
           rawOutput: outcomeSidecar?.relativePath,
           filledPrompt: promptPath,
           fallbackLevel,
+          schemaVersion: SUBAGENT_LEDGER_SCHEMA_VERSION,
+          primaryAgent,
+          runnerSelfReport,
+          fallbackFrom,
         });
         appendInvocationToArtifact(
           artifactAbsPath,
@@ -948,15 +1126,37 @@ export async function runDeliveryOrchestrator(
         });
 
         if (outcome === 'skipped') {
-          console.log(
-            'All runners unavailable — subagent review honestly skipped.',
-          );
+          if (usedRunner === 'skipped') {
+            console.log(
+              'All runners unavailable — subagent review honestly skipped.',
+            );
+          } else {
+            console.log(
+              `Runner ${usedRunner} completed with terminatedReason=${terminatedReason} — subagent review honestly skipped.`,
+            );
+          }
         }
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
         return 0;
       }
+      case 'reconcile-subagent-review': {
+        await runReconcileSubagentReview(
+          state,
+          cwd,
+          context,
+          parsed.positionals[0],
+        );
+        return 0;
+      }
       case 'open-pr': {
+        // P14.03: --ack-reconciliation appends an operator-explicit row to
+        // the runner artifact, then proceeds to the standard open-pr gate.
+        if (parsed.ackReconciliation) {
+          await runAckReconciliation(state, cwd, context, parsed);
+        }
+        // Hard-block silent-lie conditions before publish.
+        runReconciliationGate(state, cwd, context, parsed.positionals[0]);
         const nextState = await openPullRequest(
           state,
           cwd,
@@ -976,6 +1176,12 @@ export async function runDeliveryOrchestrator(
           notifier,
           cwd,
           eventsForOpenPrCommand(nextState, parsed.positionals[0]),
+        );
+        await emitSoaEventForOpenPr(
+          nextState,
+          context.config,
+          cwd,
+          parsed.positionals[0],
         );
         return 0;
       }
@@ -1017,10 +1223,15 @@ export async function runDeliveryOrchestrator(
               pollTicketId,
             ),
           );
-          await emitNotificationWarnings(
-            notifier,
+          const docOnlyEvents = eventsForPollReviewCommand(
+            docOnlyState,
+            pollTicketId,
+          );
+          await emitNotificationWarnings(notifier, cwd, docOnlyEvents);
+          await maybeEmitReviewCleanRecorded(
+            docOnlyEvents,
+            context.config,
             cwd,
-            eventsForPollReviewCommand(docOnlyState, pollTicketId),
           );
           return 0;
         }
@@ -1030,11 +1241,9 @@ export async function runDeliveryOrchestrator(
         console.log(
           formatCurrentTicketStatus(nextState, context.config, pollTicketId),
         );
-        await emitNotificationWarnings(
-          notifier,
-          cwd,
-          eventsForPollReviewCommand(nextState, pollTicketId),
-        );
+        const pollEvents = eventsForPollReviewCommand(nextState, pollTicketId);
+        await emitNotificationWarnings(notifier, cwd, pollEvents);
+        await maybeEmitReviewCleanRecorded(pollEvents, context.config, cwd);
         return 0;
       }
       case TICKET_TRIAGE_COMMAND: {
@@ -1054,11 +1263,12 @@ export async function runDeliveryOrchestrator(
         );
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
-        await emitNotificationWarnings(
-          notifier,
-          cwd,
-          eventsForReconcileLateReviewCommand(nextState, ticketId),
+        const triageEvents = eventsForReconcileLateReviewCommand(
+          nextState,
+          ticketId,
         );
+        await emitNotificationWarnings(notifier, cwd, triageEvents);
+        await maybeEmitReviewCleanRecorded(triageEvents, context.config, cwd);
         return 0;
       }
       case 'record-review': {
@@ -1085,11 +1295,9 @@ export async function runDeliveryOrchestrator(
         );
         await saveState(cwd, nextState);
         console.log(formatStatus(nextState, context.config));
-        await emitNotificationWarnings(
-          notifier,
-          cwd,
-          eventsForRecordReviewCommand(nextState, ticketId),
-        );
+        const recordEvents = eventsForRecordReviewCommand(nextState, ticketId);
+        await emitNotificationWarnings(notifier, cwd, recordEvents);
+        await maybeEmitReviewCleanRecorded(recordEvents, context.config, cwd);
         return 0;
       }
       case 'advance': {
@@ -1109,6 +1317,12 @@ export async function runDeliveryOrchestrator(
           findPrimaryWorktreePath(wt, context.config),
         );
         console.log(formatStatus(nextState, context.config));
+        await emitSoaEventsForTransitions(
+          state,
+          nextState,
+          context.config,
+          cwd,
+        );
         const boundaryGuidance = formatAdvanceBoundaryGuidance(
           state,
           advancedState,
@@ -2052,10 +2266,340 @@ export function derivePlanKey(planPath: string): string {
   return derivePlanKeyImpl(planPath);
 }
 
+export async function emitSoaEventForOpenPr(
+  state: DeliveryState,
+  config: ResolvedOrchestratorConfig,
+  projectRoot: string,
+  ticketId?: string,
+): Promise<void> {
+  const events = eventsForOpenPrCommand(state, ticketId);
+  const windowEvent = events.find((e) => e.kind === 'review_window_ready');
+  if (windowEvent) {
+    await appendSoaEvent(
+      config,
+      projectRoot,
+      buildSoaEventLine('pr_review_window_opened', {
+        plan_key: windowEvent.planKey,
+        ticket_id: windowEvent.ticketId,
+      }),
+    );
+  }
+}
+
+export async function emitSoaEventsForTransitions(
+  previousState: DeliveryState,
+  nextState: DeliveryState,
+  config: ResolvedOrchestratorConfig,
+  projectRoot: string,
+): Promise<void> {
+  for (const previousTicket of previousState.tickets) {
+    const nextTicket = nextState.tickets.find(
+      (t) => t.id === previousTicket.id,
+    );
+    if (previousTicket.status !== 'done' && nextTicket?.status === 'done') {
+      await appendSoaEvent(
+        config,
+        projectRoot,
+        buildSoaEventLine('ticket_completed', {
+          plan_key: nextState.planKey,
+          ticket_id: nextTicket.id,
+        }),
+      );
+    }
+    if (
+      previousTicket.status !== 'in_progress' &&
+      nextTicket?.status === 'in_progress'
+    ) {
+      await appendSoaEvent(
+        config,
+        projectRoot,
+        buildSoaEventLine('ticket_started', {
+          plan_key: nextState.planKey,
+          ticket_id: nextTicket.id,
+        }),
+      );
+    }
+  }
+}
+
 function formatError(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
 
   return String(error);
+}
+
+// ─── P14.03 reconciliation helpers ────────────────────────────────────────
+
+function gitListChangedPaths(
+  worktreePath: string,
+  from: string,
+  to: string,
+): string[] {
+  const r = spawnSync('git', ['diff', '--name-only', `${from}..${to}`], {
+    cwd: worktreePath,
+    encoding: 'utf-8',
+  });
+  return (r.stdout ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function gitListCommitsInRange(
+  worktreePath: string,
+  from: string,
+  to: string,
+): { sha: string; subject: string }[] {
+  const r = spawnSync('git', ['log', '--pretty=%H%x09%s', `${from}..${to}`], {
+    cwd: worktreePath,
+    encoding: 'utf-8',
+  });
+  return (r.stdout ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [sha, ...rest] = line.split('\t');
+      return { sha: sha ?? '', subject: rest.join('\t') };
+    });
+}
+
+function gitListCommitFiles(worktreePath: string, sha: string): string[] {
+  const r = spawnSync('git', ['show', '--pretty=format:', '--name-only', sha], {
+    cwd: worktreePath,
+    encoding: 'utf-8',
+  });
+  return (r.stdout ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function loadReconciliationContext(
+  state: DeliveryState,
+  cwd: string,
+  ticketId?: string,
+): {
+  ticket: TicketState;
+  artifactAbs: string;
+  artifactRows: Array<{ outcome: string; reviewedHeadSha?: string }>;
+  reviewedHeadSha: string;
+  headSha: string;
+  reviewedPaths: string[];
+  reportMarkdown: string;
+} {
+  const ticket =
+    (ticketId
+      ? state.tickets.find((t) => t.id === ticketId)
+      : (state.tickets.find((t) => t.status === 'subagent_review_complete') ??
+        state.tickets.find((t) => t.status === 'verified') ??
+        state.tickets.find((t) => t.status === 'in_review'))) ?? undefined;
+  if (!ticket) {
+    throw new Error(
+      ticketId
+        ? `Unknown ticket ${ticketId}.`
+        : 'No ticket at subagent_review_complete / verified / in_review found.',
+    );
+  }
+  const artifactRel =
+    ticket.subagentRunnerArtifactPath ??
+    `${state.reviewsDirPath}/${ticket.id}-subagent-review.ledger.json`;
+  const artifactAbs = resolve(cwd, artifactRel);
+  let rows: Array<{ outcome: string; reviewedHeadSha?: string }> = [];
+  let reviewedHeadSha = '';
+  if (existsSync(artifactAbs)) {
+    try {
+      const parsed = JSON.parse(readFileSync(artifactAbs, 'utf-8')) as {
+        invocations?: Array<{ outcome: string; reviewedHeadSha?: string }>;
+      };
+      rows = parsed.invocations ?? [];
+      const last = rows[rows.length - 1];
+      if (last?.reviewedHeadSha) reviewedHeadSha = last.reviewedHeadSha;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!reviewedHeadSha) {
+    throw new Error(
+      `No reviewedHeadSha recorded for ${ticket.id}. Run subagent-review first.`,
+    );
+  }
+  const headSha = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: ticket.worktreePath,
+    encoding: 'utf-8',
+  }).stdout.trim();
+
+  // Reviewed paths = files modified between baseBranch and reviewedHeadSha.
+  const reviewedPaths = gitListChangedPaths(
+    ticket.worktreePath,
+    ticket.baseBranch,
+    reviewedHeadSha,
+  );
+
+  const outcomePath = `${state.reviewsDirPath}/${ticket.id}-subagent-review.report.md`;
+  const outcomeAbs = resolve(cwd, outcomePath);
+  const reportMarkdown = existsSync(outcomeAbs)
+    ? readFileSync(outcomeAbs, 'utf-8')
+    : '';
+
+  return {
+    ticket,
+    artifactAbs,
+    artifactRows: rows,
+    reviewedHeadSha,
+    headSha,
+    reviewedPaths,
+    reportMarkdown,
+  };
+}
+
+function runReconciliationGate(
+  state: DeliveryState,
+  cwd: string,
+  context: DeliveryOrchestratorContext,
+  ticketId?: string,
+): void {
+  if (context.config.reviewPolicy.subagentReview === 'disabled') return;
+  let ctx: ReturnType<typeof loadReconciliationContext>;
+  try {
+    ctx = loadReconciliationContext(state, cwd, ticketId);
+  } catch {
+    // No artifact / no reviewedHeadSha: existing open-pr gate handles
+    // missing-artifact cases. Reconciliation only applies when a row exists.
+    return;
+  }
+  // If the only recorded outcome is `skipped`, the runner gate didn't review
+  // anything — reconciliation is N/A.
+  const hasNonSkipped = ctx.artifactRows.some((r) => r.outcome !== 'skipped');
+  if (!hasNonSkipped) return;
+
+  const decision = reconcileReview({
+    artifactRows: ctx.artifactRows,
+    reportMarkdown: ctx.reportMarkdown,
+    reviewedHeadSha: ctx.reviewedHeadSha,
+    headSha: ctx.headSha,
+    reviewedPaths: ctx.reviewedPaths,
+    listCommitSubjects: (from, to) =>
+      gitListCommitsInRange(ctx.ticket.worktreePath, from, to),
+    listCommitFiles: (sha) => gitListCommitFiles(ctx.ticket.worktreePath, sha),
+    listChangedPathsInRange: (from, to) =>
+      gitListChangedPaths(ctx.ticket.worktreePath, from, to),
+  });
+
+  if (decision.kind === 'blocked') {
+    throw new ReconciliationBlockedError(decision.condition, decision.message);
+  }
+
+  if (decision.kind === 'patched') {
+    // Append a patched row referencing detected commit SHAs.
+    const parsed = JSON.parse(readFileSync(ctx.artifactAbs, 'utf-8')) as {
+      ticket: string;
+      invocations: Array<Record<string, unknown>>;
+    };
+    // Dedup: if an existing patched row for this reviewedHeadSha already
+    // records the same commit SHAs, skip the append. Prevents unbounded row
+    // accumulation when commitDeliveryArtifactAndPush fails between writes
+    // and re-runs of the gate.
+    const alreadyRecorded = parsed.invocations.some((row) => {
+      if (row['outcome'] !== 'patched') return false;
+      if (row['reviewedHeadSha'] !== ctx.reviewedHeadSha) return false;
+      const existing = row['patches'];
+      if (!Array.isArray(existing)) return false;
+      return decision.commitShas.every((sha) =>
+        (existing as unknown[]).includes(sha),
+      );
+    });
+    if (alreadyRecorded) {
+      console.log(
+        `reconcile-subagent-review: patched row for ${decision.commitShas.join(', ')} already recorded; skipping duplicate.`,
+      );
+      return;
+    }
+    parsed.invocations.push({
+      runnerKind: 'operator-recorder',
+      reviewedHeadSha: ctx.reviewedHeadSha,
+      outcome: 'patched',
+      completedAt: new Date().toISOString(),
+      terminatedReason: 'completed',
+      findings: [],
+      probedSurfaces: [],
+      patches: decision.commitShas,
+      schemaVersion: SUBAGENT_LEDGER_SCHEMA_VERSION,
+      primaryAgent: 'unknown',
+      runnerSelfReport: null,
+      fallbackFrom: null,
+    });
+    writeFileSync(
+      ctx.artifactAbs,
+      JSON.stringify(parsed, null, 2) + '\n',
+      'utf-8',
+    );
+    commitDeliveryArtifactAndPush({
+      absolutePath: ctx.artifactAbs,
+      branch: ctx.ticket.branch,
+      commitMessage: `chore(${ctx.ticket.id}): reconciliation appended patched row`,
+      ensureBranchPushed: context.platform.ensureBranchPushed,
+      relativeToRepo,
+      repoRoot: cwd,
+      runProcess: context.platform.runProcess,
+    });
+    console.log(
+      `reconcile-subagent-review: appended patched row referencing ${decision.commitShas.join(', ')}`,
+    );
+  }
+}
+
+async function runReconcileSubagentReview(
+  state: DeliveryState,
+  cwd: string,
+  context: DeliveryOrchestratorContext,
+  ticketId?: string,
+): Promise<void> {
+  runReconciliationGate(state, cwd, context, ticketId);
+  console.log(
+    'reconcile-subagent-review: ledger is consistent with git state.',
+  );
+}
+
+async function runAckReconciliation(
+  state: DeliveryState,
+  cwd: string,
+  context: DeliveryOrchestratorContext,
+  parsed: {
+    ackReconciliation?: 'patched' | 'deferred' | 'clean';
+    commitSha?: string;
+    reason?: string;
+    primary?: string;
+    positionals: string[];
+  },
+): Promise<void> {
+  if (!parsed.ackReconciliation) return;
+  const ctx = loadReconciliationContext(state, cwd, parsed.positionals[0]);
+  const primaryAgent = resolvePrimaryAgent({
+    flag: parsed.primary,
+    configField: context.config.primaryAgent,
+  });
+  recordAcknowledgment({
+    artifactPath: ctx.artifactAbs,
+    ticket: ctx.ticket.id,
+    reviewedHeadSha: ctx.reviewedHeadSha,
+    variant: parsed.ackReconciliation,
+    commitSha: parsed.commitSha,
+    reason: parsed.reason,
+    primaryAgent,
+  });
+  commitDeliveryArtifactAndPush({
+    absolutePath: ctx.artifactAbs,
+    branch: ctx.ticket.branch,
+    commitMessage: `chore(${ctx.ticket.id}): record subagent-review ack-reconciliation (${parsed.ackReconciliation})`,
+    ensureBranchPushed: context.platform.ensureBranchPushed,
+    relativeToRepo,
+    repoRoot: cwd,
+    runProcess: context.platform.runProcess,
+  });
+  console.log(
+    `Recorded ${parsed.ackReconciliation} acknowledgment row for ${ctx.ticket.id}.`,
+  );
 }

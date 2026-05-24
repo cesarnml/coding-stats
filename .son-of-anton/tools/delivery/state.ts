@@ -452,6 +452,12 @@ function syncStateWithPlan(
         subagentRunnerArtifactPath:
           previous?.subagentRunnerArtifactPath ??
           inferredTicket?.subagentRunnerArtifactPath,
+        subagentAdversarialPromptPath:
+          previous?.subagentAdversarialPromptPath ??
+          inferredTicket?.subagentAdversarialPromptPath,
+        subagentAdversarialPromptWrittenAt:
+          previous?.subagentAdversarialPromptWrittenAt ??
+          inferredTicket?.subagentAdversarialPromptWrittenAt,
         prNumber: previous?.prNumber ?? inferredTicket?.prNumber,
         prUrl: previous?.prUrl ?? inferredTicket?.prUrl,
         prOpenedAt: previous?.prOpenedAt ?? inferredTicket?.prOpenedAt,

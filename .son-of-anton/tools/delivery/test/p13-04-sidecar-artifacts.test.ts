@@ -7,7 +7,6 @@ import {
   SUBAGENT_REVIEW_OUTCOME_SUFFIX,
   buildRunnerInvocation,
   deriveSubagentReviewOutcomePath,
-  formatRawRunnerOutput,
   isSubagentAdversarialPromptReference,
   isSubagentReviewOutcomePath,
   validateRunnerArtifact,
@@ -15,7 +14,7 @@ import {
 } from '../subagent-runner';
 
 describe('P13.04 — subagent review sidecar artifacts', () => {
-  it('writeSubagentReviewOutcome persists formatRawRunnerOutput-shaped prose', () => {
+  it('writeSubagentReviewOutcome persists runner stdout as report prose', () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'p13-04-outcome-'));
     const reviewsDirPath = 'docs/product/delivery/phase-13/reviews';
     const ticketId = 'P13.04';
@@ -36,16 +35,14 @@ describe('P13.04 — subagent review sidecar artifacts', () => {
     );
 
     const onDisk = readFileSync(written.absolutePath, 'utf-8');
-    expect(onDisk).toBe(
-      `${formatRawRunnerOutput('Invariant results\nAll held.', '')}\n`,
-    );
+    expect(onDisk).toBe('Invariant results\nAll held.\n');
   });
 
   it('runner artifact stores path references, not embedded prose', () => {
     const promptPath =
-      'docs/product/delivery/phase-13/reviews/P13.04-subagent-adversarial-prompt.md';
+      'docs/product/delivery/phase-13/reviews/P13.04-subagent-review.prompt.md';
     const outcomePath =
-      'docs/product/delivery/phase-13/reviews/P13.04-subagent-review-outcome.md';
+      'docs/product/delivery/phase-13/reviews/P13.04-subagent-review.report.md';
 
     expect(isSubagentAdversarialPromptReference(promptPath)).toBe(true);
     expect(isSubagentReviewOutcomePath(outcomePath)).toBe(true);
@@ -70,7 +67,7 @@ describe('P13.04 — subagent review sidecar artifacts', () => {
     const artifact = {
       ticket: 'P13.legacy',
       invocations: [
-        buildRunnerInvocation('codex-exec', 'abc1234', 'clean', {
+        buildRunnerInvocation('codex-cli', 'abc1234', 'clean', {
           terminatedReason: 'completed',
           filledPrompt: 'inline prompt body with enough text',
           rawOutput: 'inline runner prose',

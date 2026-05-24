@@ -103,6 +103,12 @@ export type {
 } from './platform-adapters';
 export { parseDotEnv } from './env';
 export {
+  appendSoaEvent,
+  buildSoaEventLine,
+  maybeEmitReviewCleanRecorded,
+} from './soa-event-feed';
+export type { SoaEventLine } from './soa-event-feed';
+export {
   appendInvocationToArtifact,
   buildRunnerArtifact,
   buildRunnerInvocation,
@@ -118,6 +124,34 @@ export type {
   SubagentRunnerOutcome,
   SubagentRunnerTerminatedReason,
 } from './subagent-runner';
+export {
+  ADVISORY_OBSERVATION_DISPOSITIONS,
+  mergeAdvisoryObservationTriageEntries,
+  readAdvisoryObservationTriageArtifact,
+  sortAdvisoryObservationTriageArtifact,
+  validateAdvisoryObservationTriageArtifact,
+  writeAdvisoryObservationTriageArtifact,
+} from './advisory-observation-triage';
+export type {
+  AdvisoryObservationDisposition,
+  AdvisoryObservationTriageArtifact,
+  AdvisoryObservationTriageEntry,
+} from './advisory-observation-triage';
+export {
+  deriveAdvisoryObservationTriageArtifactPath,
+  readAdvisoryObservationDispositionInput,
+  runAdvisoryObservationTriage,
+} from './advisory-observation-command';
+export type {
+  AdvisoryObservationDispositionInput,
+  AdvisoryObservationGroup,
+  AdvisoryObservationTriageResult,
+} from './advisory-observation-command';
+export {
+  computeAdvisoryObservationWarnings,
+  formatAdvisoryObservationWarnings,
+} from './advisory-observation-warnings';
+export type { AdvisoryObservationWarning } from './advisory-observation-warnings';
 export {
   applyAdvanceBoundaryMode,
   copyLocalBootstrapFilesIfPresent,

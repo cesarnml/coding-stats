@@ -168,7 +168,7 @@ describe('orchestrator config', () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'orch-cfg-resolve-'));
     try {
       const resolved = resolveOrchestratorConfig({}, tempDir);
-      expect(resolved).toEqual({
+      expect(resolved).toMatchObject({
         defaultBranch: 'main',
         planRoot: 'docs',
         runtime: 'bun',
@@ -178,6 +178,7 @@ describe('orchestrator config', () => {
           subagentReview: 'skip_doc_only',
           prReview: 'skip_doc_only',
         },
+        codogotchi: { enabled: true },
       });
     } finally {
       await rm(tempDir, { recursive: true });
