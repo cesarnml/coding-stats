@@ -1,5 +1,9 @@
 import type { SummariesResult } from '$src/types/wakatime'
-import type { ComposeOption, PieSeriesOption, TooltipComponentOption } from 'echarts/types/dist/echarts'
+import type {
+  ComposeOption,
+  PieSeriesOption,
+  TooltipComponentOption,
+} from 'echarts/types/dist/echarts'
 
 export type AiLinesSlice = {
   name: string

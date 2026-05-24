@@ -62,7 +62,7 @@
   {#if hasData}
     <DailyGaugeControls {summaries} {selectedDate} on:update={onUpdate} />
     <ChartContainer>
-      <div class="h-full w-full" bind:this={chartRef} />
+      <div class="h-full w-full" bind:this={chartRef}></div>
     </ChartContainer>
   {:else}
     <EmptyState message="No data for this range" cta="Try a wider date range" />

@@ -1,4 +1,4 @@
-<div class="loader" aria-label="loading-spinner" />
+<div class="loader" aria-label="loading-spinner"></div>
 
 <style lang="postcss">
   :root {

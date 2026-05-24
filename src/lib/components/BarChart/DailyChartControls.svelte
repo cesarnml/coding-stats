@@ -79,7 +79,7 @@
     disabled={isPrevDisabled}
     aria-label="left arrow"
   >
-    <iconify-icon class="text-2xl" icon="ic:baseline-chevron-left" />
+    <iconify-icon class="text-2xl" icon="ic:baseline-chevron-left"></iconify-icon>
   </button>
   <div class="w-24 text-center font-mono text-base text-base-content">
     {#if loading}
@@ -88,7 +88,7 @@
         icon="eos-icons:three-dots-loading"
         aria-label="loading spinner"
         role="img"
-      />
+      ></iconify-icon>
     {:else}
       {totalTime}
     {/if}
@@ -100,6 +100,6 @@
     disabled={isNextDisabled}
     aria-label="right arrow"
   >
-    <iconify-icon class="text-2xl" icon="ic:baseline-chevron-right" />
+    <iconify-icon class="text-2xl" icon="ic:baseline-chevron-right"></iconify-icon>
   </button>
 </div>

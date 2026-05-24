@@ -19,12 +19,15 @@ export const createBreakdownChartData = (summaries: SummariesResult) => {
 }
 
 export const filterBreakdownChartData = (data: Record<string, number>) => {
-  return Object.entries(data).reduce((acc, [name, value]) => {
-    if (value > (max(Object.values(data)) ?? 1) * MINIMUM_PERCENTAGE_OF_MAX_TIME) {
-      return { ...acc, [name]: value / secPerHour }
-    }
-    return acc
-  }, {} as Record<string, number>)
+  return Object.entries(data).reduce(
+    (acc, [name, value]) => {
+      if (value > (max(Object.values(data)) ?? 1) * MINIMUM_PERCENTAGE_OF_MAX_TIME) {
+        return { ...acc, [name]: value / secPerHour }
+      }
+      return acc
+    },
+    {} as Record<string, number>,
+  )
 }
 
 export const createBreakdownChartOption = (

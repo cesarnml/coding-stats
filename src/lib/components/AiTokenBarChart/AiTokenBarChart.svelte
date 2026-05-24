@@ -42,7 +42,7 @@
   <ChartTitle>{title}</ChartTitle>
   {#if hasData}
     <ChartContainer>
-      <div class="h-full w-full" bind:this={chartRef} data-testid="ai-token-chart" />
+      <div class="h-full w-full" bind:this={chartRef} data-testid="ai-token-chart"></div>
     </ChartContainer>
   {:else}
     <EmptyState message="No AI token data for this range" cta="AI data accumulates daily" />

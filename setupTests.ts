@@ -2,7 +2,6 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
-
 // jsdom does not implement the Web Animations API; stub it so Svelte 5
 // transitions don't crash in tests.
 Element.prototype.animate = vi.fn(() => ({
@@ -10,6 +9,37 @@ Element.prototype.animate = vi.fn(() => ({
   cancel: vi.fn(),
   finish: vi.fn(),
 }))
+
+// jsdom does not lay out elements, so clientWidth/clientHeight stay 0 and ECharts
+// logs "[ECharts] Can't get DOM width or height" when chart components mount.
+const CHART_DOM_WIDTH = 400
+const CHART_DOM_HEIGHT = 300
+
+for (const dimension of ['clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight'] as const) {
+  const value = dimension.includes('Width') ? CHART_DOM_WIDTH : CHART_DOM_HEIGHT
+  Object.defineProperty(HTMLElement.prototype, dimension, {
+    configurable: true,
+    get() {
+      return value
+    },
+  })
+}
+
+HTMLElement.prototype.getBoundingClientRect = vi.fn(function getBoundingClientRect(
+  this: HTMLElement,
+) {
+  return {
+    width: CHART_DOM_WIDTH,
+    height: CHART_DOM_HEIGHT,
+    top: 0,
+    left: 0,
+    bottom: CHART_DOM_HEIGHT,
+    right: CHART_DOM_WIDTH,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  }
+})
 
 // jsdom's HTMLCanvasElement.getContext returns null; stub a minimal 2d context
 // so ECharts (zrender) can initialise without throwing during tests.

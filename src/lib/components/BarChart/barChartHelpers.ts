@@ -249,12 +249,12 @@ export const createActiveHoursData = (durations: SupabaseDuration) =>
           dayjs().isSame(durations.date, 'day') && dayjs().hour() === index
             ? { color: ChartColor.Time }
             : value > 45
-            ? { color: ChartColor.Great }
-            : value > 30
-            ? { color: ChartColor.Good }
-            : value > 15
-            ? { color: ChartColor.Fair }
-            : { color: ChartColor.Poor },
+              ? { color: ChartColor.Great }
+              : value > 30
+                ? { color: ChartColor.Good }
+                : value > 15
+                  ? { color: ChartColor.Fair }
+                  : { color: ChartColor.Poor },
       }
     })
 

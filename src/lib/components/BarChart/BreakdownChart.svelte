@@ -30,9 +30,12 @@
   $: option = createBreakdownChartOption(
     isFiltered
       ? filteredData
-      : Object.entries(data).reduce((acc, [key, value]) => {
-          return { ...acc, [key]: value / secPerHour }
-        }, {} as Record<string, number>),
+      : Object.entries(data).reduce(
+          (acc, [key, value]) => {
+            return { ...acc, [key]: value / secPerHour }
+          },
+          {} as Record<string, number>,
+        ),
   )
 
   onMount(() => {
@@ -66,7 +69,9 @@
     })
     if (!chart) {
       chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
-      chart.on('click', (params) => { goto(Url.ProjectDetail(params.name)) })
+      chart.on('click', (params) => {
+        goto(Url.ProjectDetail(params.name))
+      })
     }
     chart.setOption(option)
   })
@@ -75,7 +80,7 @@
 <Container>
   <ChartTitle>
     <div class="relative flex items-center justify-center">
-      <span />
+      <span></span>
       <h2>
         {title}
       </h2>
@@ -88,7 +93,7 @@
               data-tippy-content="Show all projects"
               role="img"
               aria-label="filter on"
-            />
+            ></iconify-icon>
           {:else}
             <iconify-icon
               class="h-full text-base text-zinc-500"
@@ -96,7 +101,7 @@
               data-tippy-content="Hide small values"
               role="img"
               aria-label="filter off"
-            />
+            ></iconify-icon>
           {/if}
         </button>
         <iconify-icon
@@ -104,13 +109,13 @@
           data-tippy-content="Click a bar to view project details"
           role="img"
           aria-label="info"
-        />
+        ></iconify-icon>
       </div>
     </div>
   </ChartTitle>
   {#if hasData}
     <ChartContainer>
-      <div class="h-full w-full" bind:this={chartRef} />
+      <div class="h-full w-full" bind:this={chartRef}></div>
     </ChartContainer>
   {:else}
     <EmptyState message="No data for this range" cta="Try a wider date range" />

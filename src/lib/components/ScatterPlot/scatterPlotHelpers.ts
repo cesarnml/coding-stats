@@ -11,15 +11,18 @@ export const createBranchToTimeDict = (
   available_branches: string[],
 ) => {
   if (!summaries.data) return {}
-  return summaries.data.reduce((result, summary) => {
-    summary.branches.forEach((branch) => {
-      if (!getStoryBranches(available_branches).includes(branch.name)) {
-        return
-      }
-      result[branch.name] = (result[branch.name] ?? 0) + branch.total_seconds
-    })
-    return result
-  }, {} as Record<string, number>)
+  return summaries.data.reduce(
+    (result, summary) => {
+      summary.branches.forEach((branch) => {
+        if (!getStoryBranches(available_branches).includes(branch.name)) {
+          return
+        }
+        result[branch.name] = (result[branch.name] ?? 0) + branch.total_seconds
+      })
+      return result
+    },
+    {} as Record<string, number>,
+  )
 }
 
 export const createBranchToEstimateDict = (stories: StorySearchResults) =>
@@ -37,14 +40,17 @@ export const createBranchesByEstimateDict = (
   branchToEstimateDict: Record<string, number>,
   branchToTimeDict: Record<string, number>,
 ) =>
-  Object.entries(branchToEstimateDict).reduce((acc, [branchName, estimate]) => {
-    const defaultBranches: string[] = []
-    if (branchToTimeDict[branchName]) {
-      acc[estimate] = acc[estimate] ?? defaultBranches
-      acc[estimate].push(branchName)
-    }
-    return acc
-  }, {} as Record<string, string[]>)
+  Object.entries(branchToEstimateDict).reduce(
+    (acc, [branchName, estimate]) => {
+      const defaultBranches: string[] = []
+      if (branchToTimeDict[branchName]) {
+        acc[estimate] = acc[estimate] ?? defaultBranches
+        acc[estimate].push(branchName)
+      }
+      return acc
+    },
+    {} as Record<string, string[]>,
+  )
 
 export const createScatterPlotOption = (
   storyBranches: string[],

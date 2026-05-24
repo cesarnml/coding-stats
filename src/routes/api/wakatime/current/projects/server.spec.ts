@@ -33,7 +33,9 @@ describe('GET /api/wakatime/current/projects', () => {
   it('forwards q to WakaTime', async () => {
     await GET(requestEvent('foo bar'))
     expect(wakaUrl().pathname).toBe(`${RestResource.Projects}`)
-    expect(wakaUrl().origin + wakaUrl().pathname).toBe(`${BaseUrl.WakaTime}${RestResource.Projects}`)
+    expect(wakaUrl().origin + wakaUrl().pathname).toBe(
+      `${BaseUrl.WakaTime}${RestResource.Projects}`,
+    )
     expect(wakaUrl().searchParams.get('q')).toBe('foo bar')
     expect(wakaUrl().searchParams.get('api_key')).toBeTruthy()
   })

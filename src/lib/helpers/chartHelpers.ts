@@ -82,10 +82,13 @@ type Item = { name: string; total_seconds: number }
 
 export const createItemNameToTimeDict = (items: Item[]) => {
   if (!items) return {}
-  return items.reduce((acc, { name, total_seconds }) => {
-    acc[name] = (acc[name] ?? 0) + total_seconds
-    return acc
-  }, {} as Record<string, number>)
+  return items.reduce(
+    (acc, { name, total_seconds }) => {
+      acc[name] = (acc[name] ?? 0) + total_seconds
+      return acc
+    },
+    {} as Record<string, number>,
+  )
 }
 
 export const convertDataDictToChartData = (dataDict: Record<string, number>) =>

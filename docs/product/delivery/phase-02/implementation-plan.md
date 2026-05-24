@@ -9,6 +9,7 @@ Dependency modernization — `notes/public/revival-roadmap.md` (pre-Tier 2 maint
 ## Product contract
 
 When this phase is complete:
+
 - `tailwindcss` v4, `@tailwindcss/postcss`, and `daisyui` v5 are in `package.json`
 - `tailwind.config.ts`, `autoprefixer`, `@tailwindcss/forms`, and `@tailwindcss/typography` are gone
 - `app.css` (renamed from `app.postcss`) contains all Tailwind config via `@import`, `@plugin`, and `@theme`

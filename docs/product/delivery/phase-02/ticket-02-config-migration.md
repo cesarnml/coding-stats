@@ -20,6 +20,7 @@ Size: 2 points
 ## Green
 
 **1. Update `postcss.config.js`:**
+
 ```js
 export default {
   plugins: {
@@ -31,15 +32,18 @@ export default {
 **2. Delete `tailwind.config.ts`.**
 
 **3. Rename `src/app.postcss` → `src/app.css` and rewrite:**
+
 ```css
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "daisyui" {
-  themes: synthwave, night --prefersdark;
+  themes:
+    synthwave,
+    night --prefersdark;
 }
 
 @theme {
-  --color-chart-dark: #0F0C28;
+  --color-chart-dark: #0f0c28;
   --aspect-panoramic: 3/1;
 }
 
@@ -65,8 +69,9 @@ export default {
 ```
 
 **4. Update `src/routes/+layout.svelte`:**
+
 ```ts
-import '../app.css'  // was: import '../app.postcss'
+import '../app.css' // was: import '../app.postcss'
 ```
 
 **5. Update `src/routes/+error.svelte`:**

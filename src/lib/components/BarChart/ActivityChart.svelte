@@ -41,6 +41,6 @@
   </ChartTitle>
   <DailyChartControls {durations} {itemType} on:update={onUpdate} />
   <BigChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} />
+    <div class="h-full w-full" bind:this={chartRef}></div>
   </BigChartContainer>
 </Container>

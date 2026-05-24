@@ -18,6 +18,7 @@ Size: 2 points
 Write failing tests before any implementation:
 
 **`AiActivityChartHelpers.spec.ts`:**
+
 ```ts
 import { buildAiActivityOption } from './AiActivityChartHelpers'
 
@@ -27,7 +28,7 @@ it('maps daily summaries to stacked AI and human series', () => {
     { date: '2026-05-02', ai_additions: 200, human_additions: 80 },
   ])
   expect(result.series[0].data).toEqual([100, 200]) // AI series
-  expect(result.series[1].data).toEqual([40, 80])   // Human series
+  expect(result.series[1].data).toEqual([40, 80]) // Human series
   expect(result.xAxis.data).toEqual(['2026-05-01', '2026-05-02'])
 })
 
@@ -45,6 +46,7 @@ it('handles zero-value days without crashing', () => {
 ```
 
 **`AiActivityChart.spec.ts`:**
+
 ```ts
 it('shows empty state message when data is empty', () => {
   render(AiActivityChart, { props: { data: [] } })
@@ -62,6 +64,7 @@ Commit the failing tests. Then make them pass.
 ## Green
 
 **`AiActivityChartHelpers.ts`:**
+
 - Accept `{ date: string; ai_additions: number; human_additions: number }[]`
 - Return an ECharts option with:
   - `xAxis.data` = dates
@@ -71,6 +74,7 @@ Commit the failing tests. Then make them pass.
 - Follow the same dark theme + SVG renderer pattern as existing chart helpers
 
 **`AiActivityChart.svelte`:**
+
 - Props: `data: { date: string; ai_additions: number; human_additions: number }[]`
 - `echarts.init(ref, 'dark', { renderer: 'svg' })` in `onMount`
 - `chart.setOption(option)` in `afterUpdate`
@@ -78,11 +82,13 @@ Commit the failing tests. Then make them pass.
 - If `data.length === 0`, render empty state copy instead of initializing ECharts (avoids blank SVG)
 
 **Stat panel on `+page.svelte`:**
+
 - Compute `aiTotal = summaries.data.reduce((sum, d) => sum + (d.grand_total.ai_additions ?? 0), 0)`
 - Display alongside existing grand total / daily average panels
 - Zero state: show `—` when `aiTotal === 0` with subtext "AI data accumulates daily"
 
 **Wire up:**
+
 - In `+page.server.ts` or `+page.svelte`: derive `aiData` from existing `summaries.data` — map each day to `{ date, ai_additions: grand_total.ai_additions, human_additions: grand_total.human_additions }`
 - Pass `aiData` as prop to `AiActivityChart`
 - No new `fetch` calls

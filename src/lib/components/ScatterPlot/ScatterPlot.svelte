@@ -61,6 +61,6 @@
 <Container>
   <ChartTitle>{title}</ChartTitle>
   <BigChartContainer>
-    <div class="h-full w-full" bind:this={chartRef} />
+    <div class="h-full w-full" bind:this={chartRef}></div>
   </BigChartContainer>
 </Container>

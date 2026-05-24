@@ -18,6 +18,7 @@ Start `pnpm dev` after P2.02 is merged. Navigate to `/`, toggle between synthwav
 ## Green
 
 Fix any class rename issues discovered during visual smoke test. Common daisyUI v4 → v5 renames to check:
+
 - `join` → verify still works (v5 kept it)
 - `loading` → verify still works
 - `stats`/`stat` → verify still works

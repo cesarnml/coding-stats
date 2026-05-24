@@ -40,6 +40,11 @@
     on:input={onChange}
   />
   {#if loading}
-    <button class="loading btn-link btn absolute right-1" type="button" tabindex="-1" />
+    <button
+      class="loading btn-link btn absolute right-1"
+      type="button"
+      tabindex="-1"
+      aria-label="Loading search results"
+    ></button>
   {/if}
 </div>

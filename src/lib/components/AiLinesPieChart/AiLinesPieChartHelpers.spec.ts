@@ -63,7 +63,9 @@ describe('computeAiLinesSlices', () => {
   })
 
   it('returns null when all line values are zero', () => {
-    const summaries = makeSummaries([{ ai_additions: 0, ai_deletions: 0, human_additions: 0, human_deletions: 0 }])
+    const summaries = makeSummaries([
+      { ai_additions: 0, ai_deletions: 0, human_additions: 0, human_deletions: 0 },
+    ])
     expect(computeAiLinesSlices(summaries)).toBeNull()
   })
 

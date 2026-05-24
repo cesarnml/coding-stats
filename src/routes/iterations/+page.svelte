@@ -35,7 +35,7 @@
                   icon="material-symbols:menu-book-outline-sharp"
                   role="img"
                   aria-label="book"
-                />
+                ></iconify-icon>
                 {iteration.stats.num_stories_unstarted +
                   iteration.stats.num_stories_started +
                   iteration.stats.num_stories_done +
@@ -46,11 +46,11 @@
                   icon="material-symbols:bar-chart-rounded"
                   role="img"
                   aria-label="stats"
-                />
+                ></iconify-icon>
                 {iteration.stats.num_points}
               </div>
               <div class="flex items-center gap-1">
-                <iconify-icon icon="gg:loadbar-doc" role="img" aria-label="docs" />
+                <iconify-icon icon="gg:loadbar-doc" role="img" aria-label="docs"></iconify-icon>
                 {iteration.stats.num_related_documents}
               </div>
             </div>

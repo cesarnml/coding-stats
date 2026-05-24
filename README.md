@@ -38,10 +38,10 @@ pnpm test
 
 Sign-in uses Supabase Auth with GitHub OAuth. New users get a `public.profiles` row automatically via the `on_auth_user_created` trigger (see `supabase/migrations/*_on_auth_user_created.sql`).
 
-| Environment | GitHub OAuth app | Supabase GitHub callback (set in GitHub app) | App redirect allow-list |
-| --- | --- | --- | --- |
-| **Production** | CodingStats | `https://rzrykoldaspzesdlfkgy.supabase.co/auth/v1/callback` | `https://codingstats.vercel.app/login-redirect` (and `https://coding-stats.vercel.app/login-redirect` if that hostname is still in use) |
-| **Local** | CodingStatsDev | `http://localhost:54321/auth/v1/callback` | `http://localhost:5173/login-redirect` |
+| Environment    | GitHub OAuth app | Supabase GitHub callback (set in GitHub app)                | App redirect allow-list                                                                                                                 |
+| -------------- | ---------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Production** | CodingStats      | `https://rzrykoldaspzesdlfkgy.supabase.co/auth/v1/callback` | `https://codingstats.vercel.app/login-redirect` (and `https://coding-stats.vercel.app/login-redirect` if that hostname is still in use) |
+| **Local**      | CodingStatsDev   | `http://localhost:54321/auth/v1/callback`                   | `http://localhost:5173/login-redirect`                                                                                                  |
 
 **Production setup:** Supabase dashboard → Authentication → Providers → GitHub (enabled, CodingStats client ID/secret). Authentication → URL configuration → add the production `login-redirect` URLs above.
 

@@ -30,10 +30,13 @@ export const getTopLanguage = (summaries: SummariesResult) => {
 
   if (isEmpty(languages)) return DEFAULT_EMPTY_MESSAGE
 
-  const languageToTimeDict = languages.reduce((acc, { name, total_seconds }) => {
-    acc[name] = (acc[name] ?? 0) + total_seconds
-    return acc
-  }, {} as Record<string, number>)
+  const languageToTimeDict = languages.reduce(
+    (acc, { name, total_seconds }) => {
+      acc[name] = (acc[name] ?? 0) + total_seconds
+      return acc
+    },
+    {} as Record<string, number>,
+  )
 
   return Object.keys(languageToTimeDict).reduce((a, b) =>
     languageToTimeDict[a] > languageToTimeDict[b] ? a : b,

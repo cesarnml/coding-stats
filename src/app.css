@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
 @plugin 'daisyui' {
-  themes: synthwave, night --prefersdark;
+  themes:
+    synthwave,
+    night --prefersdark;
 }
 
 @theme {

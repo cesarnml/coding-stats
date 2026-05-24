@@ -11,14 +11,17 @@ import type { BarSeriesOption, ComposeOption } from 'echarts/types/dist/shared'
 
 export const createVerticalBarChartDatasetSource = (summaries: SummariesResult) => {
   if (!summaries.data) return []
-  const branchToTimeDict = summaries.data.reduce((result, summary) => {
-    summary.branches
-      .filter((branch) => branch.name !== MAIN_BRANCH)
-      .forEach((entity) => {
-        result[entity.name] = (result[entity.name] ?? 0) + entity.total_seconds
-      })
-    return result
-  }, {} as Record<string, number>)
+  const branchToTimeDict = summaries.data.reduce(
+    (result, summary) => {
+      summary.branches
+        .filter((branch) => branch.name !== MAIN_BRANCH)
+        .forEach((entity) => {
+          result[entity.name] = (result[entity.name] ?? 0) + entity.total_seconds
+        })
+      return result
+    },
+    {} as Record<string, number>,
+  )
 
   return Object.entries(branchToTimeDict).map(([branchFullName, totalSeconds]) => [
     getBranchShortName(branchFullName).split(BRANCH_ONLY_ID_DELIMITER)[1],

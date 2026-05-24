@@ -38,7 +38,9 @@ const makeSummaries = (
 
 describe('AiTokenBarChart', () => {
   it('shows empty state when all token values are zero', () => {
-    render(AiTokenBarChart, { summaries: makeSummaries([{ ai_input_tokens: 0, ai_output_tokens: 0 }]) })
+    render(AiTokenBarChart, {
+      summaries: makeSummaries([{ ai_input_tokens: 0, ai_output_tokens: 0 }]),
+    })
     expect(screen.getByText('No AI token data for this range')).toBeInTheDocument()
   })
 

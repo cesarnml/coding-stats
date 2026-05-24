@@ -23,7 +23,9 @@ export const GET: RequestHandler = async ({ fetch, locals: { supabase } }) => {
       .eq('date', summariesWithDate[0].date)
     return json(output)
   } else {
-    const output = await supabase.from('summaries').insert(summariesWithDate as unknown as SupaSummary[])
+    const output = await supabase
+      .from('summaries')
+      .insert(summariesWithDate as unknown as SupaSummary[])
     return json(output)
   }
 }

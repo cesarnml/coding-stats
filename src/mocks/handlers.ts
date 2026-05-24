@@ -41,16 +41,16 @@ export const handlers = [
     })
   }),
   http.get(`${BaseUrl.Shortcut}${RestResource.Iterations}`, () => HttpResponse.json(iterations)),
-  http.get(
-    `${BaseUrl.Shortcut}${RestResource.IterationStories(TEST_ITERATION_ID)}`,
-    () => HttpResponse.json(iterationStories),
+  http.get(`${BaseUrl.Shortcut}${RestResource.IterationStories(TEST_ITERATION_ID)}`, () =>
+    HttpResponse.json(iterationStories),
   ),
   http.get(`${BaseUrl.Vercel}${RestResource.Aliases}`, () => HttpResponse.json(vercelAliases)),
-  http.get(
-    `${BaseUrl.Vercel}${RestResource.VercelProjects}`,
-    () => HttpResponse.json(vercelProjects),
+  http.get(`${BaseUrl.Vercel}${RestResource.VercelProjects}`, () =>
+    HttpResponse.json(vercelProjects),
   ),
-  http.get(`${BaseUrl.WakaTime}${RestResource.AllTime}`, () => HttpResponse.json(allTimeSinceToday)),
+  http.get(`${BaseUrl.WakaTime}${RestResource.AllTime}`, () =>
+    HttpResponse.json(allTimeSinceToday),
+  ),
   http.get(ApiEndpoint.SupabaseProfiles, () => HttpResponse.json(null)),
   http.post(ApiEndpoint.SupabaseProfiles, () => HttpResponse.json(null)),
   http.get(ApiEndpoint.SupabaseSummaries, () => HttpResponse.json(summaries)),

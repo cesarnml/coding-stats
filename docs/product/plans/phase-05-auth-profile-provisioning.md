@@ -84,12 +84,12 @@ The repo contains a migration with the trigger; hosted project has it applied. R
 
 ## Risks
 
-| Risk | Mitigation (product-level) |
-|------|----------------------------|
-| Trigger exists in repo but not applied to hosted DB | Exit condition requires production verification, not migration commit alone |
-| Local OAuth misconfigured (Invalid Redirect URI) | Documented prod vs local callback checklist in committed scope |
-| `handle_new_user()` metadata keys don't match GitHub | Accept nullable name/email for v1; defer mapping fix unless insert fails |
-| Owner's existing session still has no row | Explicit manual insert documented; out of scope for backfill automation |
+| Risk                                                 | Mitigation (product-level)                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| Trigger exists in repo but not applied to hosted DB  | Exit condition requires production verification, not migration commit alone |
+| Local OAuth misconfigured (Invalid Redirect URI)     | Documented prod vs local callback checklist in committed scope              |
+| `handle_new_user()` metadata keys don't match GitHub | Accept nullable name/email for v1; defer mapping fix unless insert fails    |
+| Owner's existing session still has no row            | Explicit manual insert documented; out of scope for backfill automation     |
 
 ## Retrospective
 

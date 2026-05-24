@@ -1,4 +1,9 @@
-import { ApiEndpoint, DefaultWakaApiRange, WakaApiRange, WakaToShortcutApiRange } from '$lib/constants'
+import {
+  ApiEndpoint,
+  DefaultWakaApiRange,
+  WakaApiRange,
+  WakaToShortcutApiRange,
+} from '$lib/constants'
 import type { AliasesResult, ProjectsResult } from '$src/types/vercel'
 import type { SummariesResult } from '$src/types/wakatime'
 import dayjs from 'dayjs'

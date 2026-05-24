@@ -3,10 +3,7 @@ import type { SummariesResult } from '$src/types/wakatime'
 import { describe, expect, it } from 'vitest'
 import AiLinesPieChart from './AiLinesPieChart.svelte'
 
-const makeSummaries = (
-  ai_additions: number,
-  human_additions: number,
-): SummariesResult =>
+const makeSummaries = (ai_additions: number, human_additions: number): SummariesResult =>
   ({
     data: [
       {
