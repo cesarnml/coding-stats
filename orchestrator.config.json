@@ -8,5 +8,7 @@
     "subagentReview": "skip_doc_only",
     "prReview": "disabled"
   },
-  "prReviewAgents": [{ "login": "coderabbitai", "name": "coderabbit", "resolveThreads": true }]
+  "prReviewAgents": [{ "login": "coderabbitai", "name": "coderabbit", "resolveThreads": true }],
+  "subagentRunner": "codex-cli",
+  "primaryAgent": "claude"
 }
