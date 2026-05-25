@@ -311,6 +311,9 @@ export async function runDeliveryOrchestrator(
     let context = createDeliveryOrchestratorContext(resolvedConfig);
     const platform = context.platform;
     const notifier = resolveNotifier();
+    // Always emit SoA events into the primary worktree's .soa/, regardless of
+    // which worktree directory bun was invoked from.
+    const eventRoot = findPrimaryWorktreePath(cwd, context.config) ?? cwd;
     if (isStandaloneTriageCommand(parsed.command)) {
       const result = await runStandaloneAiReview(
         cwd,
@@ -497,7 +500,7 @@ export async function runDeliveryOrchestrator(
           stateForStart,
           nextState,
           context.config,
-          cwd,
+          eventRoot,
         );
         await emitNotificationWarnings(
           notifier,
@@ -947,7 +950,8 @@ export async function runDeliveryOrchestrator(
                 try {
                   void emitSubagentInvoked(
                     context.config,
-                    worktreePath,
+                    findPrimaryWorktreePath(worktreePath, context.config) ??
+                      worktreePath,
                     state.planKey,
                     subagentTarget.id,
                     runner,
@@ -1180,7 +1184,7 @@ export async function runDeliveryOrchestrator(
         await emitSoaEventForOpenPr(
           nextState,
           context.config,
-          cwd,
+          eventRoot,
           parsed.positionals[0],
         );
         return 0;
@@ -1231,7 +1235,7 @@ export async function runDeliveryOrchestrator(
           await maybeEmitReviewCleanRecorded(
             docOnlyEvents,
             context.config,
-            cwd,
+            eventRoot,
           );
           return 0;
         }
@@ -1243,7 +1247,11 @@ export async function runDeliveryOrchestrator(
         );
         const pollEvents = eventsForPollReviewCommand(nextState, pollTicketId);
         await emitNotificationWarnings(notifier, cwd, pollEvents);
-        await maybeEmitReviewCleanRecorded(pollEvents, context.config, cwd);
+        await maybeEmitReviewCleanRecorded(
+          pollEvents,
+          context.config,
+          eventRoot,
+        );
         return 0;
       }
       case TICKET_TRIAGE_COMMAND: {
@@ -1268,7 +1276,11 @@ export async function runDeliveryOrchestrator(
           ticketId,
         );
         await emitNotificationWarnings(notifier, cwd, triageEvents);
-        await maybeEmitReviewCleanRecorded(triageEvents, context.config, cwd);
+        await maybeEmitReviewCleanRecorded(
+          triageEvents,
+          context.config,
+          eventRoot,
+        );
         return 0;
       }
       case 'record-review': {
@@ -1297,7 +1309,11 @@ export async function runDeliveryOrchestrator(
         console.log(formatStatus(nextState, context.config));
         const recordEvents = eventsForRecordReviewCommand(nextState, ticketId);
         await emitNotificationWarnings(notifier, cwd, recordEvents);
-        await maybeEmitReviewCleanRecorded(recordEvents, context.config, cwd);
+        await maybeEmitReviewCleanRecorded(
+          recordEvents,
+          context.config,
+          eventRoot,
+        );
         return 0;
       }
       case 'advance': {
@@ -1321,7 +1337,7 @@ export async function runDeliveryOrchestrator(
           state,
           nextState,
           context.config,
-          cwd,
+          eventRoot,
         );
         const boundaryGuidance = formatAdvanceBoundaryGuidance(
           state,
