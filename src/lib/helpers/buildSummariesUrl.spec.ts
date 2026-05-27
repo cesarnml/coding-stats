@@ -27,4 +27,18 @@ describe('buildSummariesUrl', () => {
     const url = buildSummariesUrl('Custom', '2024-01-01', null)
     expect(url).toBe(`${ApiEndpoint.SupabaseSummaries}?range=Custom`)
   })
+
+  it('includes project param for project summaries', () => {
+    const url = buildSummariesUrl(WakaApiRange.Last_30_Days, null, null, 'codogotchi')
+    expect(url).toBe(
+      `${ApiEndpoint.SupabaseProjectSummaries}?range=Last+30+Days&project=codogotchi`,
+    )
+  })
+
+  it('uses start and end with project for custom project summaries', () => {
+    const url = buildSummariesUrl('Custom', '2024-01-01', '2024-01-31', 'codogotchi')
+    expect(url).toBe(
+      `${ApiEndpoint.SupabaseProjectSummaries}?start=2024-01-01&end=2024-01-31&project=codogotchi`,
+    )
+  })
 })

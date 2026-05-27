@@ -11,13 +11,10 @@
   import ScatterPlot from '$lib/components/ScatterPlot/ScatterPlot.svelte'
   import StatsPanel from '$lib/components/Stats/StatsPanel.svelte'
   import Treemap from '$lib/components/Treemap/Treemap.svelte'
-  import {
-    ApiEndpoint,
-    WakaApiRange,
-    WakaToShortcutApiRange,
-    type ValueOf,
-  } from '$lib/constants.js'
+  import { ApiEndpoint, WakaApiRange, WakaToShortcutApiRange, type ValueOf } from '$lib/constants.js'
+  import { buildSummariesUrl } from '$lib/helpers/buildSummariesUrl'
   import { DateFormat } from '$lib/helpers/timeHelpers.js'
+  import { customDateRange } from '$lib/stores/customDateRange'
   import { loading } from '$lib/stores/loading.js'
   import { selectedRange } from '$lib/stores/selectedRange.js'
   import dayjs from 'dayjs'
@@ -25,13 +22,12 @@
 
   export let data
 
-  $: ({
-    summaries,
-    projectName,
-    stories,
-    lazy: { aliases },
-    profile,
-  } = data)
+  let summariesOverride: typeof data.summaries | null = null
+  let storiesOverride: typeof data.stories | null = null
+
+  $: summaries = summariesOverride ?? data.summaries
+  $: stories = storiesOverride ?? data.stories
+  $: ({ projectName, lazy: { aliases }, profile } = data)
 
   $: available_branches = summaries.data
     ? [
@@ -49,21 +45,27 @@
 
   const onWakaRange = async () => {
     const shortcutRange =
-      WakaToShortcutApiRange[$selectedRange as keyof typeof WakaToShortcutApiRange]
+      $selectedRange === WakaApiRange.Custom && $customDateRange.start && $customDateRange.end
+        ? dayjs($customDateRange.end).diff(dayjs($customDateRange.start), 'd')
+        : WakaToShortcutApiRange[$selectedRange as keyof typeof WakaToShortcutApiRange]
     loading.on()
     try {
+      const summariesUrl = buildSummariesUrl(
+        $selectedRange,
+        $customDateRange.start,
+        $customDateRange.end,
+        $page.params.projectName,
+      )
       const responses = await Promise.all([
-        fetch(
-          `${ApiEndpoint.SupabaseProjectSummaries}?range=${$selectedRange}&project=${$page.params.projectName}`,
-        ),
+        fetch(summariesUrl),
         fetch(
           `${ApiEndpoint.SearchStories}?query=has:branch moved:${dayjs()
             .subtract(shortcutRange, 'd')
             .format(DateFormat.Query)}..*`,
         ),
       ])
-      summaries = await responses[0].json()
-      stories = await responses[1].json()
+      summariesOverride = await responses[0].json()
+      storiesOverride = await responses[1].json()
     } catch (err) {
       console.error('Failed to fetch project data:', err)
     } finally {

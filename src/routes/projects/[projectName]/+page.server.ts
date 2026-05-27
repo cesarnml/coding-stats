@@ -1,9 +1,5 @@
-import {
-  ApiEndpoint,
-  DefaultWakaApiRange,
-  WakaApiRange,
-  WakaToShortcutApiRange,
-} from '$lib/constants'
+import { ApiEndpoint, DefaultWakaApiRange, WakaToShortcutApiRange } from '$lib/constants'
+import { buildSummariesUrl } from '$lib/helpers/buildSummariesUrl'
 import type { AliasesResult, ProjectsResult } from '$src/types/vercel'
 import type { SummariesResult } from '$src/types/wakatime'
 import dayjs from 'dayjs'
@@ -13,14 +9,15 @@ import type { StorySearchResults } from '$lib/generated/openapi/shortcut'
 
 export const load: PageServerLoad = async ({ fetch, params, url, locals: { getProfile } }) => {
   const range = url.searchParams.get('range') ?? DefaultWakaApiRange
+  const start = url.searchParams.get('start')
+  const end = url.searchParams.get('end')
   const profile = await getProfile()
   const wakaRange = profile?.range ?? range
   const shortcutRange = WakaToShortcutApiRange[wakaRange as keyof typeof WakaToShortcutApiRange]
+  const summariesUrl = buildSummariesUrl(wakaRange, start, end, params.projectName)
 
   const responses = await Promise.all([
-    fetch(
-      `${ApiEndpoint.SupabaseProjectSummaries}?project=${params.projectName}&range=${wakaRange}`,
-    ),
+    fetch(summariesUrl),
     fetch(ApiEndpoint.VercelProjects),
     fetch(
       `${ApiEndpoint.SearchStories}?query=has:branch moved:${dayjs()

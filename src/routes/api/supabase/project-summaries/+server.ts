@@ -1,28 +1,15 @@
-import { WakaApiRange, WakaToShortcutApiRange } from '$lib/constants'
-import { DateFormat } from '$lib/helpers/timeHelpers'
+import { DefaultWakaApiRange } from '$lib/constants'
+import { resolveSummariesDateRange } from '$lib/helpers/resolveSummariesDateRange'
 import type { SummariesResult } from '$src/types/wakatime'
 import { json, type RequestHandler } from '@sveltejs/kit'
-import dayjs from 'dayjs'
 
 export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
-  const start = url.searchParams.get('start') ?? ''
-  const end = url.searchParams.get('end') ?? ''
+  const start = url.searchParams.get('start')
+  const end = url.searchParams.get('end')
   const project = url.searchParams.get('project') ?? ''
-  let range = url.searchParams.get('range') ?? WakaApiRange.Last_7_Days_From_Yesterday
+  const range = url.searchParams.get('range') ?? DefaultWakaApiRange
 
-  // start and end take precedence over range
-  if (start && end) {
-    range = ''
-  }
-
-  const rangeStart = dayjs()
-    .utc()
-    .subtract(WakaToShortcutApiRange[range as keyof typeof WakaToShortcutApiRange], 'd')
-    .format(DateFormat.Query)
-  const rangeEnd =
-    range === WakaApiRange.Yesterday || range === WakaApiRange.Last_7_Days_From_Yesterday
-      ? dayjs().utc().subtract(1, 'd').format(DateFormat.Query)
-      : dayjs().utc().format(DateFormat.Query)
+  const { rangeStart, rangeEnd } = resolveSummariesDateRange(range, start, end)
 
   const { data: projectRecord } = await supabase
     .from('projects')
