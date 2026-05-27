@@ -61,11 +61,11 @@ bun run deliver --plan <plan-path> \
   --boundary-mode <cook|gated> \
   --subagent-review-policy <required|skip_doc_only|disabled> \
   --pr-review-policy <required|skip_doc_only|disabled> \
-  --subagent <claude-cli|codex-cli> \
+  --subagent <claude-cli|codex-cli|cursor-cli> \
   start
 ```
 
-`--subagent` declares the execution agent's own identity. The CLI tries the preferred runner first, then the other, then records an honest `skipped`. No config change needed when switching platforms.
+`--subagent` declares the execution agent's own identity (`claude-cli`, `codex-cli`, or `cursor-cli`). The CLI tries the preferred runner first, then the other programmatic runners, then records an honest `skipped`. No config change needed when switching platforms. For `cursor-cli`, install the Cursor Agent CLI (`agent` on PATH) and authenticate (`agent login` or `CURSOR_API_KEY`).
 
 The resolved policy is persisted in `state.json` as `runPolicy` and governs execution for every invocation that loads it. If `orchestrator.config.json` changes between runs, the orchestrator detects divergence and refuses to continue silently — pass `--baseline orchestrator` to adopt the current config or `--baseline run-policy` to re-apply the persisted runPolicy (it governs execution for the current invocation, not just state):
 
@@ -111,6 +111,7 @@ It does not patch source files, and it is not a per-ticket pre-PR gate.
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `orchestrator.config.json`                                | Runtime config (boundary mode, review policy, package manager)                      |
 | `scripts/soa-sync.sh`                                     | Consumer sync script — links skills, injects agent rules, runs migrations           |
+| `scripts/soa-update.sh`                                   | Consumer update script — fetch, subtree merge, sync, and verify upstream content    |
 | `docs/template/delivery/delivery-orchestrator.md`         | Full command reference, including stable workflow-contract and optional-DI guidance |
 | `docs/template/delivery/son-of-anton.md`                  | Doctrine: why this workflow exists                                                  |
 | `docs/template/delivery/tdd-workflow.md`                  | Red-green-refactor contract for ticket implementation                               |

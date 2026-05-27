@@ -116,9 +116,11 @@ gate.
   patches with a `[subagent-review]` subject suffix or records `deferred` via
   `subagent-review record-deferred`. `reconcile-subagent-review` hard-blocks
   `open-pr` when the ledger would silently disagree with git history. Operator
-  selection is explicit via `--subagent <claude-cli|codex-cli>` (optional
-  `subagentRunner` config default). The CLI refuses to record `clean` when the
-  runner did not actually complete.
+  selection is explicit via `--subagent <claude-cli|codex-cli|cursor-cli>` (optional
+  `subagentRunner` config default). Programmatic runners: Claude (`claude -p`),
+  Codex (`codex exec`), and Cursor Agent CLI (`agent --print --trust` in the
+  ticket worktree). The CLI tries the preferred runner first, then the other
+  programmatic runners, and refuses to record `clean` when none actually complete.
 - **Stacked PR model** — each ticket gets its own branch and PR, stacked in
   dependency order. Closeout squash-merges the whole phase onto main cleanly.
 - **Migration runner** — when Son of Anton ships structural changes, `bun run sync`
@@ -214,16 +216,30 @@ adapter automatically.
 
 ## Updating
 
+Consumer repos:
+
 ```bash
-git fetch https://github.com/cesarnml/son-of-anton.git main
-git subtree merge --prefix .son-of-anton FETCH_HEAD --squash
-bun run sync
+bash .son-of-anton/scripts/soa-update.sh
 ```
 
-Migrations apply automatically on `bun run sync`.
-Fetching first and then merging `FETCH_HEAD` keeps the subtree update pinned to
-the fetched Son-of-Anton ref, even when the consumer repo also has a local
-`main` branch.
+That script fetches upstream, pins the fetched commit SHA, merges the subtree,
+runs `soa-sync.sh`, and verifies a known template file matches. Upstream paths
+use `docs/...`; the consumer copy lives at `.son-of-anton/docs/...`.
+
+Or add to `package.json` for convenience:
+
+```json
+{
+  "scripts": {
+    "soa-update": "bash .son-of-anton/scripts/soa-update.sh",
+    "sync": "bash .son-of-anton/scripts/soa-sync.sh"
+  }
+}
+```
+
+Migrations apply automatically during sync.
+Do not pass plain `main` to `git subtree merge` — it can resolve through the
+consumer repo's local branch history instead of the fetched Son-of-Anton commit.
 
 <details>
 <summary>Claude Code shortcut</summary>
@@ -265,12 +281,12 @@ or committing config changes.
 
 ### Supported flags
 
-| Flag                                 | Values                                  | What it overrides                                                                                                 |
-| ------------------------------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `--boundary-mode`                    | `cook`, `gated`                         | `ticketBoundaryMode`                                                                                              |
-| `--subagent-review-policy`           | `required`, `skip_doc_only`, `disabled` | `reviewPolicy.subagentReview`                                                                                     |
-| `--pr-review-policy`                 | `required`, `skip_doc_only`, `disabled` | `reviewPolicy.prReview`                                                                                           |
-| `--subagent <claude-cli\|codex-cli>` | `claude-cli`, `codex-cli`               | declare execution agent identity for programmatic review; tries preferred first, then the other, then honest skip |
+| Flag                                             | Values                                  | What it overrides                                                                                                                  |
+| ------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `--boundary-mode`                                | `cook`, `gated`                         | `ticketBoundaryMode`                                                                                                               |
+| `--subagent-review-policy`                       | `required`, `skip_doc_only`, `disabled` | `reviewPolicy.subagentReview`                                                                                                      |
+| `--pr-review-policy`                             | `required`, `skip_doc_only`, `disabled` | `reviewPolicy.prReview`                                                                                                            |
+| `--subagent <claude-cli\|codex-cli\|cursor-cli>` | `claude-cli`, `codex-cli`, `cursor-cli` | declare execution agent identity for programmatic review; tries preferred first, then other programmatic runners, then honest skip |
 
 The resolved policy is written to `state.json` at the start of every run.
 `orchestrator.config.json` is never modified.
