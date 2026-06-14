@@ -7,6 +7,18 @@ if (import.meta.env.PROD) {
     dsn: PUBLIC_SENTRY_DSN,
     tracesSampleRate: 1.0,
   })
+
+  // Register the service worker ourselves (kit.serviceWorker.register is false)
+  // so a transient registration failure (e.g. a stale/404 worker file
+  // mid-deploy) is caught and reported as a handled warning instead of an
+  // unhandled "Rejected" promise rejection.
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js', { type: 'module' }).catch((error) => {
+        Sentry.captureException(error, { level: 'warning', tags: { source: 'serviceWorker' } })
+      })
+    })
+  }
 }
 
 const baseHandleError: HandleClientError = (input) => {

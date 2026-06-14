@@ -17,6 +17,12 @@ const config = {
     csrf: {
       trustedOrigins: ['*'],
     },
+    serviceWorker: {
+      // Register manually in hooks.client.ts so registration failures (e.g. a
+      // stale/404 worker file mid-deploy) are caught instead of surfacing as
+      // unhandled "Rejected" promise rejections.
+      register: false,
+    },
     alias: {
       $src: 'src',
     },

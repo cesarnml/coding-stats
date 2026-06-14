@@ -1,7 +1,8 @@
 import { SHORTCUT_API_TOKEN } from '$env/static/private'
 import { BaseUrl, RestResource } from '$lib/constants'
 import type { StorySearchResults } from '$lib/generated/openapi/shortcut'
-import { json, type RequestHandler } from '@sveltejs/kit'
+import { fetchWithRetry } from '$lib/server/fetchWithRetry'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 
 const PAGE_SIZE = 25
 const Detail = {
@@ -12,7 +13,8 @@ const Detail = {
 export const GET: RequestHandler = async ({ fetch, url }) => {
   const query = url.searchParams.get('query')
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
+    fetch,
     `${BaseUrl.Shortcut}${RestResource.Stories}?page_size=${PAGE_SIZE}&detail=${Detail.Full}&query=${query}`,
     {
       method: 'GET',
@@ -22,6 +24,11 @@ export const GET: RequestHandler = async ({ fetch, url }) => {
       },
     },
   )
+
+  if (!response.ok) {
+    error(response.status, `Shortcut story search failed: ${response.statusText}`)
+  }
+
   const storySearchResults: StorySearchResults = await response.json()
   return json(storySearchResults)
 }
