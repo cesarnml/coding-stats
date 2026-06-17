@@ -19,15 +19,20 @@
 
   let currentTime = $state(dayjs().format(DateFormat.TwelveHour))
 
+  // Track the most recently scheduled frame so cleanup cancels the running
+  // loop. `updateTime` reschedules itself each tick, so cancelling only the
+  // initial handle would leak the loop past unmount.
+  let animationFrame: number
+
   onMount(() => {
-    const animationFrame = requestAnimationFrame(updateTime)
+    animationFrame = requestAnimationFrame(updateTime)
 
     return () => cancelAnimationFrame(animationFrame)
   })
 
   function updateTime() {
     currentTime = dayjs().format(DateFormat.TwelveHour)
-    requestAnimationFrame(updateTime)
+    animationFrame = requestAnimationFrame(updateTime)
   }
 </script>
 

@@ -8,7 +8,7 @@ Red: skip
 ## Outcome
 
 - These 9 files use runes only: `Container.svelte`, `ChartTitle.svelte`, `common/ChartContainer.svelte`, `common/BigChartContainer.svelte`, `Stats/StatPanelItem.svelte`, `PageTransition.svelte`, `assets/svg/{Moon,Sun,System}.svelte`.
-- `<slot>` / named slots → snippets (`{@render children()}` / `{#snippet}` / `{@render name()}`); `export let` → `$props()`; `$:` → `$derived`/`$effect` per the triage rule.
+- `<slot>` / named slots → snippets (`{@render children?.()}` / `{#snippet}` / `{@render name()}`); `export let` → `$props()`; `$:` → `$derived`/`$effect` per the triage rule. The default-slot render uses optional chaining (`children?.()`) to tolerate childless mounts — see Rationale.
 - Consumer call-sites that pass **named** slot content to these wrappers are updated in this same ticket (ripple owned here).
 - Each converted file carries `<svelte:options runes={true}>`.
 - `grep` for legacy idioms in these files returns zero.
