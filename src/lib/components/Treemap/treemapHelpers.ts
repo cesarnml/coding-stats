@@ -11,8 +11,13 @@ export const getProjectFiles = (summaries: SummariesResult) => {
   ].filter((file) => !file.includes('node_modules') && !file.includes('generated'))
 }
 
-export const createProjectFileToTimeDict = (summaries: SummariesResult, projectName: string) => {
-  if (!summaries.data) return {}
+export const createProjectFileToTimeDict = (
+  summaries: SummariesResult,
+  projectName: string | undefined,
+) => {
+  // Without a project name the `${projectName}/` split below yields a literal
+  // "undefined/" delimiter and garbage keys, so bail to an empty dict instead.
+  if (!summaries.data || !projectName) return {}
   const projectFiles = getProjectFiles(summaries)
   const filesToTimeDict: Record<string, number> = {}
   summaries.data.forEach((summary) => {
@@ -64,7 +69,7 @@ export const createTreemapData = (obj: any) => {
 
 export const createTreemapOption = (
   data: any[],
-  projectName: string,
+  projectName: string | undefined,
 ): ComposeOption<GridComponentOption | TooltipComponentOption | TreemapSeriesOption> => ({
   grid: { left: 0, right: 0, top: 0, bottom: 0 },
   // tooltip: {
