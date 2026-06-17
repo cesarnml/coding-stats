@@ -72,6 +72,26 @@ export function detectLabeledCommits(input: {
 }
 
 /**
+ * Canonical sibling section headings used by the subagent review report. The
+ * parser terminates a section extraction only when it encounters another of
+ * these headings — not on every `**bold**` or `# heading` line. Without this
+ * list, observation-prefix lines like `**A1 — Title**` were being read as
+ * section terminators, silently dropping all observations that followed them.
+ *
+ * Heading aliases (`Runner status` ↔ `Runner termination`) tolerate light
+ * subagent drift across runners.
+ */
+const CANONICAL_REPORT_SECTION_HEADINGS = [
+  'Invariant results',
+  'Surface results',
+  'Actionable findings',
+  'Advisory Observations',
+  'Findings for human review', // legacy alias of Advisory Observations
+  'Runner termination',
+  'Runner status', // tolerated drift
+] as const;
+
+/**
  * Parses the `Actionable findings` section of the subagent report markdown
  * and returns true if it contains any actionable content (anything other than
  * `None.` or whitespace). Tolerates extra blank lines, trailing whitespace,
@@ -89,7 +109,10 @@ export function parseActionableFindings(markdown: string): boolean {
 export function parseAdvisoryObservations(markdown: string): string[] {
   const body = extractReportSection(markdown, 'Advisory Observations');
   if (body === undefined) return [];
-  const normalized = normalizeSectionBody(body);
+  // Strip horizontal rules — agents use `---` as cosmetic section dividers but
+  // they are not observations and their presence breaks the all-bullets check.
+  const strippedBody = body.replace(/^---+\s*$/gm, '');
+  const normalized = normalizeSectionBody(strippedBody);
   if (normalized === '') return [];
   if (/^none\.?$/i.test(normalized)) return [];
 
@@ -99,7 +122,7 @@ export function parseAdvisoryObservations(markdown: string): string[] {
     return bulletLines.map((line) => line.replace(/^[-*]\s+/, '').trim());
   }
 
-  return body
+  return strippedBody
     .trim()
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.replace(/\n/g, ' ').trim())
@@ -153,7 +176,15 @@ function extractReportSection(
   if (startIndex === -1) return undefined;
   const bodyLines: string[] = [];
   for (const line of lines.slice(startIndex + 1)) {
-    if (isSectionHeadingLine(line)) break;
+    // Only terminate the section on a canonical sibling section heading. Bold
+    // observation prefixes (e.g. `**A1 — Title**`) are content, not section
+    // boundaries, and must not silently truncate the section body.
+    if (isCanonicalSectionHeadingLine(line, heading)) break;
+    // Also terminate on runner-termination key-value lines that agents write
+    // instead of the canonical `**Runner termination**` heading (common drift:
+    // `**runnerStatus:** completed` or `**\`runnerStatus\`:** completed`).
+    // No observation would ever start with these tokens.
+    if (/^\*\*`?(?:runnerStatus|terminatedReason)`?[:`]/i.test(line)) break;
     bodyLines.push(line);
   }
   return bodyLines.join('\n');
@@ -184,10 +215,21 @@ function isHeadingFor(line: string, heading: string): boolean {
   );
 }
 
-function isSectionHeadingLine(line: string): boolean {
-  return (
-    /^\s*\*\*\s*[^*]+\s*\*\*\s*$/.test(line) ||
-    /^\s{0,3}#{1,6}\s+\S.*#*\s*$/.test(line)
+/**
+ * Returns true only when `line` is a heading that matches one of the canonical
+ * sibling section headings (`Actionable findings`, `Advisory Observations`,
+ * `Runner termination`, etc.) and is not the heading we are currently
+ * extracting. This keeps non-canonical bold prefixes inside the section body
+ * where they belong.
+ */
+function isCanonicalSectionHeadingLine(
+  line: string,
+  currentHeading: string,
+): boolean {
+  return CANONICAL_REPORT_SECTION_HEADINGS.some(
+    (candidate) =>
+      candidate.toLowerCase() !== currentHeading.toLowerCase() &&
+      isHeadingFor(line, candidate),
   );
 }
 
