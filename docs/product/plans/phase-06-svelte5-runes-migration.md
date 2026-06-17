@@ -1,6 +1,6 @@
 # Phase 6: Svelte 5 Runes Migration
 
-**Delivery status:** Product plan — awaiting developer approval. Decomposition has not started.
+**Delivery status:** Delivered. All 8 tickets done (PRs #170–#177). Awaiting developer closeout.
 
 ## TL;DR
 
