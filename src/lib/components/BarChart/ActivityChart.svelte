@@ -40,14 +40,14 @@
     chart?.setOption(option)
   })
 
-  const onUpdate = (e: CustomEvent<SupabaseDuration>) => (durations = e.detail)
+  const onUpdate = (detail: SupabaseDuration) => (durations = detail)
 </script>
 
 <Container>
   <ChartTitle>
     <DailyTitleContent showCurrentTime title="Activity" {durations} />
   </ChartTitle>
-  <DailyChartControls {durations} {itemType} on:update={onUpdate} />
+  <DailyChartControls {durations} {itemType} onupdate={onUpdate} />
   <BigChartContainer>
     <div class="h-full w-full" bind:this={chartRef}></div>
   </BigChartContainer>

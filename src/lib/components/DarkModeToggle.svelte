@@ -1,5 +1,7 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import Moon from '$lib/assets/svg/Moon.svelte'
   import Sun from '$lib/assets/svg/Sun.svelte'
   import System from '$lib/assets/svg/System.svelte'
@@ -16,7 +18,8 @@
     system: 'system',
   } as const
 
-  let selection: keyof typeof Selection
+  let selection = $state<keyof typeof Selection | undefined>(undefined)
+
   const readColorTheme = () =>
     typeof localStorage.getItem === 'function'
       ? localStorage.getItem('colorTheme')
@@ -39,7 +42,8 @@
     selection = (readColorTheme() as keyof typeof Selection | null) ?? Selection.system
   })
 
-  afterUpdate(() => {
+  $effect(() => {
+    if (selection === undefined) return
     writeColorTheme(selection)
     if (selection === Selection.dark) {
       document.documentElement.setAttribute('data-theme', 'night')
@@ -83,10 +87,11 @@
 
 <div class="switch">
   {#each Object.values(Selection) as color}
+    {@const Icon = iconMap[color]}
     <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
     <label class:active={selection === color} tabindex={0}>
       <input type="radio" name="colorSelection" bind:group={selection} value={color} />
-      <span><svelte:component this={iconMap[color]} /></span>
+      <span><Icon /></span>
     </label>
   {/each}
 </div>
