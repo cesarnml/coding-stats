@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { ApiEndpoint, WakaApiRange, WakaApiRangePrompt } from '$lib/constants'
   import { customDateRange } from '$lib/stores/customDateRange'

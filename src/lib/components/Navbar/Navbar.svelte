@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { media } from '$lib/stores/media'
   import { dropdown } from '$lib/stores/dropdown'

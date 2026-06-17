@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   let { message, cta, show = true }: { message: string; cta?: string; show?: boolean } = $props()
 </script>

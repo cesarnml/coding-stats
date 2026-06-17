@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { onMount } from 'svelte'
   import * as echarts from 'echarts'

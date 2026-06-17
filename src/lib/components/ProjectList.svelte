@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { Url } from '$lib/constants'
   import { formatHours, formatMinimalWork, formatMinutes } from '$lib/helpers/timeHelpers'

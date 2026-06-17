@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <svg
   data-testid="geist-icon"
   fill="none"

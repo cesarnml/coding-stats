@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import NavLinks from '$lib/components/Navbar/NavLinks.svelte'
   import NavMenu from '$lib/components/Navbar/NavMenu.svelte'

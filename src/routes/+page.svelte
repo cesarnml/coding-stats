@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import ActivityChart from '$lib/components/BarChart/ActivityChart.svelte'
   import BreakdownChart from '$lib/components/BarChart/BreakdownChart.svelte'
