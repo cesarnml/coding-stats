@@ -1,5 +1,7 @@
 # Phase 06 — Svelte 5 Runes Migration
 
+**Delivery status:** Delivered. All 8 tickets done (PRs #170–#177). Awaiting developer closeout.
+
 > Convert all 51 `.svelte` files from Svelte 4 legacy syntax to Svelte 5 runes, then flip the compiler to `runes: true` so legacy syntax becomes a build error. Behavior-preserving, mechanical-only.
 
 ## Epic

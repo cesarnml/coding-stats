@@ -44,5 +44,5 @@ Red: skip
 Red first: n/a (`Red: skip`).
 Why this path: the global flip is the durable lock that makes the migration self-policing; bundled with directive cleanup and the retrospective as the phase-closeout ticket.
 Alternative considered: leaving per-file directives in place (no global flag) — rejected; enforcement would be convention, not a guarantee, and the product plan requires `runes: true`.
-Deferred: SvelteKit `$app/stores`→`$app/state` migration; `writable`→`$state` store conversion.
-Contract note: —
+Deferred: SvelteKit `$app/stores`→`$app/state` migration; `writable`→`$state` store conversion; `chartRef` `$state` fix; ESLint a11y rule name migration; `state_referenced_locally` warning cleanup.
+Contract note: T08 global flip surfaced zero new compilation errors — per-file bridge strategy validated. Verified enforcement: `export let` in runes mode → `legacy_export_invalid` build error (tested and reverted). Retrospective written to `notes/public/phase-06-svelte5-runes-migration-retrospective.md`.
