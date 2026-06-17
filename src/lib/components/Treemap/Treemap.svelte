@@ -1,8 +1,10 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { page } from '$app/stores'
   import type { SummariesResult } from '$src/types/wakatime'
   import * as echarts from 'echarts'
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import Container from '../Container.svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import {
@@ -12,16 +14,14 @@
   } from './treemapHelpers'
   import ChartContainer from '../common/ChartContainer.svelte'
 
-  export let summaries: SummariesResult
-  export let title: string
+  let { summaries, title }: { summaries: SummariesResult; title: string } = $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: filesToTimeDict = createProjectFileToTimeDict(summaries, $page.params.projectName)
-  $: data = createTreemapData(filesToTimeDict)
-
-  $: option = createTreemapOption(data, $page.params.projectName)
+  const filesToTimeDict = $derived(createProjectFileToTimeDict(summaries, $page.params.projectName))
+  const data = $derived(createTreemapData(filesToTimeDict))
+  const option = $derived(createTreemapOption(data, $page.params.projectName))
 
   onMount(() => {
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
@@ -35,8 +35,8 @@
     }
   })
 
-  afterUpdate(() => {
-    chart.setOption(option)
+  $effect(() => {
+    chart?.setOption(option)
   })
 </script>
 

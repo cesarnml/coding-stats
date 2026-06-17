@@ -1,5 +1,7 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import * as echarts from 'echarts'
   import type { SummariesResult } from '$src/types/wakatime'
   import Container from '../Container.svelte'
@@ -8,15 +10,15 @@
   import EmptyState from '../EmptyState.svelte'
   import { buildAiTokenBarOption, buildAiTokenBarSeries } from './AiTokenBarChartHelpers'
 
-  export let summaries: SummariesResult
-  export let title = 'AI Token Usage'
+  let { summaries, title = 'AI Token Usage' }: { summaries: SummariesResult; title?: string } =
+    $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: series = buildAiTokenBarSeries(summaries)
-  $: hasData = series.hasData
-  $: option = buildAiTokenBarOption(series)
+  const series = $derived(buildAiTokenBarSeries(summaries))
+  const hasData = $derived(series.hasData)
+  const option = $derived(buildAiTokenBarOption(series))
 
   onMount(() => {
     if (!chartRef) return
@@ -31,7 +33,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     if (hasData) chart.setOption(option)

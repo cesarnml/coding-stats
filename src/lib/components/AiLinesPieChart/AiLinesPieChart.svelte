@@ -1,5 +1,7 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import * as echarts from 'echarts'
   import type { SummariesResult } from '$src/types/wakatime'
   import Container from '../Container.svelte'
@@ -8,15 +10,15 @@
   import EmptyState from '../EmptyState.svelte'
   import { buildAiLinesPieOption, computeAiLinesSlices } from './AiLinesPieChartHelpers'
 
-  export let summaries: SummariesResult
-  export let title = 'AI vs Human Lines'
+  let { summaries, title = 'AI vs Human Lines' }: { summaries: SummariesResult; title?: string } =
+    $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: slices = computeAiLinesSlices(summaries)
-  $: hasData = slices !== null
-  $: option = hasData ? buildAiLinesPieOption(slices!) : null
+  const slices = $derived(computeAiLinesSlices(summaries))
+  const hasData = $derived(slices !== null)
+  const option = $derived(hasData ? buildAiLinesPieOption(slices!) : null)
 
   onMount(() => {
     if (!chartRef) return
@@ -31,7 +33,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     if (option) chart.setOption(option)
