@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "recordedAt": "2026-06-17T12:47:57.852Z",
+  "recordedAt": "2026-06-17T13:09:54.383Z",
   "summary": {
     "total": 17,
-    "patched": 4,
-    "rejected": 10,
+    "patched": 7,
+    "rejected": 7,
     "already-covered": 3,
     "requires-human-review": 0
   },
@@ -81,8 +81,12 @@
       "observation": "**`BreakdownChart` Svelte runtime warning for `state_referenced_locally`.** `let isFiltered = $state(_isFiltered)` will emit the Svelte 5 diagnostic `state_referenced_locally` at dev time. This is not a correctness gap (behavior is intentional), but it may produce noise in the dev console and could confuse future maintainers who encounter the warning without context. A suppression comment or a brief inline note would remove the ambiguity."
     },
     {
-      "disposition": "rejected",
-      "rationale": "createXAxisValues string[]|undefined vs string[] is a latent type gap that is runtime-guarded by hasData and the chartRef check. Pre-existing helper typing untouched by the migration; out of scope for this phase.",
+      "disposition": "patched",
+      "rationale": "createXAxisValues returned string[]|undefined while createStackedBarChartOption expects string[]. Now returns [] for the no-data case, closing the type gap (commit d0d434f).",
+      "patch": {
+        "commitSha": "d0d434ff01c63d91ddb4f9210f6536c237960470",
+        "files": ["src/lib/components/BarChart/barChartHelpers.ts"]
+      },
       "source": {
         "reportPath": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
         "ticketId": "P6.03"
@@ -90,8 +94,12 @@
       "observation": "**`createXAxisValues` return type diverges from `createStackedBarChartOption` parameter type.** `createXAxisValues` returns `string[] | undefined`; `createStackedBarChartOption` accepts `string[]`. TypeScript does not catch this because the assignment flows through `const xValues = $derived(createXAxisValues(summaries))` typed as the return type of the function. The runtime impact is guarded by the `hasData` conditional and `chartRef` guard, but the type gap means a future caller of `createStackedBarChartOption` could pass `undefined` silently."
     },
     {
-      "disposition": "rejected",
-      "rationale": "Pre-existing rAF-cleanup bug carried over unchanged by the behavior-preserving migration. Out of scope for the runes phase; not introduced here.",
+      "disposition": "patched",
+      "rationale": "DailyTitleContent rAF loop leaked past unmount because cleanup cancelled only the initial frame handle. Now tracks the latest scheduled handle and cancels it (commit d0d434f).",
+      "patch": {
+        "commitSha": "d0d434ff01c63d91ddb4f9210f6536c237960470",
+        "files": ["src/lib/components/BarChart/DailyTitleContent.svelte"]
+      },
       "source": {
         "reportPath": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
         "ticketId": "P6.03"
@@ -117,8 +125,12 @@
       "observation": "`DailyGauge` correctness during initial mount depends on the Svelte 5 guarantee that `$effect` callbacks fire in declaration order during the mount flush (so the selectedDate effect settles `selectedDate = defaultDate` before `onMount` reads `option`). This guarantee holds under the current file layout. If a future refactor moves the `onMount` block above the selectedDate `$effect`, the gauge would initialize ECharts with `data[0].value = undefined` for one frame before correcting. The dependency on declaration order is not documented. A comment or a restructuring that initializes `selectedDate` synchronously (e.g., `let selectedDate = $state(availableDates.at(-1) ?? '')`) would eliminate the ordering dependency entirely — though that would require the `availableDates` derivation to be declared above `selectedDate`, which may conflict with how `$props()` and `$derived` interact on the initial computation. This is lower priority than the ticket-doc gap above; noting it for T05 or a future audit."
     },
     {
-      "disposition": "rejected",
-      "rationale": "Treemap projectName string|undefined is a pre-existing gap untouched by the migration. Out of scope for the behavior-preserving runes phase.",
+      "disposition": "patched",
+      "rationale": "Treemap helpers typed projectName as string but the caller passes $page.params.projectName (string|undefined). Widened the params and bail to an empty dict when absent, avoiding garbage \"undefined/\" split keys (commit d0d434f).",
+      "patch": {
+        "commitSha": "d0d434ff01c63d91ddb4f9210f6536c237960470",
+        "files": ["src/lib/components/Treemap/treemapHelpers.ts"]
+      },
       "source": {
         "reportPath": "docs/product/delivery/phase-06/reviews/P6.04-subagent-review.report.md",
         "ticketId": "P6.04"
