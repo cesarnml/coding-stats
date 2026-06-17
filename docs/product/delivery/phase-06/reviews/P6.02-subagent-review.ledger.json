@@ -33,6 +33,22 @@
       "outcome": "clean",
       "acknowledgment": "operator-confirmed-clean",
       "reason": "Subagent report Actionable findings section says 'None.' followed by explanatory prose; reconciler regex requires bare 'None.' — no actual findings exist, review is genuinely clean"
+    },
+    {
+      "runnerKind": "operator-recorder",
+      "reviewedHeadSha": "ea40e08cc4782cf61740b47d492b278825035514",
+      "completedAt": "2026-06-17T03:08:06.006Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": [],
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": null,
+      "fallbackFrom": null,
+      "outcome": "clean",
+      "acknowledgment": "operator-confirmed-clean",
+      "reason": "Subagent report Actionable findings section says None followed by explanatory prose; reconciler regex requires bare None — no actual findings exist, review is genuinely clean"
     }
   ]
 }
