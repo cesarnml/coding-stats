@@ -8,7 +8,7 @@
   import { WakaApiRangePrompt } from '$lib/constants'
   import { selectedRange } from '$lib/stores/selectedRange'
   import { profile } from '$lib/stores/profile'
-  import { inject } from '@vercel/analytics'
+  import { injectAnalytics } from '@vercel/analytics/sveltekit'
   import { onMount } from 'svelte'
   import 'tippy.js/animations/scale.css'
   import 'tippy.js/dist/tippy.css'
@@ -18,7 +18,7 @@
   import { session } from '$lib/stores/session'
 
   // Initiate Vercel analytics
-  inject({ mode: dev ? 'development' : 'production', debug: false })
+  injectAnalytics({ mode: dev ? 'development' : 'production', debug: false })
 
   export let data
 
