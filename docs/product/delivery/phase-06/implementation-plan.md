@@ -66,17 +66,6 @@ Semantic note: `afterUpdate` fires after _any_ component update; `$effect` fires
 - `ticket-07-routes-and-remaining-leaves.md`
 - `ticket-08-global-flip-and-retro.md`
 
-## File-to-ticket map (51 files)
-
-- **T01 (1):** `BarChart/VerticalBarChart.svelte`
-- **T02 (9):** `Container.svelte`, `ChartTitle.svelte`, `common/ChartContainer.svelte`, `common/BigChartContainer.svelte`, `Stats/StatPanelItem.svelte`, `PageTransition.svelte`, `assets/svg/{Moon,Sun,System}.svelte`
-- **T03 (5):** `BarChart/ActivityChart.svelte`, `BarChart/BreakdownChart.svelte`, `BarChart/StackedBarChart.svelte`, `BarChart/WeekdaysBarChart.svelte`, `BarChart/DailyTitleContent.svelte`
-- **T04 (8):** `LineChart/LineChart.svelte`, `PieChart/PieChart.svelte`, `ScatterPlot/ScatterPlot.svelte`, `Treemap/Treemap.svelte`, `TimelineChart/TimelineChart.svelte`, `GaugeChart/DailyGauge.svelte`, `AiTokenBarChart/AiTokenBarChart.svelte`, `AiLinesPieChart/AiLinesPieChart.svelte`
-- **T05 (4):** `DateRangeSelect.svelte`, `BarChart/DailyChartControls.svelte`, `GaugeChart/DailyGaugeControls.svelte`, `DarkModeToggle.svelte`
-- **T06 (7):** `Navbar/{Navbar,NavDropdown,NavEnd,NavLink,NavLinks,NavLogo,NavMenu}.svelte`
-- **T07 (17):** `routes/+error.svelte`, `routes/+layout.svelte`, `routes/+page.svelte`, `routes/AiStatPanel.svelte`, `routes/account/+page.svelte`, `routes/iterations/+page.svelte`, `routes/iterations/[iterationId]/+page.svelte`, `routes/login-redirect/+page.svelte`, `routes/login/+page.svelte`, `routes/projects/+page.svelte`, `routes/projects/[projectName]/+page.svelte`, `Footer.svelte`, `ProjectList.svelte`, `EmptyState.svelte`, `Stats/StatsPanel.svelte`, `common/NinjaSpinner.svelte`, `common/SearchInput.svelte`
-- **T08 (0 conversions):** `svelte.config.js` + strip all `<svelte:options runes={true}>` directives + retrospective
-
 ## Exit Condition
 
 1. Repo-wide grep for all six legacy idioms returns zero hits across `src`.
@@ -112,3 +101,14 @@ Semantic note: `afterUpdate` fires after _any_ component update; `$effect` fires
 ## Phase Closeout
 
 Retrospective: `required` (per product plan — `runes: true` is a durable architectural boundary changing every future component PR's assumptions; captures reusable migration patterns/gotchas). Written in P6.08.
+
+## File-to-ticket map (51 files)
+
+- **T01 (1):** `BarChart/VerticalBarChart.svelte`
+- **T02 (9):** `Container.svelte`, `ChartTitle.svelte`, `common/ChartContainer.svelte`, `common/BigChartContainer.svelte`, `Stats/StatPanelItem.svelte`, `PageTransition.svelte`, `assets/svg/{Moon,Sun,System}.svelte`
+- **T03 (5):** `BarChart/ActivityChart.svelte`, `BarChart/BreakdownChart.svelte`, `BarChart/StackedBarChart.svelte`, `BarChart/WeekdaysBarChart.svelte`, `BarChart/DailyTitleContent.svelte`
+- **T04 (8):** `LineChart/LineChart.svelte`, `PieChart/PieChart.svelte`, `ScatterPlot/ScatterPlot.svelte`, `Treemap/Treemap.svelte`, `TimelineChart/TimelineChart.svelte`, `GaugeChart/DailyGauge.svelte`, `AiTokenBarChart/AiTokenBarChart.svelte`, `AiLinesPieChart/AiLinesPieChart.svelte`
+- **T05 (4):** `DateRangeSelect.svelte`, `BarChart/DailyChartControls.svelte`, `GaugeChart/DailyGaugeControls.svelte`, `DarkModeToggle.svelte`
+- **T06 (7):** `Navbar/{Navbar,NavDropdown,NavEnd,NavLink,NavLinks,NavLogo,NavMenu}.svelte`
+- **T07 (17):** `routes/+error.svelte`, `routes/+layout.svelte`, `routes/+page.svelte`, `routes/AiStatPanel.svelte`, `routes/account/+page.svelte`, `routes/iterations/+page.svelte`, `routes/iterations/[iterationId]/+page.svelte`, `routes/login-redirect/+page.svelte`, `routes/login/+page.svelte`, `routes/projects/+page.svelte`, `routes/projects/[projectName]/+page.svelte`, `Footer.svelte`, `ProjectList.svelte`, `EmptyState.svelte`, `Stats/StatsPanel.svelte`, `common/NinjaSpinner.svelte`, `common/SearchInput.svelte`
+- **T08 (0 conversions):** `svelte.config.js` + strip all `<svelte:options runes={true}>` directives + retrospective
