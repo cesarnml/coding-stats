@@ -1,11 +1,11 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
   import { dropdown } from '$lib/stores/dropdown'
 
-  export let label: string
-  export let url: string
-  export let isLarge = false
+  let { label, url, isLarge = false }: { label: string; url: string; isLarge?: boolean } = $props()
 </script>
 
 <button
@@ -15,7 +15,7 @@
   class:!capitalize={isLarge}
   class:text-base={!isLarge}
   type="button"
-  on:click={async () => {
+  onclick={async () => {
     await goto(url)
     dropdown.close()
   }}

@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import DarkModeToggle from '$lib/components/DarkModeToggle.svelte'
   import { DROPDOWN_NAV_URLS, Url } from '$lib/constants'
@@ -5,7 +7,7 @@
   import { session } from '$lib/stores/session'
   import NavLink from './NavLink.svelte'
 
-  $: dropdownUrls = DROPDOWN_NAV_URLS.filter((url) => url !== Url.Projects || $session)
+  const dropdownUrls = $derived(DROPDOWN_NAV_URLS.filter((url) => url !== Url.Projects || $session))
 </script>
 
 {#if $dropdown}
