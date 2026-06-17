@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { TOP_LEVEL_NAV_URLS, Url } from '$lib/constants'
   import { profile } from '$lib/stores/profile'

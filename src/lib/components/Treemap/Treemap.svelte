@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { page } from '$app/stores'
   import type { SummariesResult } from '$src/types/wakatime'

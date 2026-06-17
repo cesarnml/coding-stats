@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { ApiEndpoint, Step } from '$lib/constants'
   import { DurationItemType, type ValueOfDurationItemType } from '$lib/helpers/chartHelpers'

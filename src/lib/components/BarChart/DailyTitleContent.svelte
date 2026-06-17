@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { DateFormat } from '$lib/helpers/timeHelpers'
   import type { SupabaseDuration } from '$src/routes/api/supabase/durations/+server'

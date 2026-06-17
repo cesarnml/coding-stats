@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import type { StorySearchResults } from '$lib/generated/openapi/shortcut'
   import { getStoryBranches } from '$lib/helpers/chartHelpers'

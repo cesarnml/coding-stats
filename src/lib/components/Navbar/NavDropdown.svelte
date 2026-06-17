@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import DarkModeToggle from '$lib/components/DarkModeToggle.svelte'
   import { DROPDOWN_NAV_URLS, Url } from '$lib/constants'

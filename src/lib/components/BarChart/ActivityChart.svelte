@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import DailyChartControls from '$lib/components/BarChart/DailyChartControls.svelte'
   import ChartTitle from '$lib/components/ChartTitle.svelte'

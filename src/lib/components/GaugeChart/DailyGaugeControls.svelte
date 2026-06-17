@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import type { SummariesResult } from '$src/types/wakatime'
   import dayjs from 'dayjs'

@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import SearchInput from '$lib/components/common/SearchInput.svelte'
   import { Url } from '$lib/constants.js'

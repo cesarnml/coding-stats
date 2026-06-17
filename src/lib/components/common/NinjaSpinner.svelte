@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <div class="loader" aria-label="loading-spinner"></div>
 
 <style lang="postcss">

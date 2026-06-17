@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { dev } from '$app/environment'
   import { goto, invalidate } from '$app/navigation'

@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import type { SupabaseDuration } from '$src/routes/api/supabase/durations/+server'
   import * as echarts from 'echarts'

@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { dropdown } from '$lib/stores/dropdown'
   import 'iconify-icon'

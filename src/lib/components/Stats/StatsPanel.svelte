@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import { formatTime } from '$lib/helpers/timeHelpers'
   import type { SummariesResult } from '$src/types/wakatime'

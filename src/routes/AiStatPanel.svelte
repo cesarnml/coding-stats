@@ -1,5 +1,3 @@
-<svelte:options runes={true} />
-
 <script lang="ts">
   import StatPanelItem from '$lib/components/Stats/StatPanelItem.svelte'
 
