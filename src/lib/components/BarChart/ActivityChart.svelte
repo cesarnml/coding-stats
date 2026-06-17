@@ -1,22 +1,28 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import DailyChartControls from '$lib/components/BarChart/DailyChartControls.svelte'
   import ChartTitle from '$lib/components/ChartTitle.svelte'
   import Container from '$lib/components/Container.svelte'
   import type { SupabaseDuration } from '$src/routes/api/supabase/durations/+server'
   import * as echarts from 'echarts'
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import BigChartContainer from '../common/BigChartContainer.svelte'
   import DailyTitleContent from './DailyTitleContent.svelte'
   import { createActiveHoursData, createActiveHoursOption } from './barChartHelpers'
 
-  export let durations: SupabaseDuration
-  export let itemType: 'project' | 'language'
+  let {
+    durations: durationsProp,
+    itemType,
+  }: { durations: SupabaseDuration; itemType: 'project' | 'language' } = $props()
+
+  let durations = $state(durationsProp)
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: data = createActiveHoursData(durations)
-  $: option = createActiveHoursOption(data, durations)
+  const data = $derived(createActiveHoursData(durations))
+  const option = $derived(createActiveHoursOption(data, durations))
 
   onMount(() => {
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
@@ -30,7 +36,9 @@
     }
   })
 
-  afterUpdate(() => chart.setOption(option))
+  $effect(() => {
+    chart?.setOption(option)
+  })
 
   const onUpdate = (e: CustomEvent<SupabaseDuration>) => (durations = e.detail)
 </script>

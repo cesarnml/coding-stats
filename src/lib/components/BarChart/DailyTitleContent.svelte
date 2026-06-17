@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { DateFormat } from '$lib/helpers/timeHelpers'
   import type { SupabaseDuration } from '$src/routes/api/supabase/durations/+server'
@@ -8,14 +10,16 @@
 
   dayjs.extend(advancedFormat)
 
-  export let title: string
-  export let durations: SupabaseDuration
-  export let showCurrentTime = false
+  let {
+    title,
+    durations,
+    showCurrentTime = false,
+  }: { title: string; durations: SupabaseDuration; showCurrentTime?: boolean } = $props()
 
-  $: date = dayjs(durations.date).format(DateFormat.Shortish)
-  $: isToday = dayjs().isSame(durations.date, 'day')
+  const date = $derived(dayjs(durations.date).format(DateFormat.Shortish))
+  const isToday = $derived(dayjs().isSame(durations.date, 'day'))
 
-  let currentTime = dayjs().format(DateFormat.TwelveHour)
+  let currentTime = $state(dayjs().format(DateFormat.TwelveHour))
 
   onMount(() => {
     const animationFrame = requestAnimationFrame(updateTime)

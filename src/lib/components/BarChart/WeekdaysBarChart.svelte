@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import * as echarts from 'echarts'
   import Container from '../Container.svelte'
@@ -5,19 +7,17 @@
   import { createSimpleBarChartOption, type SimpleBarChartOption } from './barChartHelpers'
   import type { SummariesResult } from '$src/types/wakatime'
   import { onMount } from 'svelte'
-  import { afterUpdate } from 'svelte'
   import ChartContainer from '../common/ChartContainer.svelte'
   import EmptyState from '../EmptyState.svelte'
 
-  export let summaries: SummariesResult
-  export let title = 'Weekly Breakdown'
+  let { summaries, title = 'Weekly Breakdown' }: { summaries: SummariesResult; title?: string } =
+    $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
-  let option: SimpleBarChartOption
 
-  $: hasData = (summaries.data?.length ?? 0) > 0
-  $: option = createSimpleBarChartOption(summaries)
+  const hasData = $derived((summaries.data?.length ?? 0) > 0)
+  const option: SimpleBarChartOption = $derived(createSimpleBarChartOption(summaries))
 
   onMount(() => {
     if (!chartRef) return
@@ -32,7 +32,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     chart.setOption(option)

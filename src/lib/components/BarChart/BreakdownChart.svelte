@@ -1,8 +1,10 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { goto } from '$app/navigation'
   import type { SummariesResult } from '$src/types/wakatime'
   import * as echarts from 'echarts'
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import Container from '../Container.svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import {
@@ -17,25 +19,31 @@
   import ChartContainer from '../common/ChartContainer.svelte'
   import EmptyState from '../EmptyState.svelte'
 
-  export let summaries: SummariesResult
-  export let title: string
-  export let isFiltered = true
+  let {
+    summaries,
+    title,
+    isFiltered: _isFiltered = true,
+  }: { summaries: SummariesResult; title: string; isFiltered?: boolean } = $props()
+
+  let isFiltered = $state(_isFiltered)
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: hasData = (summaries.data?.length ?? 0) > 0
-  $: data = createBreakdownChartData(summaries)
-  $: filteredData = filterBreakdownChartData(data)
-  $: option = createBreakdownChartOption(
-    isFiltered
-      ? filteredData
-      : Object.entries(data).reduce(
-          (acc, [key, value]) => {
-            return { ...acc, [key]: value / secPerHour }
-          },
-          {} as Record<string, number>,
-        ),
+  const hasData = $derived((summaries.data?.length ?? 0) > 0)
+  const data = $derived(createBreakdownChartData(summaries))
+  const filteredData = $derived(filterBreakdownChartData(data))
+  const option = $derived(
+    createBreakdownChartOption(
+      isFiltered
+        ? filteredData
+        : Object.entries(data).reduce(
+            (acc, [key, value]) => {
+              return { ...acc, [key]: value / secPerHour }
+            },
+            {} as Record<string, number>,
+          ),
+    ),
   )
 
   onMount(() => {
@@ -61,7 +69,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     tippy(document.querySelectorAll('[data-tippy-content]'), {
       theme: 'light',
@@ -85,7 +93,7 @@
         {title}
       </h2>
       <div class="absolute right-0 top-0 flex h-full items-center gap-6">
-        <button class="flex items-center" type="button" on:click={() => (isFiltered = !isFiltered)}>
+        <button class="flex items-center" type="button" onclick={() => (isFiltered = !isFiltered)}>
           {#if isFiltered}
             <iconify-icon
               class="h-full text-base"
