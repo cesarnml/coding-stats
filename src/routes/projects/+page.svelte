@@ -1,12 +1,13 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import SearchInput from '$lib/components/common/SearchInput.svelte'
   import { Url } from '$lib/constants.js'
   import { ChartColor } from '$lib/helpers/chartHelpers.js'
   import { upsertProject } from '$lib/supabase/projects'
   import { project } from '$lib/stores/project.js'
-  export let data
 
-  $: ({ wakaProjects, q, supabase } = data)
+  let { data } = $props()
 
   const syncProject = (row: Awaited<ReturnType<typeof upsertProject>>) => {
     if (!row) return
@@ -19,15 +20,15 @@
   }
 
   const onTrackProject = async (projectName: string) => {
-    syncProject(await upsertProject(supabase, { name: projectName, is_tracked: true }))
+    syncProject(await upsertProject(data.supabase, { name: projectName, is_tracked: true }))
   }
 
   const onUnTrackProject = async (projectName: string) => {
-    syncProject(await upsertProject(supabase, { name: projectName, is_tracked: false }))
+    syncProject(await upsertProject(data.supabase, { name: projectName, is_tracked: false }))
   }
 
   const onColorChange = async (projectName: string, color: string) => {
-    syncProject(await upsertProject(supabase, { name: projectName, color }))
+    syncProject(await upsertProject(data.supabase, { name: projectName, color }))
   }
 
   const getInputValue = (event: Event) =>
@@ -37,16 +38,16 @@
 </script>
 
 <div class="space-y-8">
-  <SearchInput query={q} />
+  <SearchInput query={data.q} />
   <ul class="w-full space-y-4 px-4">
-    {#each wakaProjects.data as { name } (name)}
+    {#each data.wakaProjects.data as { name } (name)}
       <li class="flex items-center gap-4">
         <div class="inline-flex flex-col">
           <input
             class="project-color"
             type="color"
             value={$project?.find((p) => p.name === name)?.color ?? ChartColor.Icon}
-            on:change={(event) => onColorChange(name, getInputValue(event))}
+            onchange={(event) => onColorChange(name, getInputValue(event))}
           />
         </div>
         <a
@@ -54,14 +55,14 @@
           href={Url.ProjectDetail(name)}>{name}</a
         >
         {#if isTracked(name)}
-          <button class="btn-sm btn" type="button" on:click={() => onUnTrackProject(name)}
+          <button class="btn-sm btn" type="button" onclick={() => onUnTrackProject(name)}
             >Tracking</button
           >
         {:else}
           <button
             class="btn-secondary btn-sm btn"
             type="button"
-            on:click={() => onTrackProject(name)}>Track</button
+            onclick={() => onTrackProject(name)}>Track</button
           >
         {/if}
       </li>

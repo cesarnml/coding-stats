@@ -1,7 +1,9 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import type { PageData } from './$types'
 
-  export let data: PageData
+  let { data }: { data: PageData } = $props()
   const { stories } = data
 </script>
 

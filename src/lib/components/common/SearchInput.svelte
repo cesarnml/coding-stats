@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
@@ -5,12 +7,15 @@
 
   const DELAY = 350
 
-  export let query = ''
+  let { query = '' }: { query?: string } = $props()
 
-  let search = query
-  let loading = false
+  // eslint-disable-next-line svelte/prefer-writable-derived
+  let search = $state('')
+  let loading = $state(false)
 
-  $: search = query
+  $effect(() => {
+    search = query
+  })
 
   const debouncedSearch = debounce(async () => {
     loading = true
@@ -37,7 +42,7 @@
     class="input-primary input w-full flex-shrink text-base md:max-w-xs"
     bind:value={search}
     placeholder="Search projects..."
-    on:input={onChange}
+    oninput={onChange}
   />
   {#if loading}
     <button

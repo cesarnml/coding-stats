@@ -1,13 +1,16 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { page } from '$app/stores'
   import { Url } from '$lib/constants'
-  $: {
+
+  $effect(() => {
     const redirectTo = $page.url.searchParams.get('redirect')
 
     if ($page.data.session) {
       location.href = redirectTo ?? Url.Home
     }
-  }
+  })
 </script>
 
 <section class="flex h-screen items-center justify-center">

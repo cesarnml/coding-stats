@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { Url } from '$lib/constants'
   import { DateFormat } from '$lib/helpers/timeHelpers'
@@ -5,14 +7,12 @@
   import dayjs from 'dayjs'
   import 'iconify-icon'
 
-  export let data: PageData
-
-  $: ({ iterations, lazy } = data)
+  let { data }: { data: PageData } = $props()
 </script>
 
 <div class="iterations-container w-full overflow-x-auto rounded-lg bg-chart-dark px-2 md:px-4">
   <div class="iterations-inner flex w-fit gap-4">
-    {#each iterations as iteration (iteration.id)}
+    {#each data.iterations as iteration (iteration.id)}
       <div class="card glass card-body flex h-full min-w-[400px] flex-col overflow-y-auto p-4">
         <div class="mb-6">
           <div class="mb-2">
@@ -58,7 +58,7 @@
         </div>
         <div class="overflow-y-auto overflow-x-hidden">
           <div class="flex flex-col gap-4">
-            {#await lazy.iterationStoriesDict[iteration.id] then stories}
+            {#await data.lazy.iterationStoriesDict[iteration.id] then stories}
               {#if !stories.length}
                 <div class="btn-outline btn-secondary btn h-32 p-2">EMPTY</div>
               {:else}

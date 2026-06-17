@@ -1,15 +1,17 @@
+<svelte:options runes={true} />
+
 <!-- src/routes/account/+page.svelte -->
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { goto } from '$app/navigation'
   import { Url } from '$lib/constants'
 
-  export let data
+  let { data } = $props()
 
   let { profile } = data
 
-  let loading = false
-  let name: string | null = profile?.name ?? null
+  let loading = $state(false)
+  let name = $state<string | null>(profile?.name ?? null)
 
   function handleSubmit() {
     loading = true
