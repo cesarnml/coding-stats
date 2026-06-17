@@ -1,7 +1,14 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-  export let title: string
-  export let icon: string
-  export let label: string
+  import type { Snippet } from 'svelte'
+
+  let {
+    title,
+    icon,
+    label,
+    children,
+  }: { title: string; icon: string; label: string; children?: Snippet } = $props()
 </script>
 
 <div class="stat shrink">
@@ -11,6 +18,6 @@
   </div>
   <div class="stat-title text-sm">{title}</div>
   <div class="stat-value text-lg text-secondary">
-    <slot />
+    {@render children?.()}
   </div>
 </div>

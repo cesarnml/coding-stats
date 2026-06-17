@@ -1,8 +1,11 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import { fade } from 'svelte/transition'
   import { cubicInOut } from 'svelte/easing'
 
-  export let pathname: string
+  let { pathname, children }: { pathname: string; children?: Snippet } = $props()
   const duration = 350 // in ms
 </script>
 
@@ -13,6 +16,6 @@
     in:fade={{ duration, delay: duration, easing: cubicInOut }}
     out:fade={{ duration, easing: cubicInOut }}
   >
-    <slot />
+    {@render children?.()}
   </div>
 {/key}
