@@ -90,7 +90,7 @@
     >
       {$page.params.projectName}
     </h1>
-    <DateRangeSelect on:wakarange={onWakaRange} />
+    <DateRangeSelect onwakarange={onWakaRange} />
   </div>
   <StatsPanel {summaries} />
   <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">

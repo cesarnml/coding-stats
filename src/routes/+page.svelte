@@ -93,7 +93,7 @@
         <p class="text-xs text-base-content/50">Updated {maxDateFormatted}</p>
       {/if}
     </div>
-    <DateRangeSelect on:wakarange={onWakaRange} />
+    <DateRangeSelect onwakarange={onWakaRange} />
   </div>
   <StatsPanel {summaries} showFullPanel />
   <AiStatPanel {aiStats} />

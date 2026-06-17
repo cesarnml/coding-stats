@@ -1,18 +1,23 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import type { SummariesResult } from '$src/types/wakatime'
   import dayjs from 'dayjs'
   import { DateFormat } from '$lib/helpers/timeHelpers'
-  import { createEventDispatcher } from 'svelte'
 
-  export let summaries: SummariesResult
-  export let selectedDate: string
+  let {
+    summaries,
+    selectedDate,
+    onupdate,
+  }: { summaries: SummariesResult; selectedDate: string; onupdate?: (detail: string) => void } =
+    $props()
 
-  const dispatch = createEventDispatcher()
-
-  $: dates = summaries.data ? summaries.data.map((summary) => summary.range.date).reverse() : []
+  const dates = $derived(
+    summaries.data ? summaries.data.map((summary) => summary.range.date).reverse() : [],
+  )
 
   const handleClick = (date: string) => {
-    dispatch('update', date)
+    onupdate?.(date)
   }
 </script>
 
@@ -25,7 +30,7 @@
         class:btn-primary={date !== selectedDate}
         class:btn-outline={date !== selectedDate}
         type="button"
-        on:click={() => handleClick(date)}
+        onclick={() => handleClick(date)}
       >
         {dayjs(date).format(DateFormat.Short)}
       </button>

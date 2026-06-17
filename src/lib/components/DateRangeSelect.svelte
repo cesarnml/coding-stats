@@ -1,12 +1,13 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { ApiEndpoint, WakaApiRange, WakaApiRangePrompt } from '$lib/constants'
   import { customDateRange } from '$lib/stores/customDateRange'
   import { profile } from '$lib/stores/profile'
   import { selectedRange } from '$lib/stores/selectedRange'
-  import { createEventDispatcher } from 'svelte'
   import dayjs from 'dayjs'
 
-  const dispatch = createEventDispatcher()
+  let { onwakarange }: { onwakarange?: () => void } = $props()
 
   const today = dayjs().format('YYYY-MM-DD')
 
@@ -21,14 +22,14 @@
   function onRangeChange() {
     if ($selectedRange !== WakaApiRange.Custom) {
       customDateRange.set({ start: null, end: null })
-      dispatch('wakarange')
+      onwakarange?.()
       persistRange($selectedRange)
     }
   }
 
   function onCustomDateChange() {
     if ($customDateRange.start && $customDateRange.end) {
-      dispatch('wakarange')
+      onwakarange?.()
     }
   }
 </script>
@@ -37,7 +38,7 @@
   <select
     class="select-accent select w-full bg-neutral-focus text-accent sm:w-fit"
     bind:value={$selectedRange}
-    on:change={onRangeChange}
+    onchange={onRangeChange}
     title="Select date range"
   >
     <option disabled selected>Pick a range</option>
@@ -54,7 +55,7 @@
       class="input input-bordered input-accent bg-neutral-focus text-accent"
       max={today}
       bind:value={$customDateRange.start}
-      on:change={onCustomDateChange}
+      onchange={onCustomDateChange}
       aria-label="Start date"
     />
     <input
@@ -62,7 +63,7 @@
       class="input input-bordered input-accent bg-neutral-focus text-accent"
       max={today}
       bind:value={$customDateRange.end}
-      on:change={onCustomDateChange}
+      onchange={onCustomDateChange}
       aria-label="End date"
     />
   {/if}

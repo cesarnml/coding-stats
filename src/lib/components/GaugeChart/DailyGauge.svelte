@@ -54,15 +54,15 @@
     chart.setOption(option)
   })
 
-  const onUpdate = (e: CustomEvent<string>) => {
-    selectedDate = e.detail
+  const onUpdate = (detail: string) => {
+    selectedDate = detail
   }
 </script>
 
 <Container>
   <ChartTitle>{title}</ChartTitle>
   {#if hasData}
-    <DailyGaugeControls {summaries} {selectedDate} on:update={onUpdate} />
+    <DailyGaugeControls {summaries} {selectedDate} onupdate={onUpdate} />
     <ChartContainer>
       <div class="h-full w-full" bind:this={chartRef}></div>
     </ChartContainer>

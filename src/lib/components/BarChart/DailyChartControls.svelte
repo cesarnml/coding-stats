@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { ApiEndpoint, Step } from '$lib/constants'
   import { DurationItemType, type ValueOfDurationItemType } from '$lib/helpers/chartHelpers'
@@ -6,25 +8,34 @@
   import dayjs from 'dayjs'
   import isToday from 'dayjs/plugin/isToday'
   import 'iconify-icon'
-  import { createEventDispatcher, onMount } from 'svelte'
+  import { onMount } from 'svelte'
 
   dayjs.extend(isToday)
 
-  export let durations: SupabaseDuration
-  export let itemType: ValueOfDurationItemType
-  let loading = false
+  let {
+    durations: durationsProp,
+    itemType,
+    onupdate,
+  }: {
+    durations: SupabaseDuration
+    itemType: ValueOfDurationItemType
+    onupdate?: (detail: SupabaseDuration) => void
+  } = $props()
+
+  let durations = $state(durationsProp)
+  let loading = $state(false)
 
   const PREV_DAYS_LIMIT = 13
   const INCREMENT_UNIT = 'days'
   const EMPTY_COPY = 'No Data'
-  const dispatch = createEventDispatcher()
 
-  $: totalDuration = durations.data.reduce((acc, cur) => cur.duration + acc, 0)
-  $: totalTime = formatTime(totalDuration).trim() || EMPTY_COPY
-  $: isNextDisabled = dayjs(durations.date).isToday() || loading
-  $: isPrevDisabled =
+  const totalDuration = $derived(durations.data.reduce((acc, cur) => cur.duration + acc, 0))
+  const totalTime = $derived(formatTime(totalDuration).trim() || EMPTY_COPY)
+  const isNextDisabled = $derived(dayjs(durations.date).isToday() || loading)
+  const isPrevDisabled = $derived(
     dayjs(durations.date).isSame(dayjs().subtract(PREV_DAYS_LIMIT, INCREMENT_UNIT), 'day') ||
-    loading
+      loading,
+  )
 
   onMount(() => {
     const interval = setInterval(async () => {
@@ -34,7 +45,7 @@
         try {
           const response = await fetch(`${ApiEndpoint.SupabaseDurations}?date=${durations.date}`)
           durations = await response.json()
-          dispatch('update', durations)
+          onupdate?.(durations)
         } catch (error) {
           console.log('error:', error)
         }
@@ -44,7 +55,7 @@
             `${ApiEndpoint.SupabaseDurationsByLanguage}?date=${durations.date}`,
           )
           durations = await response.json()
-          dispatch('update', durations)
+          onupdate?.(durations)
         } catch (error) {
           console.log('error:', error)
         }
@@ -63,7 +74,7 @@
         ? await fetch(`${ApiEndpoint.SupabaseDurations}?date=${date}`)
         : await fetch(`${ApiEndpoint.SupabaseDurationsByLanguage}?date=${date}`)
     durations = await response.json()
-    dispatch('update', durations)
+    onupdate?.(durations)
     loading = false
   }
 
@@ -75,7 +86,7 @@
   <button
     class="btn-outline btn-square btn-sm btn flex items-center"
     type="button"
-    on:click={getPrevDate}
+    onclick={getPrevDate}
     disabled={isPrevDisabled}
     aria-label="left arrow"
   >
@@ -96,7 +107,7 @@
   <button
     class="btn-outline btn-square btn-sm btn flex items-center"
     type="button"
-    on:click={getNextDate}
+    onclick={getNextDate}
     disabled={isNextDisabled}
     aria-label="right arrow"
   >
