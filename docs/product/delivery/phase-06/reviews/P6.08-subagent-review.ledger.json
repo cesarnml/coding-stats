@@ -33,6 +33,21 @@
       "outcome": "clean",
       "acknowledgment": "operator-confirmed-clean",
       "reason": "Subagent report used --- horizontal rules despite template prohibition; parser false-positived on Condition B; ledger records findings: [] and outcome: clean correctly"
+    },
+    {
+      "runnerKind": "operator-recorder",
+      "reviewedHeadSha": "5cbe956d5f6fb18351ab13eadde519f92e1fdaba",
+      "outcome": "deferred",
+      "completedAt": "2026-06-17T07:59:57.678Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": [],
+      "reason": "Subagent report included prohibited --- horizontal rules; reconciliation parser false-positived on Condition B reading 'None.' + '---' as actionable content. Ledger correctly records findings: [] and outcome: clean. No actual actionable findings exist — all invariants held, all surfaces clean.",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": null,
+      "fallbackFrom": null
     }
   ]
 }
