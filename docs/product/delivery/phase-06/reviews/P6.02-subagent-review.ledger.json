@@ -49,6 +49,21 @@
       "outcome": "clean",
       "acknowledgment": "operator-confirmed-clean",
       "reason": "Subagent report Actionable findings section says None followed by explanatory prose; reconciler regex requires bare None — no actual findings exist, review is genuinely clean"
+    },
+    {
+      "runnerKind": "operator-recorder",
+      "reviewedHeadSha": "ea40e08cc4782cf61740b47d492b278825035514",
+      "outcome": "deferred",
+      "completedAt": "2026-06-17T03:09:45.067Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": [],
+      "reason": "Reconciler Condition B false positive: subagent wrote 'None. All three invariants hold...' in Actionable findings — parser regex requires bare 'None.' to pass; review is genuinely clean with zero actionable findings per full report",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": null,
+      "fallbackFrom": null
     }
   ]
 }
