@@ -26,6 +26,11 @@ Red: skip
 - `+layout.svelte` default `<slot>` → `{@render children?.()}`.
 - Add `<svelte:options runes={true}>` to each.
 
+## Refactor
+
+- No structural change to routes or leaves; `$props()` destructuring mirrors the previous `export let` declarations exactly.
+- Do not touch `load` functions, `+page.ts`/`+layout.ts`, or any non-`.svelte` route module.
+
 ## Review Focus
 
 - `+layout` children render correctly across all routes (page content nests under layout).

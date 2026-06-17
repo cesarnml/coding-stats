@@ -23,6 +23,11 @@ Red: skip
 - Convert `NavLogo` slot → snippet and update its consumer call-site.
 - Add `<svelte:options runes={true}>` to each.
 
+## Refactor
+
+- No structural change. Snippet param shape for `NavLogo` mirrors its previous slot exactly.
+- Leave store subscriptions and dropdown toggle logic untouched.
+
 ## Review Focus
 
 - `$dropdown`/`$loading`/`$navigating` NOT converted to `$state` — confirm they remain store subscriptions (regressing this breaks the stores-stay deferral).

@@ -24,6 +24,11 @@ Red: skip
 - Verify `bind:group` targets a native `<input>`; if it targets a component prop, add `$bindable()` to that child and note it.
 - Add `<svelte:options runes={true}>` to each.
 
+## Refactor
+
+- No new abstractions. Callback prop names mirror the previous event names (`update` → `onUpdate`, etc.); keep signatures identical to the dispatched detail.
+- Do not restructure the controls' markup or styling.
+
 ## Review Focus
 
 - Every dispatched event (`on:update`, `on:change`, custom) has a corresponding callback prop and every consumer call-site is updated — grep `on:` against these components' usages after conversion.

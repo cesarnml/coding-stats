@@ -15,7 +15,7 @@ When this phase is complete:
 - All 45 existing test files pass, `svelte-check` is clean, and the single Playwright smoke test (`tests/smoke-test.test.ts`) is green.
 - The app behaves identically to pre-migration, verified by documented manual-smoke notes over high-risk interactive surfaces.
 
-## Grill-me decisions locked
+## Grill-Me decisions locked
 
 - **Landing strategy** — per-file `<svelte:options runes={true}>` as a transient bridge so each ticket is independently mergeable and `main` stays green in mixed mode; the final ticket flips the global flag and strips every directive in one mechanical commit.
 - **Sequencing** — recipe-first (T01 proves the ECharts pattern on one chart), then bottom-up by cluster.
@@ -85,30 +85,30 @@ Semantic note: `afterUpdate` fires after _any_ component update; `$effect` fires
 4. Manual-smoke notes recorded for high-risk surfaces (chart redraw, `DateRangeSelect`, controls, `DarkModeToggle` dynamic render, Navbar dropdown).
 5. Retrospective written to `notes/public/phase-06-svelte5-runes-migration-retrospective.md`.
 
-## CI baseline
+## CI Baseline
 
 > To be recorded at P6.01 start on `main`.
 
-## Review rules
+## Review Rules
 
 - Tickets merge in order. Each ticket adds `<svelte:options runes={true}>` to the files it converts; mixed mode keeps `main` green between tickets.
 - Only T08 touches `svelte.config.js` and removes the per-file directives.
 - Each ticket PR passes `format` + `verify` + smoke e2e before the next ticket starts.
 - Reviewer verifies the recipe was applied uniformly within a cluster and that no drive-by changes crept in (diffs should read as "same component, new syntax").
 
-## Explicit deferrals
+## Explicit Deferrals
 
 - `writable` store → `$state` `.svelte.ts` conversion.
 - Component extraction, prop/API renames, styling changes, `any`/type cleanup.
 - Net-new characterization tests for high-risk surfaces.
 - SvelteKit `$app/stores` → `$app/state` migration (`$navigating`/`$page`) — separate axis, auto-subscription works in runes mode.
 
-## Stop conditions
+## Stop Conditions
 
 - A chart's `afterUpdate`→`$effect` conversion changes redraw behavior in a way manual smoke catches and the recipe can't cleanly resolve — stop, log a finding, escalate before forcing it.
 - A `bind:` turns out to target a custom-component prop requiring non-trivial `$bindable` redesign beyond mechanical translation — log and confirm scope before proceeding.
 - `runes: true` global flip surfaces a file that can't compile in rune mode (e.g. a missed legacy idiom or third-party `.svelte` dep) — fix the file, do not soften the flag.
 
-## Phase closeout
+## Phase Closeout
 
 Retrospective: `required` (per product plan — `runes: true` is a durable architectural boundary changing every future component PR's assumptions; captures reusable migration patterns/gotchas). Written in P6.08.
