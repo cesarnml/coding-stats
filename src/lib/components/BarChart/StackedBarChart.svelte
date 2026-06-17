@@ -1,6 +1,8 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import * as echarts from 'echarts'
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import Container from '../Container.svelte'
   import {
@@ -13,18 +15,19 @@
   import ChartContainer from '../common/ChartContainer.svelte'
   import EmptyState from '../EmptyState.svelte'
 
-  export let summaries: SummariesResult
-  export let title: string
-  export let itemsType: 'categories' | 'projects'
+  let {
+    summaries,
+    title,
+    itemsType,
+  }: { summaries: SummariesResult; title: string; itemsType: 'categories' | 'projects' } = $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
-  let option: StackedBarChartOption
 
-  $: hasData = (summaries.data?.length ?? 0) > 0
-  $: xValues = createXAxisValues(summaries)
-  $: series = createBarChartSeries({ summaries, itemsType })
-  $: option = createStackedBarChartOption(xValues, series)
+  const hasData = $derived((summaries.data?.length ?? 0) > 0)
+  const xValues = $derived(createXAxisValues(summaries))
+  const series = $derived(createBarChartSeries({ summaries, itemsType }))
+  const option: StackedBarChartOption = $derived(createStackedBarChartOption(xValues, series))
 
   onMount(() => {
     if (!chartRef) return
@@ -39,7 +42,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     chart?.dispose()
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })

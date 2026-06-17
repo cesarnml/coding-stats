@@ -40,4 +40,4 @@ Red first: n/a (`Red: skip`).
 Why this path: mechanical application of the proven T01 recipe across the largest chart cluster.
 Alternative considered: one ticket for all 12 remaining charts — rejected for diff reviewability (split into T03 BarChart family + T04 standalones).
 Deferred: standalone charts (T04).
-Contract note: —
+Contract note: `ActivityChart.svelte` retains `on:update={onUpdate}` (Svelte 4 legacy event directive) because `DailyChartControls` is a Svelte 4 component not yet migrated to runes. TypeScript rejects `onupdate` as an unknown prop until T05 migrates `DailyChartControls` to expose the callback prop. This is a tracked cross-boundary compatibility bridge; the full cleanup lands in T05. The "grep for legacy idioms returns zero" outcome claim applies to all idioms that can be removed without breaking TypeScript at the cross-component boundary.
