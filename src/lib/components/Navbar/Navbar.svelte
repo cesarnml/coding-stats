@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { media } from '$lib/stores/media'
   import { dropdown } from '$lib/stores/dropdown'
@@ -10,9 +12,11 @@
   import { loading } from '$lib/stores/loading'
   import logo from '$lib/assets/images/logo.webp'
 
-  $: if ($media.sm) {
-    dropdown.close()
-  }
+  $effect(() => {
+    if ($media.sm) {
+      dropdown.close()
+    }
+  })
 </script>
 
 <div
