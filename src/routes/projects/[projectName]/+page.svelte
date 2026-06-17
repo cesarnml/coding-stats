@@ -11,7 +11,12 @@
   import ScatterPlot from '$lib/components/ScatterPlot/ScatterPlot.svelte'
   import StatsPanel from '$lib/components/Stats/StatsPanel.svelte'
   import Treemap from '$lib/components/Treemap/Treemap.svelte'
-  import { ApiEndpoint, WakaApiRange, WakaToShortcutApiRange, type ValueOf } from '$lib/constants.js'
+  import {
+    ApiEndpoint,
+    WakaApiRange,
+    WakaToShortcutApiRange,
+    type ValueOf,
+  } from '$lib/constants.js'
   import { buildSummariesUrl } from '$lib/helpers/buildSummariesUrl'
   import { DateFormat } from '$lib/helpers/timeHelpers.js'
   import { customDateRange } from '$lib/stores/customDateRange'
@@ -27,7 +32,11 @@
 
   $: summaries = summariesOverride ?? data.summaries
   $: stories = storiesOverride ?? data.stories
-  $: ({ projectName, lazy: { aliases }, profile } = data)
+  $: ({
+    projectName,
+    lazy: { aliases },
+    profile,
+  } = data)
 
   $: available_branches = summaries.data
     ? [

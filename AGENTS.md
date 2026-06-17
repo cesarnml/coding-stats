@@ -28,6 +28,7 @@ Before closing a delivery ticket:
 Write `notes/public/<plan-path>-retrospective.md` using `.agents/skills/write-retrospective/SKILL.md` for section structure and placement conventions.
 
 <!-- soa:start -->
+
 ## Son-of-Anton Skill Triggers
 
 Use these skills when working in a consumer repo that has installed Son-of-Anton
@@ -54,4 +55,5 @@ When invoking a review subagent during orchestrated delivery:
 **Prerequisite:** Son-of-Anton requires a global `bun` install. All CLI delivery commands run via `bun run deliver …`.
 
 Before every commit: run `bun run format`, then `bun run verify` (or `bun run verify:quiet`). Use `bun run ci:quiet` as the final publication gate before opening a PR.
+
 <!-- soa:end -->

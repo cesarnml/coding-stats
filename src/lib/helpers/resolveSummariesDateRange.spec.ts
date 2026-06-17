@@ -27,7 +27,11 @@ describe('resolveSummariesDateRange', () => {
   })
 
   it('subtracts 29 days for Last 30 Days', () => {
-    const { rangeStart, rangeEnd } = resolveSummariesDateRange(WakaApiRange.Last_30_Days, null, null)
+    const { rangeStart, rangeEnd } = resolveSummariesDateRange(
+      WakaApiRange.Last_30_Days,
+      null,
+      null,
+    )
     expect(rangeStart).toBe('2024-02-15')
     expect(rangeEnd).toBe('2024-03-15')
   })

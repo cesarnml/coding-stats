@@ -6,9 +6,7 @@ export function buildSummariesUrl(
   end: string | null,
   project?: string,
 ): string {
-  const endpoint = project
-    ? ApiEndpoint.SupabaseProjectSummaries
-    : ApiEndpoint.SupabaseSummaries
+  const endpoint = project ? ApiEndpoint.SupabaseProjectSummaries : ApiEndpoint.SupabaseSummaries
 
   if (range === 'Custom' && start && end) {
     const params = new URLSearchParams({ start, end })
