@@ -1,0 +1,37 @@
+{
+  "ticket": "P6.03",
+  "invocations": [
+    {
+      "runnerKind": "claude-cli",
+      "reviewedHeadSha": "64e8f93b9cfece9c004c5c1ac2b199fdba87a4ec",
+      "outcome": "clean",
+      "completedAt": "2026-06-17T03:25:28.117Z",
+      "terminatedReason": "completed",
+      "rawOutput": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
+      "filledPrompt": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.prompt.md",
+      "fallbackLevel": "preferred",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": "completed",
+      "fallbackFrom": null,
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": []
+    },
+    {
+      "runnerKind": "operator-recorder",
+      "reviewedHeadSha": "64e8f93b9cfece9c004c5c1ac2b199fdba87a4ec",
+      "outcome": "deferred",
+      "completedAt": "2026-06-17T03:27:30.112Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": [],
+      "reason": "Finding 1 (on:update legacy idiom in ActivityChart): DailyChartControls is Svelte 4 and TypeScript rejects onupdate as unknown prop until T05 migrates it to runes. on:update is the correct cross-boundary bridge for now; ticket Rationale updated to document the tracked exception.",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": null,
+      "fallbackFrom": null
+    }
+  ]
+}

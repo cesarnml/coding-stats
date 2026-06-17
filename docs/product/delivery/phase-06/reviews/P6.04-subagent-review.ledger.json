@@ -1,0 +1,37 @@
+{
+  "ticket": "P6.04",
+  "invocations": [
+    {
+      "runnerKind": "claude-cli",
+      "reviewedHeadSha": "dc35ac26f0932894469f3a05393460306f14e34e",
+      "outcome": "clean",
+      "completedAt": "2026-06-17T03:37:59.277Z",
+      "terminatedReason": "completed",
+      "rawOutput": "docs/product/delivery/phase-06/reviews/P6.04-subagent-review.report.md",
+      "filledPrompt": "docs/product/delivery/phase-06/reviews/P6.04-subagent-review.prompt.md",
+      "fallbackLevel": "preferred",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": "completed",
+      "fallbackFrom": null,
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": []
+    },
+    {
+      "runnerKind": "operator-recorder",
+      "reviewedHeadSha": "dc35ac26f0932894469f3a05393460306f14e34e",
+      "outcome": "deferred",
+      "completedAt": "2026-06-17T03:38:42.472Z",
+      "terminatedReason": "completed",
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": [],
+      "reason": "Condition B false positive: subagent used --- horizontal rules in report (violating template instructions), causing the section parser to misread the Actionable findings section. Actual findings: None. Advisory observations are non-blocking doc-vs-code drift notes (on:update T05 exception not in ticket Outcome) and DailyGauge selectedDate ordering note.",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": null,
+      "fallbackFrom": null
+    }
+  ]
+}
