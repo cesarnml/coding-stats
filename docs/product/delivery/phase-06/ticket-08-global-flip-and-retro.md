@@ -10,7 +10,7 @@ Red: skip
 - `svelte.config.js` sets `compilerOptions: { runes: true }` globally.
 - Every `<svelte:options runes={true}>` directive added in T01–T07 is removed (now redundant).
 - Repo-wide `grep` for all six legacy idioms (`export let`, `$:`, `createEventDispatcher`, `on:` component events, `<slot>`, `beforeUpdate`/`afterUpdate`) returns zero across `src`.
-- `bun run format`, `bun run verify` (`svelte-check` + vitest), and the Playwright smoke test all pass with the global flag on.
+- `bun run format` and `bun run verify` (`svelte-check` + vitest) pass with the global flag on. The Playwright smoke test was **not** run end-to-end during delivery (missing E2E environment setup — a pre-existing CI pipeline gap, not migration-specific); `svelte-check` + vitest was the verification gate used. See the retrospective's Net assessment.
 - A reintroduced legacy idiom now fails the build (verified once, then reverted).
 - Retrospective written to `notes/public/phase-06-svelte5-runes-migration-retrospective.md`.
 - Product plan + implementation plan `Delivery status` lines updated to reflect completion.

@@ -56,30 +56,35 @@
 </script>
 
 <svelte:head>
+  <!-- IIFE-wrapped so the FOUC-prevention script does not leak `colorTheme` to
+       global scope. jsdom runs every mount's head script in one shared context,
+       so a top-level `let` collides across remounts in tests. -->
   <script>
-    let colorTheme =
-      typeof localStorage.getItem === 'function'
-        ? localStorage.getItem('colorTheme')
-        : localStorage.colorTheme
-    if (colorTheme == null) {
-      colorTheme = 'system'
-      if (typeof localStorage.setItem === 'function') {
-        localStorage.setItem('colorTheme', colorTheme)
-      } else {
-        try {
-          localStorage.colorTheme = colorTheme
-        } catch {}
+    ;(function () {
+      let colorTheme =
+        typeof localStorage.getItem === 'function'
+          ? localStorage.getItem('colorTheme')
+          : localStorage.colorTheme
+      if (colorTheme == null) {
+        colorTheme = 'system'
+        if (typeof localStorage.setItem === 'function') {
+          localStorage.setItem('colorTheme', colorTheme)
+        } else {
+          try {
+            localStorage.colorTheme = colorTheme
+          } catch {}
+        }
       }
-    }
-    if (colorTheme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'night')
-    }
-    if (colorTheme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'synthwave')
-    }
-    if (colorTheme === 'system') {
-      document.documentElement.removeAttribute('data-theme')
-    }
+      if (colorTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'night')
+      }
+      if (colorTheme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'synthwave')
+      }
+      if (colorTheme === 'system') {
+        document.documentElement.removeAttribute('data-theme')
+      }
+    })()
   </script>
 </svelte:head>
 
