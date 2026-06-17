@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "recordedAt": "2026-06-17T12:39:22.118Z",
+  "recordedAt": "2026-06-17T12:47:57.852Z",
   "summary": {
     "total": 17,
-    "patched": 2,
+    "patched": 4,
     "rejected": 10,
     "already-covered": 3,
-    "requires-human-review": 2
+    "requires-human-review": 0
   },
   "dispositions": [
     {
@@ -59,8 +59,12 @@
       "observation": "The ticket Outcome section (line 11) uses `{@render children()}` without `?.`, which conflicts with every file in the diff. The Rationale section documents the `?.` choice, so the decision is captured — but the Outcome text is now stale. A reader new to the ticket will see a discrepancy between the stated contract and the code."
     },
     {
-      "disposition": "requires-human-review",
-      "rationale": "Real test-coverage gap: no spec asserts slot/snippet children render at the correct DOM location. Deferred for developer decision on adding a StatPanelItem children-render test.",
+      "disposition": "patched",
+      "rationale": "Test-coverage gap closed: StatPanelItem.spec.ts now renders a children snippet via createRawSnippet and asserts it lands inside .stat-value, proving the slot→snippet migration.",
+      "patch": {
+        "commitSha": "bade06872354eed2f5127b957ff097b218cfaf78",
+        "files": ["src/lib/components/Stats/StatPanelItem.spec.ts"]
+      },
       "source": {
         "reportPath": "docs/product/delivery/phase-06/reviews/P6.02-subagent-review.report.md",
         "ticketId": "P6.02"
@@ -140,8 +144,15 @@
       "observation": "**`DailyChartControls` local `durations` does not track prop changes after mount.** `let durations = $state(durationsProp)` captures the initial prop value only. If the parent (`ActivityChart`, `TimelineChart`) ever receives a new `durations` prop from its own parent (e.g., after a page-level `invalidate`), `DailyChartControls`' local state is not updated. The component's internal controls would continue showing the stale date. In the current architecture this appears to be fine — the daily data panel is self-refreshing and the route-level `durations` prop originates from SSR load data that doesn't change in-session — but it is a silent semantic difference from Svelte 4's `export let`, which did track prop reassignments reactively."
     },
     {
-      "disposition": "requires-human-review",
-      "rationale": "Real test-coverage gap: neither DateRangeSelect nor DarkModeToggle spec asserts the callback fires after interaction — the core migrated behavior is untested. Deferred for developer decision.",
+      "disposition": "patched",
+      "rationale": "Test-coverage gap closed: DateRangeSelect.spec.ts now asserts onwakarange fires on a non-custom range change (and stays silent on Custom), and DarkModeToggle.spec.ts asserts radio selection applies the matching data-theme via the migrated $state/$effect path.",
+      "patch": {
+        "commitSha": "bade06872354eed2f5127b957ff097b218cfaf78",
+        "files": [
+          "src/lib/components/DateRangeSelect.spec.ts",
+          "src/lib/components/DarkModeToggle.spec.ts"
+        ]
+      },
       "source": {
         "reportPath": "docs/product/delivery/phase-06/reviews/P6.05-subagent-review.report.md",
         "ticketId": "P6.05"
