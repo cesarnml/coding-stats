@@ -1,0 +1,22 @@
+{
+  "ticket": "P6.07",
+  "invocations": [
+    {
+      "runnerKind": "claude-cli",
+      "reviewedHeadSha": "19760f4eaa72c5b01af9c167111f45f020836896",
+      "outcome": "skipped",
+      "completedAt": "2026-06-17T04:15:13.305Z",
+      "terminatedReason": "runner_failed",
+      "rawOutput": "docs/product/delivery/phase-06/reviews/P6.07-subagent-review.report.md",
+      "filledPrompt": "docs/product/delivery/phase-06/reviews/P6.07-subagent-review.prompt.md",
+      "fallbackLevel": "preferred",
+      "schemaVersion": 1,
+      "primaryAgent": "claude",
+      "runnerSelfReport": null,
+      "fallbackFrom": null,
+      "findings": [],
+      "probedSurfaces": [],
+      "patches": []
+    }
+  ]
+}
