@@ -1,8 +1,9 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import type { SupabaseDuration } from '$src/routes/api/supabase/durations/+server'
-  import type { DurationsResult, WakaDuration } from '$src/types/wakatime'
   import * as echarts from 'echarts'
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import DailyChartControls from '../BarChart/DailyChartControls.svelte'
   import DailyTitleContent from '../BarChart/DailyTitleContent.svelte'
   import ChartTitle from '../ChartTitle.svelte'
@@ -12,15 +13,19 @@
   import type { ValueOfDurationItemType } from '$lib/helpers/chartHelpers'
   import EmptyState from '../EmptyState.svelte'
 
-  export let durations: SupabaseDuration
-  export let title = 'Context Switch'
-  export let itemType: ValueOfDurationItemType
+  let {
+    durations: durationsProp,
+    title = 'Context Switch',
+    itemType,
+  }: { durations: SupabaseDuration; title?: string; itemType: ValueOfDurationItemType } = $props()
+
+  let durations = $state(durationsProp)
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: hasData = (durations.data?.length ?? 0) > 0
-  $: option = createTimelineChartOption(durations, itemType)
+  const hasData = $derived((durations.data?.length ?? 0) > 0)
+  const option = $derived(createTimelineChartOption(durations, itemType))
 
   onMount(() => {
     if (!chartRef) return
@@ -35,7 +40,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     chart.setOption(option)

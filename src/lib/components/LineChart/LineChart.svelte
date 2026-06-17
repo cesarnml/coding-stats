@@ -1,20 +1,21 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import * as echarts from 'echarts'
-  import { onMount, afterUpdate } from 'svelte'
+  import { onMount } from 'svelte'
   import Container from '../Container.svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import { createLineChartData, createLineChartOption } from './lineChartHelpers'
   import type { SummariesResult } from '$src/types/wakatime'
   import ChartContainer from '../common/ChartContainer.svelte'
 
-  export let summaries: SummariesResult
-  export let title: string
+  let { summaries, title }: { summaries: SummariesResult; title: string } = $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: data = createLineChartData(summaries)
-  $: option = createLineChartOption(data, summaries.color)
+  const data = $derived(createLineChartData(summaries))
+  const option = $derived(createLineChartOption(data, summaries.color))
 
   onMount(() => {
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
@@ -28,8 +29,8 @@
     }
   })
 
-  afterUpdate(() => {
-    chart.setOption(option)
+  $effect(() => {
+    chart?.setOption(option)
   })
 </script>
 

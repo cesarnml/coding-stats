@@ -10,7 +10,7 @@ Red: skip
 - These 8 files use runes only: `LineChart/LineChart.svelte`, `PieChart/PieChart.svelte`, `ScatterPlot/ScatterPlot.svelte`, `Treemap/Treemap.svelte`, `TimelineChart/TimelineChart.svelte`, `GaugeChart/DailyGauge.svelte`, `AiTokenBarChart/AiTokenBarChart.svelte`, `AiLinesPieChart/AiLinesPieChart.svelte`.
 - All apply the T01 ECharts recipe (`$derived option` + `$effect(setOption)`).
 - Each file carries `<svelte:options runes={true}>`.
-- `grep` for legacy idioms in these files returns zero.
+- `grep` for legacy idioms in these files returns zero; exception: `on:update` bridges in `TimelineChart.svelte` and `DailyGauge.svelte` are T05-deferred (TypeScript rejects `onupdate` as unknown prop until child controls are migrated to runes).
 
 ## Red
 

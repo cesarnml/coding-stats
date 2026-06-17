@@ -1,10 +1,11 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { onMount } from 'svelte'
   import * as echarts from 'echarts'
   import dayjs from 'dayjs'
   import advanceFormat from 'dayjs/plugin/advancedFormat.js'
   import type { SummariesResult } from '$src/types/wakatime'
-  import { afterUpdate } from 'svelte'
   import Container from '../Container.svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import { createDisciplineGaugeData, createDisciplineGaugeOption } from './gaugeChartHelpers'
@@ -14,24 +15,25 @@
 
   dayjs.extend(advanceFormat)
 
-  export let summaries: SummariesResult
-  export let title: string
+  let { summaries, title }: { summaries: SummariesResult; title: string } = $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: hasData = (summaries.data?.length ?? 0) > 0
+  const hasData = $derived((summaries.data?.length ?? 0) > 0)
 
-  let selectedDate = ''
-  $: availableDates = summaries.data?.map((summary) => summary.range.date) ?? []
-  $: defaultDate = availableDates.at(-1) ?? ''
+  let selectedDate = $state('')
+  const availableDates = $derived(summaries.data?.map((summary) => summary.range.date) ?? [])
+  const defaultDate = $derived(availableDates.at(-1) ?? '')
 
-  $: if (defaultDate && (!selectedDate || !availableDates.includes(selectedDate))) {
-    selectedDate = defaultDate
-  }
+  $effect(() => {
+    if (defaultDate && (!selectedDate || !availableDates.includes(selectedDate))) {
+      selectedDate = defaultDate
+    }
+  })
 
-  $: data = createDisciplineGaugeData(summaries, selectedDate)
-  $: option = createDisciplineGaugeOption(data)
+  const data = $derived(createDisciplineGaugeData(summaries, selectedDate))
+  const option = $derived(createDisciplineGaugeOption(data))
 
   onMount(() => {
     if (!chartRef) return
@@ -46,7 +48,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'canvas' })
     chart.setOption(option)

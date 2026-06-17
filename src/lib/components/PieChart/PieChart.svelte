@@ -1,5 +1,7 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import * as echarts from 'echarts'
   import Container from '../Container.svelte'
   import ChartTitle from '../ChartTitle.svelte'
@@ -8,15 +10,14 @@
   import ChartContainer from '../common/ChartContainer.svelte'
   import EmptyState from '../EmptyState.svelte'
 
-  export let summaries: SummariesResult
-  export let title: string
+  let { summaries, title }: { summaries: SummariesResult; title: string } = $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: hasData = (summaries.data?.length ?? 0) > 0
-  $: data = createPieChartData(summaries)
-  $: option = createPieChartOption(data)
+  const hasData = $derived((summaries.data?.length ?? 0) > 0)
+  const data = $derived(createPieChartData(summaries))
+  const option = $derived(createPieChartOption(data))
 
   onMount(() => {
     if (!chartRef) return
@@ -31,7 +32,7 @@
     }
   })
 
-  afterUpdate(() => {
+  $effect(() => {
     if (!chartRef) return
     if (!chart) chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
     chart.setOption(option)
