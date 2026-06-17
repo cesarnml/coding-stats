@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 2,
+  "recordedAt": "2026-06-17T12:39:22.118Z",
+  "summary": {
+    "total": 17,
+    "patched": 2,
+    "rejected": 10,
+    "already-covered": 3,
+    "requires-human-review": 2
+  },
+  "dispositions": [
+    {
+      "disposition": "rejected",
+      "rationale": "Code is correct as written; the optional-chaining guard meaning is a readability nuance, not a defect. Cosmetic, no action warranted.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.01-subagent-review.report.md",
+        "ticketId": "P6.01"
+      },
+      "observation": "**`chart?.setOption` guard scope is narrower than it appears.** The optional chaining protects against `chart === undefined`, but after `chart.dispose()` the variable is still a truthy disposed instance — `?.` would not shortcircuit. The guard's actual safety window is only the pre-mount interval, which Svelte 5's `onMount`-before-effects ordering makes unreachable. The code is correct; the guard's meaning could mislead a future reader into believing it also protects the post-dispose case."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "Benign double setOption on mount with no production impact — ECharts merges options idempotently. Behavior-preserving migration carried this; out of scope for the landed phase.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.01-subagent-review.report.md",
+        "ticketId": "P6.01"
+      },
+      "observation": "**Double `setOption` on initial mount.** `onMount` calls `chart.setOption(option)` unconditionally (line 41), then `$effect` fires on its first run — after `onMount` but still on the same initial render — and calls `chart?.setOption(option)` again with the same object. ECharts merges options on repeated calls and this is visually harmless, but it is a quiet redundancy. The recipe in the implementation plan documents the pattern as \"setOption once in onMount + $effect for subsequent updates,\" which could suggest the first `$effect` run is expected to be a no-op; it is not. If T03/T04 apply this recipe verbatim to 12 sibling charts, all of them will double-call on mount. No production impact, but worth a line in the T03/T04 Rationale so future reviewers don't mistake it for a bug."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "The imprecision is in the review prompt artifact, not in the code or the ticket doc — both of which are accurate. Nothing to fix in the product.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.01-subagent-review.report.md",
+        "ticketId": "P6.01"
+      },
+      "observation": "**Invariant wording in the review prompt includes \"title change\" but `title` does not feed into the ECharts option.** The prompt's invariant 1 opens with \"redraws when `summaries` or `title` props change\" — this is imprecise. `title` is rendered in the Svelte template via `<ChartTitle>` and is intentionally outside ECharts. A `title`-only change does NOT call `setOption`, and should not. The ticket outcome's wording (\"redraws on data change\") is accurate; the imprecision is in the review prompt, not in the code or ticket doc."
+    },
+    {
+      "disposition": "already-covered",
+      "rationale": "Observed +layout.svelte legacy-mode deferral to T07 is resolved: P6.07 migrated +layout.svelte to $props() + {@render children()} and P6.08 set the global runes:true flag. No remaining legacy host.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.02-subagent-review.report.md",
+        "ticketId": "P6.02"
+      },
+      "observation": "`+layout.svelte` is still in legacy mode (uses `export let data`, `$:` reactive declarations, and `<slot />` to pass page content into `PageTransition`). The Rationale explicitly defers this to T07, and Svelte 5 interop makes this work at runtime. This is not a defect, but it means the PageTransition runes conversion is only half of the needed change: `+layout.svelte` itself continues to mix legacy syntax with the now-runes `PageTransition` until T07 ships."
+    },
+    {
+      "disposition": "patched",
+      "rationale": "Stale ticket Outcome text used {@render children()} without optional chaining, contradicting the diff. Fixed Outcome to {@render children?.()} with a Rationale pointer.",
+      "patch": {
+        "commitSha": "87806148eaadd4e0b0597c508002cec247d839f1",
+        "files": ["docs/product/delivery/phase-06/ticket-02-shared-primitives-snippets.md"]
+      },
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.02-subagent-review.report.md",
+        "ticketId": "P6.02"
+      },
+      "observation": "The ticket Outcome section (line 11) uses `{@render children()}` without `?.`, which conflicts with every file in the diff. The Rationale section documents the `?.` choice, so the decision is captured — but the Outcome text is now stale. A reader new to the ticket will see a discrepancy between the stated contract and the code."
+    },
+    {
+      "disposition": "requires-human-review",
+      "rationale": "Real test-coverage gap: no spec asserts slot/snippet children render at the correct DOM location. Deferred for developer decision on adding a StatPanelItem children-render test.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.02-subagent-review.report.md",
+        "ticketId": "P6.02"
+      },
+      "observation": "The ticket Red section asserts that the four existing spec files are the guard for this conversion, but none of the specs exercise the main behavioral concern: that content passed between a converted component's tags renders at the correct DOM location. `StatPanelItem.spec.ts` renders without children (validating the `?.` guard for the empty case only), and `PageTransition.spec.ts` never passes children at all. A future regression that accidentally removes or misplaces `{@render children?.()}` would not be caught by the current test suite. The implementation is correct today, but the guard claim is weaker than the ticket implies. A single test that renders `StatPanelItem` with a known child string and asserts its presence inside `.stat-value` would make the claim true."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "state_referenced_locally is an intentional dev-only Svelte diagnostic with no correctness impact. Cosmetic; no action warranted for the landed phase.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
+        "ticketId": "P6.03"
+      },
+      "observation": "**`BreakdownChart` Svelte runtime warning for `state_referenced_locally`.** `let isFiltered = $state(_isFiltered)` will emit the Svelte 5 diagnostic `state_referenced_locally` at dev time. This is not a correctness gap (behavior is intentional), but it may produce noise in the dev console and could confuse future maintainers who encounter the warning without context. A suppression comment or a brief inline note would remove the ambiguity."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "createXAxisValues string[]|undefined vs string[] is a latent type gap that is runtime-guarded by hasData and the chartRef check. Pre-existing helper typing untouched by the migration; out of scope for this phase.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
+        "ticketId": "P6.03"
+      },
+      "observation": "**`createXAxisValues` return type diverges from `createStackedBarChartOption` parameter type.** `createXAxisValues` returns `string[] | undefined`; `createStackedBarChartOption` accepts `string[]`. TypeScript does not catch this because the assignment flows through `const xValues = $derived(createXAxisValues(summaries))` typed as the return type of the function. The runtime impact is guarded by the `hasData` conditional and `chartRef` guard, but the type gap means a future caller of `createStackedBarChartOption` could pass `undefined` silently."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "Pre-existing rAF-cleanup bug carried over unchanged by the behavior-preserving migration. Out of scope for the runes phase; not introduced here.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
+        "ticketId": "P6.03"
+      },
+      "observation": "**`DailyTitleContent` rAF loop leaks on unmount.** `onMount` assigns `const animationFrame = requestAnimationFrame(updateTime)` and returns `() => cancelAnimationFrame(animationFrame)`. But `updateTime` schedules a new frame recursively via `requestAnimationFrame(updateTime)` on every call. The cleanup only cancels the initial frame handle, not any subsequently scheduled frame (the loop was already running by the time cleanup fires). The loop continues indefinitely after unmount until the browser garbage-collects the closure. This appears to be a pre-existing bug carried over unchanged from the Svelte 4 version (behavior-preserving refactor), so it is outside the three finding-discipline clauses, but it is real."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "StackedBarChart double-init is a mount-time perf nit with no production impact. Behavior-preserving; out of scope.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.03-subagent-review.report.md",
+        "ticketId": "P6.03"
+      },
+      "observation": "**`StackedBarChart` double-init on first render.** `onMount` initialises the chart and calls `setOption`; immediately afterward `$effect` fires, disposes that instance, and reinits. On a single mount this costs two `echarts.init` + two `setOption` calls. This pattern differs from `WeekdaysBarChart` (lazy-init, no dispose) and `BreakdownChart` (conditional init, no dispose) in the same ticket. The inconsistency is not a bug, but it means `StackedBarChart` does the most work on mount for no benefit. This is outside the three finding-discipline clauses."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "DailyGauge correctness holds under the current declaration order; the ordering dependency is a hypothetical-future-refactor concern, not a present defect. Out of scope.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.04-subagent-review.report.md",
+        "ticketId": "P6.04"
+      },
+      "observation": "`DailyGauge` correctness during initial mount depends on the Svelte 5 guarantee that `$effect` callbacks fire in declaration order during the mount flush (so the selectedDate effect settles `selectedDate = defaultDate` before `onMount` reads `option`). This guarantee holds under the current file layout. If a future refactor moves the `onMount` block above the selectedDate `$effect`, the gauge would initialize ECharts with `data[0].value = undefined` for one frame before correcting. The dependency on declaration order is not documented. A comment or a restructuring that initializes `selectedDate` synchronously (e.g., `let selectedDate = $state(availableDates.at(-1) ?? '')`) would eliminate the ordering dependency entirely — though that would require the `availableDates` derivation to be declared above `selectedDate`, which may conflict with how `$props()` and `$derived` interact on the initial computation. This is lower priority than the ticket-doc gap above; noting it for T05 or a future audit."
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "Treemap projectName string|undefined is a pre-existing gap untouched by the migration. Out of scope for the behavior-preserving runes phase.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.04-subagent-review.report.md",
+        "ticketId": "P6.04"
+      },
+      "observation": "`Treemap` passes `$page.params.projectName` (type: `string | undefined`) into `createProjectFileToTimeDict` and `createTreemapOption` which declare `projectName: string`. If the component ever renders outside a route that provides `projectName` (e.g., a test or a route refactor), the helpers will silently split on the string `\"undefined\"` and produce garbage tree keys rather than throwing. This is a pre-existing gap untouched by this migration; flagging for visibility since the runes migration is an opportunity to audit it."
+    },
+    {
+      "disposition": "already-covered",
+      "rationale": "The grep-exception note is already present in ticket-04 Outcome line 13 (on:update bridges in TimelineChart/DailyGauge are T05-deferred). No fresh patch needed.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.04-subagent-review.report.md",
+        "ticketId": "P6.04"
+      },
+      "observation": "The ticket outcome statement (\"`grep` for legacy idioms in these files returns zero\") is literally falsified by the `on:update` directives in TimelineChart and DailyGauge. The T05 deferral is a real and intentional decision, but it lives only in the adversarial review prompt and the `on:update` rationale doc — not in the ticket's Outcome section. A developer running the grep audit against the ticket outcome months from now would find two hits with no ticket-level explanation. Worth appending a one-liner to the Outcome noting the exception: e.g., \"exception: `on:update` bridges in TimelineChart and DailyGauge are T05-deferred.\""
+    },
+    {
+      "disposition": "rejected",
+      "rationale": "DailyChartControls local $state(durationsProp) not tracking later prop reassignment is correct for the current architecture (SSR-sourced prop does not change in-session), as the observation itself notes. Out of scope.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.05-subagent-review.report.md",
+        "ticketId": "P6.05"
+      },
+      "observation": "**`DailyChartControls` local `durations` does not track prop changes after mount.** `let durations = $state(durationsProp)` captures the initial prop value only. If the parent (`ActivityChart`, `TimelineChart`) ever receives a new `durations` prop from its own parent (e.g., after a page-level `invalidate`), `DailyChartControls`' local state is not updated. The component's internal controls would continue showing the stale date. In the current architecture this appears to be fine — the daily data panel is self-refreshing and the route-level `durations` prop originates from SSR load data that doesn't change in-session — but it is a silent semantic difference from Svelte 4's `export let`, which did track prop reassignments reactively."
+    },
+    {
+      "disposition": "requires-human-review",
+      "rationale": "Real test-coverage gap: neither DateRangeSelect nor DarkModeToggle spec asserts the callback fires after interaction — the core migrated behavior is untested. Deferred for developer decision.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.05-subagent-review.report.md",
+        "ticketId": "P6.05"
+      },
+      "observation": "**Neither spec covers the callback invocation path.** `DateRangeSelect.spec.ts` exercises select interaction but never asserts that `onwakarange` is called after a selection change. `DarkModeToggle.spec.ts` only checks render count. Given the core behavioral invariant of this ticket is \"callbacks fire where dispatches did,\" both specs leave the primary migrated behavior untested."
+    },
+    {
+      "disposition": "already-covered",
+      "rationale": "Route pages no longer use Svelte 4 idioms: P6.07 migrated +page.svelte and projects/[projectName]/+page.svelte to $props()/$derived and P6.08 set global runes:true. The runes-mode neighbor concern is resolved.",
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.05-subagent-review.report.md",
+        "ticketId": "P6.05"
+      },
+      "observation": "**Route pages still use Svelte 4 idioms (`export let`, `$:`).** Both `src/routes/+page.svelte` and `src/routes/projects/[projectName]/+page.svelte` were touched for the `onwakarange` call-site update, but they still use `export let data`, `$: summaries = ...`, and other legacy reactive syntax throughout. This is outside this ticket's explicit scope, but these files now have a runes-mode neighbor (`DateRangeSelect`) sitting inside a Svelte 4 host. Svelte 5 compiles both modes side-by-side without issue, but when those pages are eventually migrated, the legacy `$:` blocks will need to become `$derived` and `$effect` calls, and the handler signatures that still reference `CustomEvent<T>` patterns in adjacent code should be audited again."
+    },
+    {
+      "disposition": "patched",
+      "rationale": "Ticket Outcome claimed the Playwright smoke test passed, contradicting the retrospective Net assessment. Amended Outcome to record that the smoke test was not run E2E (pre-existing CI gap) and svelte-check + vitest was the verification gate.",
+      "patch": {
+        "commitSha": "87806148eaadd4e0b0597c508002cec247d839f1",
+        "files": ["docs/product/delivery/phase-06/ticket-08-global-flip-and-retro.md"]
+      },
+      "source": {
+        "reportPath": "docs/product/delivery/phase-06/reviews/P6.08-subagent-review.report.md",
+        "ticketId": "P6.08"
+      },
+      "observation": "**Smoke-test outcome claim in ticket Outcome vs. retrospective Net assessment.** The ticket Outcome states: \"the Playwright smoke test all pass with the global flag on.\" The retrospective's Net assessment explicitly states: \"the smoke test wasn't run end-to-end during delivery due to missing E2E environment setup; the `svelte-check` + vitest suite was the verification gate used instead.\" The ticket Outcome records the smoke test as a passed exit criterion, but the retrospective — written as part of the same ticket — contradicts it. The retrospective is the more honest document and correctly characterizes this as an existing CI pipeline gap rather than a migration-specific risk. The primary agent may want to amend the ticket Outcome to reflect what was actually verified, or add a note acknowledging the gap (matching what the retrospective already says). No code correctness concern — this is documentation drift between two docs written in the same commit."
+    }
+  ]
+}
