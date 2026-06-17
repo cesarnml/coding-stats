@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { page } from '$app/stores'
   import StackedBarChart from '$lib/components/BarChart/StackedBarChart.svelte'
@@ -25,30 +27,26 @@
   import dayjs from 'dayjs'
   import { onMount } from 'svelte'
 
-  export let data
+  let { data } = $props()
 
-  let summariesOverride: typeof data.summaries | null = null
-  let storiesOverride: typeof data.stories | null = null
+  let summariesOverride = $state<typeof data.summaries | null>(null)
+  let storiesOverride = $state<typeof data.stories | null>(null)
 
-  $: summaries = summariesOverride ?? data.summaries
-  $: stories = storiesOverride ?? data.stories
-  $: ({
-    projectName,
-    lazy: { aliases },
-    profile,
-  } = data)
-
-  $: available_branches = summaries.data
-    ? [
-        ...new Set(
-          summaries.data.flatMap((summary) => summary.branches.map((branch) => branch.name)),
-        ),
-      ]
-    : []
+  const summaries = $derived(summariesOverride ?? data.summaries)
+  const stories = $derived(storiesOverride ?? data.stories)
+  const available_branches = $derived(
+    summaries.data
+      ? [
+          ...new Set(
+            summaries.data.flatMap((summary) => summary.branches.map((branch) => branch.name)),
+          ),
+        ]
+      : [],
+  )
 
   onMount(() => {
-    if (profile?.range && profile.range !== $selectedRange) {
-      selectedRange.set(profile.range as ValueOf<WakaApiRange>)
+    if (data.profile?.range && data.profile.range !== $selectedRange) {
+      selectedRange.set(data.profile.range as ValueOf<WakaApiRange>)
     }
   })
 
@@ -107,11 +105,11 @@
   <Container>
     <ChartTitle>Preview Branch Deploy</ChartTitle>
     <div class="grid grid-cols-1 gap-2 px-6 pb-6 lg:grid-cols-2">
-      {#await aliases}
+      {#await data.lazy.aliases}
         <div>Loading ...</div>
       {:then result}
         {#each result.aliases as alias}
-          {#if alias.alias.includes(`${projectName}-git-cesar-sc`) && available_branches.find( (branch) => branch.includes((alias.alias.match(/sc-(\d+)/g) ?? [''])[0]), )}
+          {#if alias.alias.includes(`${data.projectName}-git-cesar-sc`) && available_branches.find( (branch) => branch.includes((alias.alias.match(/sc-(\d+)/g) ?? [''])[0]), )}
             <div>
               <a class="link-hover link-primary link" href={`https://${alias.alias}`}
                 >{available_branches

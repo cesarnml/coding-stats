@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { formatTime } from '$lib/helpers/timeHelpers'
   import type { SummariesResult } from '$src/types/wakatime'
@@ -12,26 +14,27 @@
     computeTotalSeconds,
   } from './summariesHelpers'
 
-  export let summaries: SummariesResult
-  export let showFullPanel = false
+  let {
+    summaries,
+    showFullPanel = false,
+  }: { summaries: SummariesResult; showFullPanel?: boolean } = $props()
 
   const NO_TOP_PROJECT_MESSAGE = 'N/A'
 
-  let topProject: string
-  let topLanguage: string
-  let projectList: ReturnType<typeof createProjectList>
+  const totalSeconds = $derived(computeTotalSeconds(summaries))
+  const holidayCount = $derived(computeHolidayCount(summaries))
+  const averageSeconds = $derived(computeAverageSeconds(summaries))
 
-  $: totalSeconds = computeTotalSeconds(summaries)
-  $: holidayCount = computeHolidayCount(summaries)
-  $: averageSeconds = computeAverageSeconds(summaries)
+  const topLanguage = $derived(showFullPanel ? getTopLanguage(summaries) : '')
+  const projectList = $derived(showFullPanel ? createProjectList(summaries) : [])
+  const topProject = $derived(
+    showFullPanel ? (first(projectList)?.name ?? NO_TOP_PROJECT_MESSAGE) : NO_TOP_PROJECT_MESSAGE,
+  )
 
-  $: if (showFullPanel) {
-    topLanguage = getTopLanguage(summaries)
-    projectList = createProjectList(summaries)
-    topProject = first(projectList)?.name ?? NO_TOP_PROJECT_MESSAGE
-  }
   // @ts-expect-error tough type
-  $: isSingleDay = [WakaApiRange.Today, WakaApiRange.Yesterday].includes($selectedRange)
+  const isSingleDay = $derived(
+    [WakaApiRange.Today, WakaApiRange.Yesterday].includes($selectedRange),
+  )
 </script>
 
 <div class="overflow-x-auto">

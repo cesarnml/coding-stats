@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import ActivityChart from '$lib/components/BarChart/ActivityChart.svelte'
   import BreakdownChart from '$lib/components/BarChart/BreakdownChart.svelte'
@@ -22,49 +24,49 @@
   import type { PageData } from './$types'
   import { invalidate } from '$app/navigation'
 
-  export let data: PageData
+  let { data }: { data: PageData } = $props()
 
-  let summariesOverride: typeof data.summaries | null = null
+  let summariesOverride = $state<typeof data.summaries | null>(null)
 
-  $: summaries = summariesOverride ?? data.summaries
-  $: ({ durations, durationsByLanguage, profile } = data)
-
-  $: maxDate = summaries.max_date ?? null
-  $: latestUpdateCandidates = [
-    durations?.updated_at,
-    durationsByLanguage?.updated_at,
-    maxDate,
-  ].filter((value): value is string => Boolean(value))
-  $: latestUpdatedAt =
+  const summaries = $derived(summariesOverride ?? data.summaries)
+  const maxDate = $derived(summaries.max_date ?? null)
+  const latestUpdateCandidates = $derived(
+    [data.durations?.updated_at, data.durationsByLanguage?.updated_at, maxDate].filter(
+      (value): value is string => Boolean(value),
+    ),
+  )
+  const latestUpdatedAt = $derived(
     latestUpdateCandidates.length > 0
       ? latestUpdateCandidates.reduce((latest, current) =>
           new Date(current).getTime() > new Date(latest).getTime() ? current : latest,
         )
-      : null
-  $: maxDateFormatted = latestUpdatedAt ? fromNow(latestUpdatedAt) : null
-
-  $: aiStats = summaries.data.reduce(
-    (acc, day) => {
-      acc.ai_additions += day.grand_total.ai_additions ?? 0
-      acc.ai_deletions += day.grand_total.ai_deletions ?? 0
-      acc.human_additions += day.grand_total.human_additions ?? 0
-      acc.human_deletions += day.grand_total.human_deletions ?? 0
-      acc.total_tokens +=
-        (day.grand_total.ai_input_tokens ?? 0) + (day.grand_total.ai_output_tokens ?? 0)
-      return acc
-    },
-    {
-      ai_additions: 0,
-      ai_deletions: 0,
-      human_additions: 0,
-      human_deletions: 0,
-      total_tokens: 0,
-    },
+      : null,
+  )
+  const maxDateFormatted = $derived(latestUpdatedAt ? fromNow(latestUpdatedAt) : null)
+  const aiStats = $derived(
+    summaries.data.reduce(
+      (acc, day) => {
+        acc.ai_additions += day.grand_total.ai_additions ?? 0
+        acc.ai_deletions += day.grand_total.ai_deletions ?? 0
+        acc.human_additions += day.grand_total.human_additions ?? 0
+        acc.human_deletions += day.grand_total.human_deletions ?? 0
+        acc.total_tokens +=
+          (day.grand_total.ai_input_tokens ?? 0) + (day.grand_total.ai_output_tokens ?? 0)
+        return acc
+      },
+      {
+        ai_additions: 0,
+        ai_deletions: 0,
+        human_additions: 0,
+        human_deletions: 0,
+        total_tokens: 0,
+      },
+    ),
   )
 
   onMount(() => {
-    if (profile?.range && profile.range !== $selectedRange) {
-      selectedRange.set(profile.range as ValueOf<WakaApiRange>)
+    if (data.profile?.range && data.profile.range !== $selectedRange) {
+      selectedRange.set(data.profile.range as ValueOf<WakaApiRange>)
       invalidate('supabase:signin')
     }
   })
@@ -97,7 +99,7 @@
   </div>
   <StatsPanel {summaries} showFullPanel />
   <AiStatPanel {aiStats} />
-  <ActivityChart {durations} itemType="project" />
+  <ActivityChart durations={data.durations} itemType="project" />
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     <AiLinesPieChart {summaries} />
     <AiTokenBarChart {summaries} />
@@ -113,8 +115,8 @@
     {#if $selectedRange !== WakaApiRange.Today && $selectedRange !== WakaApiRange.Yesterday}
       <DailyGauge {summaries} title="Discipline Gauge" />
     {/if}
-    <TimelineChart {durations} itemType="project" />
-    <TimelineChart durations={durationsByLanguage} itemType="language" />
+    <TimelineChart durations={data.durations} itemType="project" />
+    <TimelineChart durations={data.durationsByLanguage} itemType="language" />
   </div>
   <ProjectList {summaries} />
 </div>

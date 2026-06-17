@@ -1,7 +1,9 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { page } from '$app/stores'
 
-  export let data
+  let { data } = $props()
   const { supabase } = data
   const signInWithGitHub = async () => {
     const redirect = import.meta.env.PROD
@@ -21,7 +23,7 @@
 </svelte:head>
 
 <div class="flex justify-center pt-8">
-  <button class="btn-primary btn" type="button" on:click={signInWithGitHub}>
+  <button class="btn-primary btn" type="button" onclick={signInWithGitHub}>
     Sign in with GitHub
   </button>
 </div>

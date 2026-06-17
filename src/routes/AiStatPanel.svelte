@@ -1,13 +1,19 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import StatPanelItem from '$lib/components/Stats/StatPanelItem.svelte'
 
-  export let aiStats: {
-    ai_additions: number
-    ai_deletions: number
-    human_additions: number
-    human_deletions: number
-    total_tokens: number
-  }
+  let {
+    aiStats,
+  }: {
+    aiStats: {
+      ai_additions: number
+      ai_deletions: number
+      human_additions: number
+      human_deletions: number
+      total_tokens: number
+    }
+  } = $props()
 </script>
 
 <div class="overflow-x-auto">

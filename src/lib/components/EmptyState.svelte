@@ -1,7 +1,7 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
-  export let message: string
-  export let cta: string | undefined = undefined
-  export let show = true
+  let { message, cta, show = true }: { message: string; cta?: string; show?: boolean } = $props()
 </script>
 
 {#if show}

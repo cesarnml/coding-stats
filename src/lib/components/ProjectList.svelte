@@ -1,11 +1,14 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { Url } from '$lib/constants'
   import { formatHours, formatMinimalWork, formatMinutes } from '$lib/helpers/timeHelpers'
   import type { SummariesResult } from '$src/types/wakatime'
   import { createProjectList } from './Stats/statHelpers'
-  export let summaries: SummariesResult
 
-  $: projects = createProjectList(summaries)
+  let { summaries }: { summaries: SummariesResult } = $props()
+
+  const projects = $derived(createProjectList(summaries))
 </script>
 
 <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

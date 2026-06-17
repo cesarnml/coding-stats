@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import { dev } from '$app/environment'
   import { goto, invalidate } from '$app/navigation'
@@ -10,6 +12,7 @@
   import { profile } from '$lib/stores/profile'
   import { injectAnalytics } from '@vercel/analytics/sveltekit'
   import { onMount } from 'svelte'
+  import type { Snippet } from 'svelte'
   import 'tippy.js/animations/scale.css'
   import 'tippy.js/dist/tippy.css'
   import 'tippy.js/themes/light.css'
@@ -20,26 +23,18 @@
   // Initiate Vercel analytics
   injectAnalytics({ mode: dev ? 'development' : 'production', debug: false })
 
-  export let data
+  let { data, children }: { data: any; children: Snippet } = $props()
 
-  $: ({
-    pathname,
-    session: initialSession,
-    supabase,
-    projects: initialProjects,
-    profile: initialProfile,
-  } = data)
-
-  $: {
-    session.set(initialSession)
-    profile.set(initialProfile)
-    project.set(initialProjects)
-  }
+  $effect(() => {
+    session.set(data.session)
+    profile.set(data.profile)
+    project.set(data.projects)
+  })
 
   onMount(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, _session) => {
+    } = data.supabase.auth.onAuthStateChange((event: string, _session: any) => {
       if (_session?.expires_at !== $session?.expires_at) {
         invalidate('supabase:auth')
       }
@@ -47,18 +42,20 @@
     return () => subscription.unsubscribe()
   })
 
-  $: if (
-    typeof window !== 'undefined' &&
-    $selectedRange &&
-    $selectedRange !== WakaApiRangePrompt &&
-    !$profile
-  ) {
-    const url = new URL(window.location.href)
-    if (url.searchParams.get('range') !== $selectedRange) {
-      url.searchParams.set('range', $selectedRange)
-      goto(url, { replaceState: true, keepFocus: true })
+  $effect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      $selectedRange &&
+      $selectedRange !== WakaApiRangePrompt &&
+      !$profile
+    ) {
+      const url = new URL(window.location.href)
+      if (url.searchParams.get('range') !== $selectedRange) {
+        url.searchParams.set('range', $selectedRange)
+        goto(url, { replaceState: true, keepFocus: true })
+      }
     }
-  }
+  })
 </script>
 
 <svelte:head>
@@ -70,8 +67,8 @@
   <Navbar />
   <div class="flex min-h-screen w-full flex-col">
     <div class="relative mx-auto w-full max-w-screen-xl flex-1 pt-20">
-      <PageTransition {pathname}>
-        <slot />
+      <PageTransition pathname={data.pathname}>
+        {@render children()}
       </PageTransition>
     </div>
     <div class="py-8">
