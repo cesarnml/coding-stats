@@ -68,14 +68,19 @@
 
   const onClick = async (step: Step) => {
     loading = true
-    const date = dayjs(durations.date).add(step, INCREMENT_UNIT).format(DateFormat.Query)
-    const response =
-      itemType === DurationItemType.Project
-        ? await fetch(`${ApiEndpoint.SupabaseDurations}?date=${date}`)
-        : await fetch(`${ApiEndpoint.SupabaseDurationsByLanguage}?date=${date}`)
-    durations = await response.json()
-    onupdate?.(durations)
-    loading = false
+    try {
+      const date = dayjs(durations.date).add(step, INCREMENT_UNIT).format(DateFormat.Query)
+      const response =
+        itemType === DurationItemType.Project
+          ? await fetch(`${ApiEndpoint.SupabaseDurations}?date=${date}`)
+          : await fetch(`${ApiEndpoint.SupabaseDurationsByLanguage}?date=${date}`)
+      durations = await response.json()
+      onupdate?.(durations)
+    } catch (error) {
+      console.log('error:', error)
+    } finally {
+      loading = false
+    }
   }
 
   const getPrevDate = () => onClick(Step.Prev)
