@@ -6,3 +6,5 @@ allowBuilds:
   esbuild: true
   msw: true
   sharp: true
+minimumReleaseAgeExclude:
+  - '@sveltejs/kit@2.65.2'
