@@ -1,6 +1,8 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
   import * as echarts from 'echarts'
-  import { afterUpdate, onMount } from 'svelte'
+  import { onMount } from 'svelte'
   import Container from '../Container.svelte'
   import ChartTitle from '../ChartTitle.svelte'
   import type { SummariesResult } from '$src/types/wakatime'
@@ -12,23 +14,25 @@
   } from './verticalBarChartHelpers'
   import BigChartContainer from '../common/BigChartContainer.svelte'
 
-  export let summaries: SummariesResult
-  export let title = 'Branches vs Time'
+  let { summaries, title = 'Branches vs Time' }: { summaries: SummariesResult; title?: string } =
+    $props()
 
   let chartRef: HTMLDivElement
   let chart: echarts.ECharts
 
-  $: available_branches = summaries.data
-    ? [
-        ...new Set(
-          summaries.data.flatMap((summary) => summary.branches.map((branch) => branch.name)),
-        ),
-      ]
-    : []
+  const available_branches = $derived(
+    summaries.data
+      ? [
+          ...new Set(
+            summaries.data.flatMap((summary) => summary.branches.map((branch) => branch.name)),
+          ),
+        ]
+      : [],
+  )
 
-  $: storyBranches = getStoryBranches(available_branches)
-  $: source = createVerticalBarChartDatasetSource(summaries)
-  $: option = createVerticalBarChartOption(source, storyBranches)
+  const storyBranches = $derived(getStoryBranches(available_branches))
+  const source = $derived(createVerticalBarChartDatasetSource(summaries))
+  const option = $derived(createVerticalBarChartOption(source, storyBranches))
 
   onMount(() => {
     chart = echarts.init(chartRef, 'dark', { renderer: 'svg' })
@@ -55,8 +59,8 @@
     }
   })
 
-  afterUpdate(() => {
-    chart.setOption(option)
+  $effect(() => {
+    chart?.setOption(option)
   })
 </script>
 
