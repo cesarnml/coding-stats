@@ -31,9 +31,8 @@
     showFullPanel ? (first(projectList)?.name ?? NO_TOP_PROJECT_MESSAGE) : NO_TOP_PROJECT_MESSAGE,
   )
 
-  // @ts-expect-error tough type
   const isSingleDay = $derived(
-    [WakaApiRange.Today, WakaApiRange.Yesterday].includes($selectedRange),
+    ([WakaApiRange.Today, WakaApiRange.Yesterday] as string[]).includes($selectedRange),
   )
 </script>
 
