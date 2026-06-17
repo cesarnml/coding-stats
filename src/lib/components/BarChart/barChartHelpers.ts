@@ -35,8 +35,8 @@ export type SimpleBarChartOption = ComposeOption<
   TooltipComponentOption | GridComponentOption | BarSeriesOption | LineSeriesOption
 >
 
-export const createXAxisValues = (summaries: SummariesResult) =>
-  summaries.data?.map((item) => dayjs(item.range.date).format(DateFormat.Short))
+export const createXAxisValues = (summaries: SummariesResult): string[] =>
+  summaries.data?.map((item) => dayjs(item.range.date).format(DateFormat.Short)) ?? []
 
 type Params = {
   summaries: SummariesResult
