@@ -36,7 +36,7 @@ const makeSummaries = (
   }) as unknown as SummariesResult
 
 describe('buildAiTokenBarSeries', () => {
-  it('returns per-day series when data has 7 or fewer days', () => {
+  it('returns a per-day bar for ranges of 7 or fewer days', () => {
     const summaries = makeSummaries(
       Array.from({ length: 7 }, (_, i) => ({
         ai_input_tokens: (i + 1) * 100,
@@ -44,25 +44,25 @@ describe('buildAiTokenBarSeries', () => {
       })),
     )
     const result = buildAiTokenBarSeries(summaries)
-    expect(result.isPerDay).toBe(true)
     expect(result.hasData).toBe(true)
     expect(result.aiInput).toHaveLength(7)
     expect(result.aiOutput).toHaveLength(7)
   })
 
-  it('returns two-bar totals when data has more than 7 days', () => {
+  it('keeps one bar per day for ranges longer than 7 days', () => {
     const summaries = makeSummaries(
-      Array.from({ length: 30 }, (_, i) => ({
+      Array.from({ length: 30 }, () => ({
         ai_input_tokens: 100,
         ai_output_tokens: 50,
       })),
     )
     const result = buildAiTokenBarSeries(summaries)
-    expect(result.isPerDay).toBe(false)
     expect(result.hasData).toBe(true)
-    expect(result.aiInput).toHaveLength(1)
-    expect(result.aiInput[0]).toBe(3000)
-    expect(result.aiOutput[0]).toBe(1500)
+    expect(result.xLabels).toHaveLength(30)
+    expect(result.aiInput).toHaveLength(30)
+    expect(result.aiOutput).toHaveLength(30)
+    expect(result.aiInput.every((v) => v === 100)).toBe(true)
+    expect(result.aiOutput.every((v) => v === 50)).toBe(true)
   })
 
   it('marks hasData false when all token values are zero', () => {
@@ -72,15 +72,5 @@ describe('buildAiTokenBarSeries', () => {
     ])
     const result = buildAiTokenBarSeries(summaries)
     expect(result.hasData).toBe(false)
-  })
-
-  it('adaptive threshold is based on data length not range string', () => {
-    // Exactly 7 days → per-day
-    const seven = makeSummaries(Array.from({ length: 7 }, () => ({ ai_input_tokens: 10 })))
-    expect(buildAiTokenBarSeries(seven).isPerDay).toBe(true)
-
-    // 8 days → totals
-    const eight = makeSummaries(Array.from({ length: 8 }, () => ({ ai_input_tokens: 10 })))
-    expect(buildAiTokenBarSeries(eight).isPerDay).toBe(false)
   })
 })

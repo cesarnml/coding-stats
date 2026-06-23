@@ -8,7 +8,6 @@ import type {
 } from 'echarts/types/dist/echarts'
 
 export type AiTokenBarSeries = {
-  isPerDay: boolean
   hasData: boolean
   xLabels: string[]
   aiInput: number[]
@@ -26,32 +25,11 @@ function formatDateLabel(dateStr: string): string {
 }
 
 export function buildAiTokenBarSeries(summaries: SummariesResult): AiTokenBarSeries {
-  const isPerDay = summaries.data.length <= 7
-
-  if (isPerDay) {
-    const xLabels = summaries.data.map((day) => formatDateLabel(day.range.date))
-    const aiInput = summaries.data.map((day) => day.grand_total.ai_input_tokens ?? 0)
-    const aiOutput = summaries.data.map((day) => day.grand_total.ai_output_tokens ?? 0)
-    const hasData = aiInput.some((v) => v > 0) || aiOutput.some((v) => v > 0)
-    return { isPerDay: true, hasData, xLabels, aiInput, aiOutput }
-  }
-
-  const totalInput = summaries.data.reduce(
-    (sum, day) => sum + (day.grand_total.ai_input_tokens ?? 0),
-    0,
-  )
-  const totalOutput = summaries.data.reduce(
-    (sum, day) => sum + (day.grand_total.ai_output_tokens ?? 0),
-    0,
-  )
-  const hasData = totalInput > 0 || totalOutput > 0
-  return {
-    isPerDay: false,
-    hasData,
-    xLabels: ['Total'],
-    aiInput: [totalInput],
-    aiOutput: [totalOutput],
-  }
+  const xLabels = summaries.data.map((day) => formatDateLabel(day.range.date))
+  const aiInput = summaries.data.map((day) => day.grand_total.ai_input_tokens ?? 0)
+  const aiOutput = summaries.data.map((day) => day.grand_total.ai_output_tokens ?? 0)
+  const hasData = aiInput.some((v) => v > 0) || aiOutput.some((v) => v > 0)
+  return { hasData, xLabels, aiInput, aiOutput }
 }
 
 function formatTokenAxis(value: number): string {
