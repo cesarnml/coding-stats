@@ -54,7 +54,7 @@
     "@vercel/analytics": "2.0.1",
     "@vitest/coverage-v8": "4.1.7",
     "@vitest/ui": "4.1.7",
-    "daisyui": "5.5.20",
+    "daisyui": "5.5.23",
     "dayjs": "1.11.21",
     "echarts": "6.1.0",
     "eslint": "10.5.0",
