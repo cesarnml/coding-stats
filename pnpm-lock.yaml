@@ -76,8 +76,8 @@ importers:
         specifier: 4.1.9
         version: 4.1.9(vitest@4.1.9)
       daisyui:
-        specifier: 5.5.23
-        version: 5.5.23
+        specifier: 5.6.7
+        version: 5.6.7
       dayjs:
         specifier: 1.11.21
         version: 1.11.21
@@ -2013,8 +2013,8 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
-  daisyui@5.5.23:
-    resolution: {integrity: sha512-xuheNUSL4T6ZVtWXoioqcNkjoyGX85QTDz4HTw2aBPfqk4fuMjax5HDo8qCmpV6M1YN8bGvfx5BpYCoDeRlt+A==}
+  daisyui@5.6.7:
+    resolution: {integrity: sha512-FVpuUbesyAUBWNp5pXn9JDF1EWt3IZJzp5Staw1YqfP0MwL36sv3wtmfWeuEBkZcazaQbeZXA91oW5dSB+TUEg==}
 
   data-urls@7.0.0:
     resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
@@ -5063,7 +5063,7 @@ snapshots:
 
   cssesc@3.0.0: {}
 
-  daisyui@5.5.23: {}
+  daisyui@5.6.7: {}
 
   data-urls@7.0.0:
     dependencies:
