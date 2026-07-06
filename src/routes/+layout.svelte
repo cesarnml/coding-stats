@@ -23,6 +23,20 @@
 
   let { data, children }: { data: any; children: Snippet } = $props()
 
+  // Built via concatenation so the Svelte parser never sees a literal closing script tag
+  const jsonLd =
+    `<script type="application/ld+json">` +
+    JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'CodingStats',
+      url: 'https://codingstats.vercel.app',
+      description:
+        'Personal coding dashboard — WakaTime activity stored in Supabase and visualized as an Apple Health for coders.',
+      author: { '@type': 'Person', name: 'Cesar Mejia Leiva', url: 'https://github.com/cesarnml' },
+    }) +
+    `${'</'}script>`
+
   $effect(() => {
     session.set(data.session)
     profile.set(data.profile)
@@ -57,8 +71,37 @@
 </script>
 
 <svelte:head>
-  <meta name="description" content="Visualize your coding metrics!" />
+  <meta
+    name="description"
+    content="CodingStats — Apple Health for coders. Own your WakaTime data beyond the 7-day free tier: coding-time trends, per-project hours, AI-usage stats, and client-ready reports."
+  />
+  <meta
+    name="keywords"
+    content="CodingStats, WakaTime dashboard, coding time tracking, coding fitness, developer productivity, WakaTime data retention, AI coding stats, per-project hours, SvelteKit, Supabase"
+  />
+  <meta name="author" content="Cesar Mejia Leiva" />
   <link rel="canonical" href={$page.url.href} />
+  <meta property="og:site_name" content="CodingStats" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="CodingStats — Apple Health for coders" />
+  <meta
+    property="og:description"
+    content="Own your WakaTime data beyond the 7-day free tier: coding-time trends, per-project hours, AI-usage stats, and client-ready reports."
+  />
+  <meta property="og:url" content={$page.url.href} />
+  <meta property="og:image" content="https://codingstats.vercel.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CodingStats — Apple Health for coders" />
+  <meta
+    name="twitter:description"
+    content="Own your WakaTime data beyond the 7-day free tier: coding-time trends, per-project hours, AI-usage stats, and client-ready reports."
+  />
+  <meta name="twitter:image" content="https://codingstats.vercel.app/og-image.png" />
+  <!-- JSON-LD is a static, fully app-controlled string — no user input involved -->
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  {@html jsonLd}
 </svelte:head>
 
 <main>
