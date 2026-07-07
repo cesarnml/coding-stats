@@ -5,8 +5,9 @@ import type { SummariesResult } from '$src/types/wakatime'
 import dayjs from 'dayjs'
 import { DateFormat } from '$lib/helpers/timeHelpers'
 import type { SupaProject, SupaProjectSummary } from '$src/app'
+import { supabaseService as supabase } from '$lib/supabase/serviceClient'
 
-export const GET: RequestHandler = async ({ fetch, locals: { supabase } }) => {
+export const GET: RequestHandler = async ({ fetch }) => {
   const yesterday = dayjs().utc().subtract(1, 'd').format(DateFormat.Query)
 
   const { data: projects }: DataContainer<SupaProject[] | null> = await supabase

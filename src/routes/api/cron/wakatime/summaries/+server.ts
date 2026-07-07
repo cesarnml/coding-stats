@@ -3,8 +3,9 @@ import type { RequestHandler } from './$types'
 import { ApiEndpoint, WakaApiRange, type DataContainer } from '$lib/constants'
 import type { SummariesResult } from '$src/types/wakatime'
 import type { SupaSummary } from '$src/app'
+import { supabaseService as supabase } from '$lib/supabase/serviceClient'
 
-export const GET: RequestHandler = async ({ fetch, locals: { supabase } }) => {
+export const GET: RequestHandler = async ({ fetch }) => {
   const response = await fetch(`${ApiEndpoint.Summaries}?&range=${WakaApiRange.Yesterday}`)
   const summariesResult: SummariesResult = await response.json()
   const summaries = summariesResult.data

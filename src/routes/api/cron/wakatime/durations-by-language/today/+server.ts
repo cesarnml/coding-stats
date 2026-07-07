@@ -4,8 +4,9 @@ import type { RequestHandler } from './$types'
 import { ApiEndpoint, WakaSliceBy } from '$lib/constants'
 import type { DurationsResult } from '$src/types/wakatime'
 import { DateFormat } from '$lib/helpers/timeHelpers'
+import { supabaseService as supabase } from '$lib/supabase/serviceClient'
 
-export const GET: RequestHandler = async ({ fetch, locals: { supabase } }) => {
+export const GET: RequestHandler = async ({ fetch }) => {
   const today = dayjs().format(DateFormat.Query)
 
   const response = await fetch(
