@@ -244,6 +244,38 @@ function resolvePullRequestForTicket(
   return matched;
 }
 
+function remoteBranchExists(cwd: string, branch: string): boolean {
+  const result = runProcessResult(cwd, [
+    'git',
+    'ls-remote',
+    '--exit-code',
+    '--heads',
+    'origin',
+    branch,
+  ]);
+
+  return result.exitCode === 0;
+}
+
+/**
+ * closeout-stack lands a ticket by closing its PR with `gh pr close` (not a
+ * real GitHub merge) and then deleting its remote branch, so a landed
+ * ticket's PR state is `CLOSED`, never `MERGED`. On a resumed run, checking
+ * `pr.state === 'MERGED'` alone can't distinguish that from a PR that was
+ * merely auto-closed by GitHub when an *earlier* stacked ticket's branch
+ * (its base) was deleted — that cascade closes the next PR without landing
+ * its content. The branch's own remote existence is the reliable signal:
+ * this script deletes a ticket's branch only after that ticket's commits are
+ * pushed to the closeout branch, so a missing branch means the ticket is
+ * truly done regardless of what happened to its PR state.
+ */
+export function isTicketAlreadyLanded(
+  pr: Pick<PullRequestSnapshot, 'state'>,
+  branchExists: boolean,
+): boolean {
+  return pr.state === 'MERGED' || !branchExists;
+}
+
 function deleteRemoteBranch(cwd: string, repo: string, branch: string): void {
   const result = runProcessResult(cwd, [
     'gh',
@@ -267,16 +299,43 @@ function deleteRemoteBranch(cwd: string, repo: string, branch: string): void {
   );
 }
 
-function fetchOriginDefaultBranch(cwd: string, defaultBranch: string): void {
-  runProcess(cwd, ['git', 'fetch', 'origin', defaultBranch]);
+export function buildCloseoutBranchSyncCommands(closeoutBranch: string): {
+  fetch: string[];
+  push: string[];
+  resetHard: string[];
+} {
+  return {
+    fetch: ['git', 'fetch', 'origin', closeoutBranch],
+    resetHard: ['git', 'reset', '--hard', `origin/${closeoutBranch}`],
+    push: ['git', 'push', 'origin', closeoutBranch],
+  };
 }
 
-function ensureOnDefaultBranch(cwd: string, defaultBranch: string): void {
+export function formatCloseoutBranchGuardError(
+  closeoutBranch: string,
+  currentBranch: string,
+): string {
+  return `closeout-stack must run from the ${closeoutBranch} branch, but HEAD is on ${currentBranch}.`;
+}
+
+export function buildCloseoutPrCloseComment(
+  ticketId: string,
+  closeoutBranch: string,
+  landedVia: 'squash' | 'cherry-pick',
+): string {
+  return landedVia === 'cherry-pick'
+    ? `Merged to ${closeoutBranch} via closeout-stack (${ticketId}). merge --squash conflicted with the stacked branch; landed this PR using sequential git cherry-pick instead.`
+    : `Squash-merged to ${closeoutBranch} via closeout-stack (${ticketId}).`;
+}
+
+function fetchOriginCloseoutBranch(cwd: string, closeoutBranch: string): void {
+  runProcess(cwd, buildCloseoutBranchSyncCommands(closeoutBranch).fetch);
+}
+
+function ensureOnCloseoutBranch(cwd: string, closeoutBranch: string): void {
   const current = runProcess(cwd, ['git', 'rev-parse', '--abbrev-ref', 'HEAD']);
-  if (current !== defaultBranch) {
-    throw new Error(
-      `closeout-stack must run from the ${defaultBranch} branch, but HEAD is on ${current}.`,
-    );
+  if (current !== closeoutBranch) {
+    throw new Error(formatCloseoutBranchGuardError(closeoutBranch, current));
   }
 }
 
@@ -284,21 +343,16 @@ function closePullRequest(
   cwd: string,
   prNumber: number,
   ticketId: string,
-  defaultBranch: string,
+  closeoutBranch: string,
   landedVia: 'squash' | 'cherry-pick',
 ): void {
-  const comment =
-    landedVia === 'cherry-pick'
-      ? `Merged to ${defaultBranch} via closeout-stack (${ticketId}). merge --squash conflicted with the stacked branch; landed this PR using sequential git cherry-pick instead.`
-      : `Squash-merged to ${defaultBranch} via closeout-stack (${ticketId}).`;
-
   const result = runProcessResult(cwd, [
     'gh',
     'pr',
     'close',
     String(prNumber),
     '--comment',
-    comment,
+    buildCloseoutPrCloseComment(ticketId, closeoutBranch, landedVia),
   ]);
 
   if (result.exitCode !== 0) {
@@ -320,6 +374,8 @@ export function formatCloseoutSummary(
 ): string {
   const lines = [formatStatus(state, config), '', 'Stacked Closeout Summary'];
 
+  lines.push(`closeout_target=${config.closeoutBranch}`);
+
   for (const merged of summary.merged) {
     const via =
       merged.landedVia === 'cherry-pick' ? ' [cherry-pick fallback]' : '';
@@ -330,7 +386,7 @@ export function formatCloseoutSummary(
 
   for (const skipped of summary.skippedMerged) {
     lines.push(
-      `- already merged ${skipped.ticketId}: PR #${skipped.prNumber} (${skipped.url})`,
+      `- already landed ${skipped.ticketId}: PR #${skipped.prNumber} (${skipped.url})`,
     );
   }
 
@@ -363,7 +419,7 @@ export async function runCloseoutStack(
     };
 
     ensureCleanWorktree(cwd);
-    ensureOnDefaultBranch(cwd, config.defaultBranch);
+    ensureOnCloseoutBranch(cwd, config.closeoutBranch);
 
     // Prefetch PR snapshots before any branch mutations so child PRs
     // are still discoverable even after parent branches are deleted.
@@ -375,30 +431,26 @@ export async function runCloseoutStack(
       const ticket = tickets[index]!;
       const pr = prSnapshots[index]!;
 
-      if (pr.state === 'MERGED') {
+      if (isTicketAlreadyLanded(pr, remoteBranchExists(cwd, ticket.branch))) {
         summary.skippedMerged.push({
           prNumber: pr.number,
           ticketId: ticket.id,
           url: pr.url,
         });
-        fetchOriginDefaultBranch(cwd, config.defaultBranch);
-        runProcess(cwd, [
-          'git',
-          'reset',
-          '--hard',
-          `origin/${config.defaultBranch}`,
-        ]);
+        const closeoutCommands = buildCloseoutBranchSyncCommands(
+          config.closeoutBranch,
+        );
+        fetchOriginCloseoutBranch(cwd, config.closeoutBranch);
+        runProcess(cwd, closeoutCommands.resetHard);
         continue;
       }
 
-      // Sync local branch with remote main
-      fetchOriginDefaultBranch(cwd, config.defaultBranch);
-      runProcess(cwd, [
-        'git',
-        'reset',
-        '--hard',
-        `origin/${config.defaultBranch}`,
-      ]);
+      // Sync local closeout branch with its remote before landing each PR.
+      const closeoutCommands = buildCloseoutBranchSyncCommands(
+        config.closeoutBranch,
+      );
+      fetchOriginCloseoutBranch(cwd, config.closeoutBranch);
+      runProcess(cwd, closeoutCommands.resetHard);
 
       // Fetch ticket branch and squash-merge locally (3-way merge, no rebase)
       runProcess(cwd, ['git', 'fetch', 'origin', ticket.branch]);
@@ -416,7 +468,7 @@ export async function runCloseoutStack(
           'git',
           'reset',
           '--hard',
-          `origin/${config.defaultBranch}`,
+          `origin/${config.closeoutBranch}`,
         ]);
 
         const oids = listPullRequestCommitOidsAscending(cwd, pr.number);
@@ -438,14 +490,17 @@ export async function runCloseoutStack(
         runProcess(cwd, ['git', 'commit', '-m', pr.title]);
       }
 
-      runProcess(cwd, ['git', 'push', 'origin', config.defaultBranch]);
+      runProcess(
+        cwd,
+        buildCloseoutBranchSyncCommands(config.closeoutBranch).push,
+      );
 
       // Close the PR and clean up the remote branch
       closePullRequest(
         cwd,
         pr.number,
         ticket.id,
-        config.defaultBranch,
+        config.closeoutBranch,
         landedVia,
       );
       deleteRemoteBranch(cwd, repo, ticket.branch);

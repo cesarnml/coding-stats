@@ -17,7 +17,7 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SKILLS_DEST="$REPO_ROOT/.claude/skills"
-SOA_TARGET_VERSION=1
+SOA_TARGET_VERSION=2
 
 if [ -d "$REPO_ROOT/.agents/skills" ] && [ ! -d "$REPO_ROOT/.son-of-anton" ]; then
   # Source repo: skills live at .agents/skills/ directly
@@ -69,6 +69,21 @@ ensure_gitignore_pattern() {
   echo "  updated: .gitignore ($pattern)"
 }
 
+copy_review_gap_scaffold() {
+  local source_dir="$REPO_ROOT/.son-of-anton/docs/template/review-gaps"
+  local dest_dir="$REPO_ROOT/docs/product/review-gaps"
+
+  [ -d "$source_dir" ] || return 0
+
+  mkdir -p "$dest_dir"
+  for file in README.md ledger.jsonl promotion-queue.md; do
+    if [ ! -e "$dest_dir/$file" ]; then
+      cp "$source_dir/$file" "$dest_dir/$file"
+      echo "  created: docs/product/review-gaps/$file"
+    fi
+  done
+}
+
 # ---------------------------------------------------------------------------
 # Migrations
 # ---------------------------------------------------------------------------
@@ -90,6 +105,35 @@ run_migration_1() {
       git -C "$REPO_ROOT" mv ".agents/delivery/$phase/reviews" "docs/product/delivery/$phase/reviews"
     fi
   done
+}
+
+run_migration_2() {
+  local config="$REPO_ROOT/orchestrator.config.json"
+  if [ ! -f "$config" ]; then
+    return
+  fi
+
+  if command -v node >/dev/null 2>&1; then
+    node - "$config" <<'EOF_NODE'
+const fs = require('node:fs');
+const path = process.argv[2];
+const raw = fs.readFileSync(path, 'utf8');
+const config = JSON.parse(raw);
+if (!config || typeof config !== 'object' || Array.isArray(config)) {
+  throw new Error('orchestrator.config.json must contain a JSON object.');
+}
+
+const normalize = (value) =>
+  typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+const fallbackBranch = normalize(config.defaultBranch) ?? 'main';
+config.deliveryBaseBranch = normalize(config.deliveryBaseBranch) ?? fallbackBranch;
+config.closeoutBranch = normalize(config.closeoutBranch) ?? fallbackBranch;
+fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`);
+EOF_NODE
+  else
+    echo "soa-sync: node is required to migrate orchestrator.config.json branch roles" >&2
+    exit 1
+  fi
 }
 
 apply_migrations() {
@@ -226,6 +270,8 @@ if [ "$IS_SOURCE_REPO" = false ]; then
   inject_soa_block ".son-of-anton/AGENTS.soa.md" "AGENTS.md"
   inject_soa_block ".son-of-anton/CLAUDE.soa.md" "CLAUDE.md"
 
+  copy_review_gap_scaffold
+
   # Scaffold orchestrator.config.json if absent.
   # Detects packageManager from lock files; defaults to bun if none found.
   SOA_CONFIG="$REPO_ROOT/orchestrator.config.json"
@@ -242,6 +288,8 @@ if [ "$IS_SOURCE_REPO" = false ]; then
     cat > "$SOA_CONFIG" <<EOF_CONFIG
 {
   "defaultBranch": "main",
+  "deliveryBaseBranch": "main",
+  "closeoutBranch": "main",
   "planRoot": "docs",
   "runtime": "$_rt",
   "packageManager": "$_pm",

@@ -1438,7 +1438,7 @@ export function findPrimaryWorktreePath(
 ): string | undefined {
   return findPlatformPrimaryWorktreePath(
     cwd,
-    config.defaultBranch,
+    config.deliveryBaseBranch,
     config.runtime,
   );
 }
@@ -1460,7 +1460,7 @@ export function syncStateFromScratch(
 ): DeliveryState {
   return syncStateFromScratchImpl(ticketDefinitions, options, inferred, {
     cwd,
-    defaultBranch: config.defaultBranch,
+    deliveryBaseBranch: config.deliveryBaseBranch,
     deriveBranchName,
     deriveWorktreePath,
   });
@@ -1481,7 +1481,7 @@ export function syncStateFromExisting(
     inferred,
     {
       cwd,
-      defaultBranch: config.defaultBranch,
+      deliveryBaseBranch: config.deliveryBaseBranch,
       deriveBranchName,
       deriveWorktreePath,
     },
@@ -1533,7 +1533,7 @@ export async function loadState(
 ): Promise<LoadStateResult> {
   const raw = await loadStateImpl(cwd, options, {
     cwd,
-    defaultBranch: config.defaultBranch,
+    deliveryBaseBranch: config.deliveryBaseBranch,
     runtime: config.runtime,
     deriveBranchName,
     deriveWorktreePath,
@@ -1550,7 +1550,7 @@ async function repairState(
 ): Promise<RepairStateResult> {
   const result = await repairStateImpl(cwd, options, {
     cwd,
-    defaultBranch: config.defaultBranch,
+    deliveryBaseBranch: config.deliveryBaseBranch,
     runtime: config.runtime,
     deriveBranchName,
     deriveWorktreePath,
@@ -2309,6 +2309,7 @@ async function restackTicket(
   return restackTicketImpl(state, cwd, ticketId, {
     buildPullRequestBody,
     defaultBranch: context.config.defaultBranch,
+    deliveryBaseBranch: context.config.deliveryBaseBranch,
     editPullRequest: platform.editPullRequest,
     ensureCleanWorktree: platform.ensureCleanWorktree,
     fetchOrigin: platform.fetchOrigin,
@@ -2544,7 +2545,11 @@ function loadReconciliationContext(
 ): {
   ticket: TicketState;
   artifactAbs: string;
-  artifactRows: Array<{ outcome: string; reviewedHeadSha?: string }>;
+  artifactRows: Array<{
+    outcome: string;
+    reviewedHeadSha?: string;
+    acknowledgment?: string;
+  }>;
   reviewedHeadSha: string;
   headSha: string;
   reviewedPaths: string[];
@@ -2567,12 +2572,20 @@ function loadReconciliationContext(
     ticket.subagentRunnerArtifactPath ??
     `${state.reviewsDirPath}/${ticket.id}-subagent-review.ledger.json`;
   const artifactAbs = resolve(cwd, artifactRel);
-  let rows: Array<{ outcome: string; reviewedHeadSha?: string }> = [];
+  let rows: Array<{
+    outcome: string;
+    reviewedHeadSha?: string;
+    acknowledgment?: string;
+  }> = [];
   let reviewedHeadSha = '';
   if (existsSync(artifactAbs)) {
     try {
       const parsed = JSON.parse(readFileSync(artifactAbs, 'utf-8')) as {
-        invocations?: Array<{ outcome: string; reviewedHeadSha?: string }>;
+        invocations?: Array<{
+          outcome: string;
+          reviewedHeadSha?: string;
+          acknowledgment?: string;
+        }>;
       };
       rows = parsed.invocations ?? [];
       const last = rows[rows.length - 1];

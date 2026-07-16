@@ -1,4 +1,13 @@
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
@@ -43,6 +52,7 @@ export type GateJsonPayload = {
 const GATE_JSON_FILENAME = 'gate.json';
 const GATE_TRANSITIONS_LOG_FILENAME = 'gate-transitions.log';
 const DELIVERY_CONTEXT_JSON_FILENAME = 'delivery-context.json';
+const GATE_TRANSITIONS_LOG_ROTATION_BYTES = 10 * 1024 * 1024;
 
 export type DeliveryContextJsonPayload = {
   owner: 'soa';
@@ -70,12 +80,70 @@ export function resolveCodogotchiHome(): string {
  */
 function resolveCanonicalGitRoot(cwd: string): string {
   try {
-    const raw = execSync('git rev-parse --git-common-dir', { cwd, encoding: 'utf8' }).trim();
+    const raw = execSync('git rev-parse --git-common-dir', {
+      cwd,
+      encoding: 'utf8',
+    }).trim();
     const absoluteCommonDir = isAbsolute(raw) ? raw : join(cwd, raw);
     return dirname(absoluteCommonDir);
   } catch {
     return cwd;
   }
+}
+
+type ActiveSession = {
+  origin: string | undefined;
+  sessionId: string | undefined;
+};
+
+/**
+ * `.soa/active-session.json` is a shared, mutable pointer that any origin's
+ * hook (Claude Code, Codex, Cursor, ...) can overwrite at any time. A single
+ * ticket's gate sequence fires many `writeGateEvent` calls in succession
+ * (ticket_started, red_tdd, green_tdd, ...); re-reading the file fresh on
+ * every call let a concurrent, unrelated writer steal the routing mid-ticket
+ * and silently misdirect a gate event into the wrong origin/session's file.
+ * Cache the first *resolved* session per repoRoot for this process's
+ * lifetime so the whole sequence stays pinned to whichever session actually
+ * started the ticket. Deliberately do not cache an unresolved read (file
+ * missing/malformed) so we keep retrying until the session becomes known.
+ */
+const resolvedSessionCache = new Map<string, ActiveSession>();
+
+function readActiveSession(repoRoot: string): ActiveSession {
+  const cached = resolvedSessionCache.get(repoRoot);
+  if (cached) return cached;
+
+  try {
+    const raw = readFileSync(
+      join(repoRoot, '.soa', 'active-session.json'),
+      'utf8',
+    );
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      const session: ActiveSession = {
+        origin: typeof parsed.origin === 'string' ? parsed.origin : undefined,
+        sessionId:
+          typeof parsed.session_id === 'string' ? parsed.session_id : undefined,
+      };
+      if (session.origin && session.sessionId) {
+        resolvedSessionCache.set(repoRoot, session);
+      }
+      return session;
+    }
+  } catch {
+    // File absent or malformed — fall back to legacy single-file mode
+  }
+  return { origin: undefined, sessionId: undefined };
+}
+
+function rotateGateTransitionsLogIfNeeded(path: string): void {
+  if (!existsSync(path)) return;
+  if (statSync(path).size <= GATE_TRANSITIONS_LOG_ROTATION_BYTES) return;
+
+  const backupPath = `${path}.1`;
+  if (existsSync(backupPath)) rmSync(backupPath);
+  renameSync(path, backupPath);
 }
 
 export async function writeGateEvent(
@@ -87,7 +155,12 @@ export async function writeGateEvent(
     const home = resolveCodogotchiHome();
     const since = new Date();
     const expiresAt = new Date(since.getTime() + GATE_TTL_MS);
-    const repoRoot = resolveCanonicalGitRoot(resolve(event.repoRoot ?? process.cwd()));
+    const repoRoot = resolveCanonicalGitRoot(
+      resolve(event.repoRoot ?? process.cwd()),
+    );
+
+    const { origin, sessionId } = readActiveSession(repoRoot);
+
     const payload: GateJsonPayload = {
       gate: event.gate,
       since: since.toISOString(),
@@ -95,15 +168,29 @@ export async function writeGateEvent(
       plan_key: event.planKey,
       ticket_id: event.ticketId,
     };
+
+    const stateDir = join(home, 'state.d');
+    const gateFile =
+      origin && sessionId
+        ? join(stateDir, `${origin}:${sessionId}.gate.json`)
+        : join(home, GATE_JSON_FILENAME);
+    const contextFile =
+      origin && sessionId
+        ? join(stateDir, `${origin}:${sessionId}.context.json`)
+        : join(home, DELIVERY_CONTEXT_JSON_FILENAME);
+
     mkdirSync(home, { recursive: true });
+    if (origin && sessionId) mkdirSync(stateDir, { recursive: true });
     const serialized = JSON.stringify(payload);
-    writeFileSync(join(home, GATE_JSON_FILENAME), serialized, 'utf8');
-    appendFileSync(join(home, GATE_TRANSITIONS_LOG_FILENAME), `${serialized}\n`, 'utf8');
+    writeFileSync(gateFile, serialized, 'utf8');
+
+    const transitionsLogFile = join(home, GATE_TRANSITIONS_LOG_FILENAME);
+    rotateGateTransitionsLogIfNeeded(transitionsLogFile);
+    appendFileSync(transitionsLogFile, `${serialized}\n`, 'utf8');
 
     const contextPayload: DeliveryContextJsonPayload = {
       owner: 'soa',
-      status:
-        event.gate === GATE_NAMES.TICKET_COMPLETED ? 'cleared' : 'active',
+      status: event.gate === GATE_NAMES.TICKET_COMPLETED ? 'cleared' : 'active',
       repo_root: repoRoot,
       plan_key: event.planKey,
       ticket_id: event.ticketId,
@@ -113,11 +200,7 @@ export async function writeGateEvent(
         since.getTime() + DELIVERY_CONTEXT_LEASE_MS,
       ).toISOString(),
     };
-    writeFileSync(
-      join(home, DELIVERY_CONTEXT_JSON_FILENAME),
-      JSON.stringify(contextPayload),
-      'utf8',
-    );
+    writeFileSync(contextFile, JSON.stringify(contextPayload), 'utf8');
   } catch {
     // best-effort: write failures never abort a delivery command
   }
