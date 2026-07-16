@@ -38,7 +38,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.61.1",
-    "@supabase/supabase-js": "2.108.2",
+    "@supabase/supabase-js": "2.110.7",
     "@sveltejs/adapter-vercel": "6.3.4",
     "@sveltejs/kit": "2.65.2",
     "@tailwindcss/postcss": "4.3.1",
