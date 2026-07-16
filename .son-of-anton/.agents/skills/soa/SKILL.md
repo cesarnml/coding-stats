@@ -1,6 +1,6 @@
 ---
 name: soa
-description: Son-of-Anton canonical entrypoint. Use for /soa plan, /soa decompose, /soa execute, /soa resume, /soa preflight, /soa triage-ticket, /soa triage-standalone, /soa triage-advisory-observations (/soa tao), /soa install, /soa update, /soa closeout, and /soa ideate. Manages installation, updates, and the full delivery lifecycle.
+description: Son-of-Anton canonical entrypoint. Use for /soa plan, /soa decompose, /soa execute, /soa resume, /soa preflight, /soa triage-ticket, /soa triage-standalone, /soa triage-advisory-observations (/soa tao), /soa quality-control (/soa qc), /soa install, /soa update, /soa closeout, and /soa ideate. Manages installation, updates, quality control, and the full delivery lifecycle.
 ---
 
 # Son-of-Anton Skill
@@ -248,9 +248,9 @@ bun run deliver triage-standalone --pr <number>
 **Trigger:** `/soa triage-advisory-observations <phase-XX|epic-XX>` or `/soa tao <phase-XX|epic-XX>`
 
 Run the post-phase advisory-observation triage lane after the stacked phase has
-landed on `main` and before the next phase starts. This is for non-blocking
-`Advisory Observations` from subagent-review reports. It is not a per-ticket
-pre-PR gate and it must not apply patches automatically.
+landed on the configured `closeoutBranch` and before the next phase starts. This
+is for non-blocking `Advisory Observations` from subagent-review reports. It is
+not a per-ticket pre-PR gate and it must not apply patches automatically.
 
 1. Parse the phase or epic target and locate its `implementation-plan.md`.
 2. Read `docs/template/delivery/delivery-orchestrator.md` in the source repo
@@ -272,11 +272,31 @@ bun run deliver --plan <plan-path> triage-advisory-observations --dispositions <
 
 ---
 
+### `quality-control` (alias: `qc`)
+
+**Trigger:** `/soa quality-control phase-NN: <description>` or `/soa qc phase-NN: <description>`.
+`phase-unknown` is accepted in place of `phase-NN` when the operator can't name
+the originating phase up front — the `soa-quality-control` skill resolves it
+via investigation and operator confirmation before recording.
+
+Run the post-phase quality control lane for a small, verified fix that should
+create one review-gap ledger entry.
+
+1. Require a phase argument (`phase-NN` or the `phase-unknown` placeholder)
+   before inspecting or changing files. If neither form is given, ask for one.
+2. Invoke the `soa-quality-control` skill. That skill owns fix verification,
+   commit provenance, phase attribution (including resolving `phase-unknown`),
+   review-gap ledger capture, and promotion-queue guidance.
+3. Keep this skill-led. Do not add a `bun run deliver quality-control`
+   delivery-orchestrator command for this path.
+
+---
+
 ### `closeout` (alias: `closeout-stack`)
 
 **Trigger:** `/soa closeout XX`
 
-Squash-merge a completed stacked PR set onto main.
+Squash-merge a completed stacked PR set onto the configured `closeoutBranch`.
 
 Run the closeout script:
 

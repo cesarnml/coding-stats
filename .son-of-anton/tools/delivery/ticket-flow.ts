@@ -106,17 +106,21 @@ export function buildTicketHandoff(
     'id' | 'title' | 'ticketFile' | 'branch' | 'baseBranch' | 'worktreePath'
   >,
   modifiedSectionsNote?: string,
-  options?: { ticketBoundaryMode?: string; subagentReviewPolicy?: string },
+  options?: {
+    ticketBoundaryMode?: string;
+    documentationPrefix?: string;
+  },
 ): string {
   const ticketIndex = state.tickets.findIndex(
     (candidate) => candidate.id === ticket.id,
   );
   const previous = ticketIndex > 0 ? state.tickets[ticketIndex - 1] : undefined;
+  const documentationPrefix = options?.documentationPrefix ?? '';
   const requiredReads = [
-    'docs/template/overview/start-here.md',
+    `${documentationPrefix}docs/template/overview/start-here.md`,
     state.planPath,
     ticket.ticketFile,
-    'docs/template/delivery/delivery-orchestrator.md',
+    `${documentationPrefix}docs/template/delivery/delivery-orchestrator.md`,
   ];
   const lines = [
     '# Ticket Handoff',
@@ -186,13 +190,8 @@ export function buildTicketHandoff(
   );
 
   if (options?.ticketBoundaryMode === 'gated') {
-    const nextCommand =
-      options.subagentReviewPolicy === 'disabled' ||
-      options.subagentReviewPolicy === undefined
-        ? 'open-pr'
-        : 'subagent-review';
     lines.push('', '## RESUME COMMAND', '');
-    lines.push(`\`bun run deliver --plan ${state.planPath} ${nextCommand}\``);
+    lines.push(`\`bun run deliver --plan ${state.planPath} start\``);
   }
 
   return lines.join('\n') + '\n';
@@ -230,7 +229,9 @@ export async function writeTicketHandoff(
     absolutePath,
     buildTicketHandoff(state, ticket, modifiedSectionsNote, {
       ticketBoundaryMode: dependencies.ticketBoundaryMode,
-      subagentReviewPolicy: dependencies.subagentReviewPolicy,
+      documentationPrefix: existsSync(resolve(cwd, '.son-of-anton'))
+        ? '.son-of-anton/'
+        : '',
     }),
     'utf8',
   );
@@ -685,6 +686,7 @@ export function openPullRequest(
       target.worktreePath,
       existingPullRequest.number,
       {
+        base: target.baseBranch,
         body,
         title,
       },
@@ -918,6 +920,7 @@ export function restackTicket(
       },
     ) => string;
     defaultBranch: string;
+    deliveryBaseBranch: string;
     editPullRequest: (
       cwd: string,
       prNumber: number,
@@ -975,8 +978,8 @@ export function restackTicket(
   );
   const previous = targetIndex > 0 ? state.tickets[targetIndex - 1] : undefined;
 
-  let nextBaseBranch = dependencies.defaultBranch;
-  let rebaseTarget = `origin/${dependencies.defaultBranch}`;
+  let nextBaseBranch = dependencies.deliveryBaseBranch;
+  let rebaseTarget = `origin/${dependencies.deliveryBaseBranch}`;
 
   if (previous) {
     const oldBase = dependencies.readMergeBase(
@@ -998,7 +1001,7 @@ export function restackTicket(
 
     dependencies.rebaseOnto(cwd, rebaseTarget, oldBase);
   } else {
-    dependencies.rebaseOntoDefaultBranch(cwd, dependencies.defaultBranch);
+    dependencies.rebaseOntoDefaultBranch(cwd, dependencies.deliveryBaseBranch);
   }
 
   const nextState: DeliveryState = {

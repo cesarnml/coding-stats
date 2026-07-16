@@ -83,7 +83,7 @@ external callers can import from one stable path.
 | `planning.ts`          | Branch and worktree naming (`deriveBranchName`, `deriveWorktreePath`, `findExistingBranch`)            |
 | `state.ts`             | State persistence (`loadState`, `saveState`, `normalizeDeliveryStateFromPersisted`)                    |
 | `ticket-flow.ts`       | Ticket lifecycle transitions, handoff artifact writing, `materializeTicketContext`                     |
-| `notifications.ts`     | Telegram notification events and formatting                                                            |
+| `notifications.ts`     | Telegram/Discord notification events and formatting                                                    |
 | `pr-metadata.ts`       | PR title/body construction and AI-review section builders                                              |
 | `review.ts`            | Review polling lifecycle, fetcher/triager adapters, artifact parsing                                   |
 | `cli-runner.ts`        | `runDeliveryOrchestrator` dispatch switch and explicit command-helper wiring                           |
@@ -130,6 +130,8 @@ behavior, and review policy are not hardcoded:
 ```json
 {
   "defaultBranch": "main",
+  "deliveryBaseBranch": "main",
+  "closeoutBranch": "main",
   "planRoot": "docs",
   "runtime": "bun",
   "packageManager": "bun",
@@ -152,6 +154,8 @@ Subagent selection precedence is **`--subagent` flag > `subagentRunner` config f
 All fields are optional. When the file is absent, the orchestrator infers sensible defaults:
 
 - `defaultBranch`: `"main"`
+- `deliveryBaseBranch`: `"main"`
+- `closeoutBranch`: `"main"`
 - `planRoot`: `"docs"` (plans live at `{planRoot}/product/delivery/<phase>/implementation-plan.md`)
 - `runtime`: `"bun"` (`"bun"` uses `Bun.spawnSync`, `"node"` uses `child_process.spawnSync` inside the orchestrator implementation)
 - `packageManager`: inferred from lockfile (`bun.lock` → `"bun"`, `pnpm-lock.yaml` → `"pnpm"`, `yarn.lock` → `"yarn"`, `package-lock.json` → `"npm"`, fallback `"npm"`) for worktree bootstrap behavior
@@ -168,6 +172,41 @@ Valid `reviewPolicy` stage values are:
 Invalid values and unknown keys are rejected at config load with a clear error.
 
 `reviewPolicy.subagentReview` governs the pre-PR internal agent review step (`subagent-review` command). `reviewPolicy.prReview` governs the external AI PR review polling window. `prReviewAgents` is a list of `{ login, name }` entries used by the fetcher script to identify external review bots by GitHub login. Runner selection for `subagent-review` is done at invocation time via `--subagent <claude-cli|codex-cli|cursor-cli>` — not in config.
+
+Branch roles are separate. `defaultBranch` is the repo-primary branch used for
+source links and repo-level references. `deliveryBaseBranch` is the first-ticket
+delivery base and primary worktree branch. `closeoutBranch` is the branch that
+`closeout-stack` verifies, resets, pushes, and comments against. Keep all three
+explicit in checked-in config:
+
+```json
+{
+  "defaultBranch": "main",
+  "deliveryBaseBranch": "main",
+  "closeoutBranch": "main"
+}
+```
+
+```json
+{
+  "defaultBranch": "main",
+  "deliveryBaseBranch": "main",
+  "closeoutBranch": "staging"
+}
+```
+
+```json
+{
+  "defaultBranch": "main",
+  "deliveryBaseBranch": "release-next",
+  "closeoutBranch": "release-next"
+}
+```
+
+Any promotion between configured branches is manual and outside the SoA closeout
+command. `/soa update` runs the sync migration that derives missing
+`deliveryBaseBranch` and `closeoutBranch` values from the previous
+`defaultBranch` value, preserving existing consumer targets.
 
 Supported `ticketBoundaryMode` values are:
 
@@ -209,7 +248,7 @@ The orchestrator owns process mechanics:
 - idempotent PR open/update behavior for already-pushed ticket branches
 - a 6/12-minute AI-review polling loop after PR open (two checkpoints: 6 minutes and 12 minutes)
 - invoking the repo-local `pr-review` fetcher and persisting split review artifacts when AI review is detected
-- optional Telegram milestone notifications for long-running delivery runs
+- optional Telegram or Discord milestone notifications for long-running delivery runs
 - blocking advancement until review is explicitly recorded or auto-recorded as `clean` after the final polling check
 - refreshing the current PR body from recorded follow-up notes immediately before advancing to the next ticket
 - resolving native GitHub inline review threads for patched AI-review findings when the saved artifact exposes a resolvable thread identity
@@ -275,9 +314,9 @@ Run it from a worktree where `.agents/delivery/<plan-key>/state.json` for that p
 
 ### Post-phase advisory-observation triage
 
-After the full stacked phase is closed out onto `main`, run advisory-observation
-triage before starting the next phase. The `/soa` wrapper is the user-facing
-entrypoint:
+After the full stacked phase is closed out onto the configured
+`closeoutBranch`, run advisory-observation triage before starting the next
+phase. The `/soa` wrapper is the user-facing entrypoint:
 
 ```bash
 /soa triage-advisory-observations phase-16
@@ -292,8 +331,8 @@ bun run deliver --plan docs/product/delivery/phase-16/implementation-plan.md \
 
 **This is a primary-agent patching lane, not an advisory-only lane.** During
 triage, the primary agent reads each parsed advisory observation, decides
-whether it is prudent to fix, and **applies patches directly to `main`**
-where prudent. The `triage-advisory-observations` command itself is a state
+whether it is prudent to fix, and **applies patches directly to the configured
+`closeoutBranch`** where prudent. The `triage-advisory-observations` command itself is a state
 recorder — it scans completed subagent-review report sidecars, parses the
 `Advisory Observations` section (excluding `Actionable findings`), aligns
 the parsed observations with the operator's explicit dispositions, and
@@ -739,7 +778,7 @@ After the developer has reviewed the full stacked PR chain and is ready to merge
 bun run closeout-stack --plan docs/product/delivery/phase-NN/implementation-plan.md
 ```
 
-`closeout-stack` is intentionally separate from `deliver`. It handles stacked PR merge choreography rather than ticket implementation state: for each reviewed slice in ticket order, it runs `git merge --squash` locally (a 3-way merge, robust against parent-branch patches), commits with the PR title, pushes to `main`, closes the PR, and deletes the remote branch. This produces one squash commit per ticket on `main` without rebasing child branches. When squash hits conflicts (often after prior tickets landed as new squash SHAs), it resets to `origin/main` and replays the PR using `gh pr view`’s commit list and sequential `git cherry-pick` instead (merge commits use `-m 1`), which may create more than one commit for that ticket.
+`closeout-stack` is intentionally separate from `deliver`. It handles stacked PR merge choreography rather than ticket implementation state: for each reviewed slice in ticket order, it runs `git merge --squash` locally (a 3-way merge, robust against parent-branch patches), commits with the PR title, pushes to `closeoutBranch`, closes the PR, and deletes the remote branch. This produces one squash commit per ticket on the configured closeout target without rebasing child branches. When squash hits conflicts (often after prior tickets landed as new squash SHAs), it resets to `origin/<closeoutBranch>` and replays the PR using `gh pr view`'s commit list and sequential `git cherry-pick` instead (merge commits use `-m 1`), which may create more than one commit for that ticket.
 
 For a non-ticket PR, run the manual standalone path:
 
@@ -763,7 +802,7 @@ The ticket-only commands `post-verify`, `subagent-review`, `open-pr`, `poll-revi
 
 If standalone delivery ever needs true post-verify or subagent-review gate semantics, add a lightweight standalone state artifact first. Do not present soft preflight discipline as a hard gate without durable evidence.
 
-If a parent ticket was squash-merged onto `main`, run:
+If a parent ticket was squash-merged onto the configured closeout branch, run:
 
 ```bash
 bun run deliver restack
@@ -773,9 +812,9 @@ from the current child ticket worktree before continuing review. `restack` infer
 
 If local state drifts from repo reality, use `repair-state` to snapshot the stale state file, rebuild clean state from current repo facts, and print the repaired fields before resuming delivery.
 
-## Optional Telegram Notifications
+## Optional Notifications (Telegram or Discord)
 
-The orchestrator can emit best-effort Telegram notifications for milestone events such as:
+The orchestrator can emit best-effort notifications for milestone events such as:
 
 - ticket started
 - PR opened
@@ -784,9 +823,13 @@ The orchestrator can emit best-effort Telegram notifications for milestone event
 - ticket completed
 - run blocked
 
-Notifications are optional and advisory. They must never block orchestrator progress if delivery to Telegram fails.
+Notifications are optional and advisory. They must never block orchestrator progress if delivery to the notification channel fails — a failed send is swallowed into a warning string and delivery continues.
 
-Enable them by setting both env vars in your repo's `.env` file (or your shell environment):
+The orchestrator supports a single destination per run, resolved from `process.env` at startup. **Precedence: Telegram wins.** If both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set, the Telegram notifier is used and any Discord webhook is ignored. Discord is used only when Telegram is not fully configured. If nothing is configured, the notifier returns `{ kind: 'noop', enabled: false }` and all notification calls are skipped — no errors, no warnings, no blocked progress.
+
+### Telegram
+
+Enable Telegram by setting both env vars in your repo's `.env` file (or your shell environment):
 
 ```bash
 # .env — Telegram notifications for Son of Anton delivery milestones
@@ -794,11 +837,20 @@ TELEGRAM_BOT_TOKEN=your-bot-token-here
 TELEGRAM_CHAT_ID=your-chat-id-here
 ```
 
-The orchestrator reads these via `process.env` at startup. If either is absent or empty, the notifier returns `{ kind: 'noop', enabled: false }` and all notification calls are skipped — no errors, no warnings, no blocked progress.
-
 To get a bot token: create a bot via [@BotFather](https://t.me/BotFather) on Telegram. To get your chat ID: send a message to your bot and call `https://api.telegram.org/bot<TOKEN>/getUpdates` — the `chat.id` field in the response is your `TELEGRAM_CHAT_ID`.
 
-When those env vars are absent, the notifier stays disabled and the orchestrator behaves normally.
+### Discord
+
+Enable Discord by setting a single webhook URL (used only when Telegram is not fully configured):
+
+```bash
+# .env — Discord notifications for Son of Anton delivery milestones
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token>
+```
+
+To create a webhook: in a Discord channel you manage, open **Edit Channel → Integrations → Webhooks → New Webhook**, pick the channel, and **Copy Webhook URL**. The orchestrator `POST`s a JSON `{ "content": "..." }` body to that URL. Standalone AI-review notifications render the PR reference as a Markdown link (`[PR #N](url)`); ticketed milestone events post the PR URL as a plain link. Markdown metacharacters in free-form text (titles, notes, reasons) are escaped so they read literally, mentions are never parsed (no accidental `@everyone`), and link previews are suppressed (`flags: 4`, mirroring Telegram's `disable_web_page_preview`) so milestone messages stay terse. Discord caps `content` at 2000 characters; like the Telegram path, the orchestrator does not truncate, so an unusually long message is delivered best-effort and simply warns if Discord rejects it.
+
+When neither Telegram nor Discord env vars are present, the notifier stays disabled and the orchestrator behaves normally.
 
 ## Review Artifact Location
 
@@ -818,34 +870,34 @@ State is written under:
 
 For active ticket continuation, `start` writes the authoritative bounded continuation set into the started ticket worktree. That means the started worktree is the local source of truth for continuing that ticket.
 
-The orchestrator also writes `state.json` in the repo directory where you run `deliver` (the current working directory). If you use **one ticket worktree per ticket** and a **separate `main` clone** for `closeout-stack` or other commands, the `main` checkout’s delivery tree does **not** update automatically.
+The orchestrator also writes `state.json` in the repo directory where you run `deliver` (the current working directory). If you use **one ticket worktree per ticket** and a **separate primary checkout** for `closeout-stack` or other commands, that checkout's delivery tree does **not** update automatically.
 
 Fetched review artifacts under `reviews/` and generated handoff artifacts under `handoffs/` are still written under the **same** path relative to the worktree where each command ran. Across a stacked phase, full history is therefore often **spread across multiple ticket worktrees** — the final worktree is **not** guaranteed to contain every `reviews/<ticket>-*.json` or `handoffs/<ticket>-handoff.md` produced earlier.
 
 **Recommendation:**
 
-- After each successful `advance`, refresh the **primary / `main` checkout** so tooling run from `main` stays aligned with reality.
+- After each successful `advance`, refresh the **primary checkout** so tooling run from the repo-primary worktree stays aligned with reality.
 - Copy **`state.json`** from the worktree where that advance just ran (only that file carries the authoritative stack index: PR numbers, branch names, ticket statuses).
 - **Merge** **`reviews/`** and **`handoffs/`** from that same worktree into the primary checkout — `reviews/` to `docs/product/delivery/<plan-key>/reviews/` and `handoffs/` to `.agents/delivery/<plan-key>/handoffs/` (per-ticket filenames normally do not collide). Periodically — and **always before `closeout-stack`** if you did not mirror after every ticket — walk **every** ticket worktree for the plan and copy any missing `reviews/*` and `handoffs/*` into primary so **all** local review and handoff evidence lives in the primary checkout, not stranded in an older worktree.
 
 Example (adjust paths and plan key; `final-wt` is the worktree that completed the last ticket):
 
 ```bash
-mkdir -p /path/to/main-clone/docs/product/delivery/<plan-key>/reviews \
-         /path/to/main-clone/.agents/delivery/<plan-key>/handoffs
+mkdir -p /path/to/primary-clone/docs/product/delivery/<plan-key>/reviews \
+         /path/to/primary-clone/.agents/delivery/<plan-key>/handoffs
 
 cp /path/to/final-wt/.agents/delivery/<plan-key>/state.json \
-   /path/to/main-clone/.agents/delivery/<plan-key>/state.json
+   /path/to/primary-clone/.agents/delivery/<plan-key>/state.json
 
 for wt in /path/to/phase-wt-01 /path/to/phase-wt-02 /path/to/phase-wt-NN; do
   cp -R "$wt/docs/product/delivery/<plan-key>/reviews/"* \
-        /path/to/main-clone/docs/product/delivery/<plan-key>/reviews/ 2>/dev/null || true
+        /path/to/primary-clone/docs/product/delivery/<plan-key>/reviews/ 2>/dev/null || true
   cp -R "$wt/.agents/delivery/<plan-key>/handoffs/"* \
-        /path/to/main-clone/.agents/delivery/<plan-key>/handoffs/ 2>/dev/null || true
+        /path/to/primary-clone/.agents/delivery/<plan-key>/handoffs/ 2>/dev/null || true
 done
 ```
 
-**Stance:** Treat each **started ticket worktree** as authoritative for continuing its active ticket; treat the **primary `main` copy** as the **aggregate mirror** for full-phase history and closeout. Active-ticket continuation should not require scavenging across older worktrees, but aggregate `reviews/` and `handoffs/` still must be **reconciled across all worktrees**, not only copied from the latest one.
+**Stance:** Treat each **started ticket worktree** as authoritative for continuing its active ticket; treat the **primary checkout** as the **aggregate mirror** for full-phase history and closeout. Active-ticket continuation should not require scavenging across older worktrees, but aggregate `reviews/` and `handoffs/` still must be **reconciled across all worktrees**, not only copied from the latest one.
 
 ## PR Body Maintenance
 
@@ -864,4 +916,4 @@ PR descriptions are maintained as delivery metadata, not one-shot text.
 - in `gated`, `advance` stops and prints reset guidance plus the canonical resume prompt; `start` still owns next-ticket handoff creation
 - `start` (zero-arg) finds the next pending ticket, creates its worktree and branch, writes its handoff, and prints the handoff path; explicit `start <ticket-id>` form is unchanged
 
-This matters because the repo squash-merges PRs onto `main`, so the PR body needs to mention prudent ai-cr follow-up work before the stack moves on.
+This matters because the repo squash-merges PRs onto `closeoutBranch`, so the PR body needs to mention prudent ai-cr follow-up work before the stack moves on.
