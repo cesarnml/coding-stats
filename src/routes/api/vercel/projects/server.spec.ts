@@ -4,7 +4,7 @@ import { GET } from './+server'
 
 describe('/api/vercel/projects', () => {
   it('works', async () => {
-    const event = {}
+    const event = { fetch }
     const response = await GET(event as unknown as RequestEvent)
     const result = await response.json()
 
