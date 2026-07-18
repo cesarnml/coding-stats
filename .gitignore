@@ -34,3 +34,4 @@ graphify-out
 supabase/seed.sql
 .qodo
 *-subagent-review.trace.log
+.soa/active-session.json
