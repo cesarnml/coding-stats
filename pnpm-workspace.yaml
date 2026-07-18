@@ -8,3 +8,4 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - '@sveltejs/kit@2.65.2'
+  - '@sveltejs/kit@2.70.0'
