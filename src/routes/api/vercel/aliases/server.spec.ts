@@ -11,6 +11,7 @@ describe('/api/vercel/aliases', () => {
           get: vi.fn(),
         },
       },
+      fetch,
     }
 
     const response = await GET(event as unknown as RequestEvent)
