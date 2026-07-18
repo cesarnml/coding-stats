@@ -72,7 +72,7 @@
     "sharp": "0.34.5",
     "svelte": "5.56.4",
     "svelte-check": "4.4.8",
-    "svelte-eslint-parser": "1.6.1",
+    "svelte-eslint-parser": "1.8.0",
     "tailwindcss": "^4.2.4",
     "terser": "5.49.0",
     "tippy.js": "6.3.7",
