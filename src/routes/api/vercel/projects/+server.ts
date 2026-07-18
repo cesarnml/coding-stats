@@ -3,13 +3,16 @@ import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import type { ProjectsResult } from '$src/types/vercel'
 import { BaseUrl, RestResource } from '$lib/constants'
+import { fetchWithRetry } from '$lib/server/fetchWithRetry'
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ fetch }) => {
   const headers = {
     Authorization: `Bearer ${VERCEL_API_TOKEN}`,
     'Content-Type': 'application/json',
   }
-  const response = await fetch(`${BaseUrl.Vercel}${RestResource.VercelProjects}`, { headers })
+  const response = await fetchWithRetry(fetch, `${BaseUrl.Vercel}${RestResource.VercelProjects}`, {
+    headers,
+  })
   const projectResult: ProjectsResult = await response.json()
   return json(projectResult)
 }
