@@ -60,7 +60,7 @@
     "eslint": "10.7.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-svelte": "3.20.0",
-    "globals": "17.6.0",
+    "globals": "17.7.0",
     "iconify-icon": "3.0.2",
     "jsdom": "29.1.1",
     "lodash": "4.18.1",
