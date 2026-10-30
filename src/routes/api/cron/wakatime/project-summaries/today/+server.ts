@@ -2,13 +2,10 @@ import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { ApiEndpoint, WakaApiRange, type DataContainer } from '$lib/constants'
 import type { SummariesResult } from '$src/types/wakatime'
-import dayjs from 'dayjs'
-import { DateFormat } from '$lib/helpers/timeHelpers'
 import type { SupaProject, SupaProjectSummary } from '$src/app'
 import { supabaseService as supabase } from '$lib/supabase/serviceClient'
 
 export const GET: RequestHandler = async ({ fetch }) => {
-  const today = dayjs().utc().format(DateFormat.Query)
   const { data: projects }: DataContainer<SupaProject[] | null> = await supabase
     .from('projects')
     .select('*')
@@ -38,12 +35,16 @@ export const GET: RequestHandler = async ({ fetch }) => {
     const createOrUpdateRequests = []
 
     for (const [idx, project] of projects.entries()) {
+      // Match on the date WakaTime assigned (user's WakaTime timezone), not UTC,
+      // so the lookup finds the row this upsert would otherwise duplicate.
+      const date = projectSummariesResultsWithDate[idx].data[0]?.range.date
+      if (!date) continue
       const { data: existingProjectSummary }: DataContainer<SupaProjectSummary | null> =
         await supabase
           .from('project_summaries')
           .select('*')
           .eq('project_id', project.id)
-          .eq('date', today)
+          .eq('date', date)
           .single()
       if (existingProjectSummary) {
         createOrUpdateRequests.push(
